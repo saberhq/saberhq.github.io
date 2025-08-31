@@ -1,0 +1,38 @@
+baseURL = "https://saberhq.github.io/"
+languageCode = "en-us"
+title = "saberhq"
+theme = "book"
+enableRobotsTXT = true
+
+[params]
+  BookTheme = "auto"
+  BookToC = true
+  BookSection = "docs"
+  BookDateFormat = "2006-01-02"
+  BookRepo = "https://github.com/saberhq/saberhq.github.io"
+
+# Top navigation
+[menu]
+  [[menu.main]]
+    name = "Blog"
+    url  = "/blog/"
+    weight = 10
+  [[menu.main]]
+    name = "Podcast"
+    url  = "/podcast/"
+    weight = 20
+  [[menu.main]]
+    name = "Newsletter"
+    url  = "/newsletter/"
+    weight = 30
+  [[menu.main]]
+    name = "About me"
+    url  = "/about/"
+    weight = 40
+
+# Footer socials (optional)
+[params.social]
+  github = "https://github.com/saberhq"
+  youtube = "https://www.youtube.com/@saberhq"
+  linkedin = "https://www.linkedin.com/in/saberhq"
+  twitter = "https://x.com/saberhq"
