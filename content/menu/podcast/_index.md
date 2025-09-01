@@ -1,5 +1,7 @@
 ---
 title: "Podcast"
+weight: 20
+bookFlatSection: true
 ---
 
 This will be the home for my AI × Bio podcast.  
