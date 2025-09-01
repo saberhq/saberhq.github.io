@@ -1,10 +1,10 @@
 ---
-title: "Welcome to Saber HQ"
+title: "Saber HQ"
 ---
 
 {{< avatar src="/saberhq_profile.jpeg" alt="Portrait of Saber Hafezqorani" size="160" >}}
 
-Welcome!
+## Welcome!
 
 My name is Saber. I’m a Research Scientist with 12 years of experience in genomics, data science, and machine learning. I earned my Ph.D. in Bioinformatics at the University of British Columbia (UBC), where I was advised by [Prof. Dr. Inanc Birol](https://www.bcgsc.ca/people/inanc-birol), working at the [Bioinformatics Technology Lab](https://www.birollab.ca/). During my Ph.D., I broadly worked on developing computational tools and software solutions for next-generation sequencing technologies. My doctoral dissertation (see [here](https://open.library.ubc.ca/soa/cIRcle/collections/ubctheses/24/items/1.0444844)) was focused on utilizing machine learning in transcriptome analysis. I am passionate about contributing to the understanding, controlling, and training of foundation models for biology.
 
@@ -13,6 +13,15 @@ Before starting at UBC, I received my M.Sc. in Bioinformatics from [METU](https:
 I share updates on my research work as blog posts on this site. And over at The Attention - my frequentish-ly newsletter 😃 - I share the latest news on research and development in the machine learning and AI field and insights from across the web on creative entrepreneurship and productivity. Sign up [here](https://newsletter.saberhq.com/) to join a growing community of friendly readers. ❤️
 
 ## Recent news
+
+September 2025: Created this website. I am starting to embrace simplicity in my life and decided to create a minimalistic statis website to share my work and thoughts. If you like the style and theme, look into Hugo's [book theme](https://themes.gohugo.io/themes/book/).
+
+July 2025: I got an offer for my first post-PhD position as Computational Scientist at [Genentech](https://www.gene.com/), where I will be working on the development of foundation models for virtual cells.
+
+July 2025: Attended [ICML 2025](https://icml.cc/) in Vancouver, Canada. Had a wonderful time connecting with people in AI x Bio community and learned a lot during amazing workshops on [Multi-modal Foundation Models and Large Language Models for Life Sciences](https://icml.cc/virtual/2025/workshop/39959) as well as [Generative AI for Biology](https://icml.cc/virtual/2025/workshop/39968).
+
+December 2024: Attended [NeurIPS 2024](https://neurips.cc/) in Vancouver, Canada.
+
 July 2024: Defended my Ph.D. dissertation and graduated from the University of British Columbia.
 
 June 2024: The LRGASP research is published in Nature Methods.
