@@ -25,10 +25,6 @@ enableRobotsTXT = true
     name = "Newsletter"
     url  = "/newsletter/"
     weight = 30
-  [[menu.main]]
-    name = "About me"
-    url  = "/about/"
-    weight = 40
 
 # Footer socials (optional)
 [params.social]
