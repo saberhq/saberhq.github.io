@@ -1,15 +1,56 @@
 {{ define "main" }}
   <main class="landing">
     <section class="landing-hero">
-      <h1>Hi, I’m Saber</h1>
-      <p>AI × Bio research, notes, and projects — start here.</p>
-      <div class="landing-cta">
-        <a class="btn" href="/blog/">Blog</a>
-        <a class="btn" href="/podcast/">Podcast</a>
-        <a class="btn" href="/newsletter/">Newsletter</a>
-        <a class="btn" href="/about/">About me</a>
+      <div class="landing-hero-head">
+        <div class="hero-title">
+          <h1>SABER HQ</h1>
+          <p>AI × Bio research, notes, and projects.</p>
+          <div class="landing-badges">
+            <span class="book-badge info"><span class="book-badge-title">Badge</span><span class="book-badge-value">Value</span></span>
+            <span class="book-badge"><span class="book-badge-title">Badge</span><span class="book-badge-value">Value</span></span>
+          </div>
+        </div>
+        <nav class="hero-links">
+          {{ $soc := .Site.Params.social }}
+          {{ with $soc.github }}<a href="{{ . }}" target="_blank" rel="noopener">GitHub</a>{{ end }}
+          {{ with $soc.linkedin }}<a href="{{ . }}" target="_blank" rel="noopener">LinkedIn</a>{{ end }}
+          {{ with $soc.youtube }}<a href="{{ . }}" target="_blank" rel="noopener">YouTube</a>{{ end }}
+          {{ with $soc.twitter }}<a href="{{ . }}" target="_blank" rel="noopener">Twitter</a>{{ end }}
+        </nav>
       </div>
     </section>
+
+    <section class="landing-columns">
+      <div class="col">
+        <h3>Podcast</h3>
+        <p>Conversations and stories at the intersection of AI and biology. Notes and takeaways from each episode.</p>
+        <p><a class="book-btn" href="/podcast/">Explore the podcast</a></p>
+      </div>
+      <div class="col">
+        <h3>Newsletter</h3>
+        <p>Occasional roundups on research, projects, and ideas worth sharing. Practical, concise, and human.</p>
+        <p><a class="book-btn" href="/newsletter/">Read the newsletter</a></p>
+      </div>
+    </section>
+
+    {{ $blog := site.GetPage "section" "menu/blog" }}
+    {{ if $blog }}
+    <section class="landing-posts">
+      <div class="section-head">
+        <h3>Latest posts <span class="sep">–</span> <a class="see-all" href="{{ $blog.RelPermalink }}">See full list</a>:</h3>
+      </div>
+      <ul class="card-grid">
+        {{ $posts := first 6 (sort (where $blog.RegularPages ".Content" "ne" "") ".Date" "desc") }}
+        {{ range $posts }}
+          <li class="card">
+            <h4><a href="{{ .RelPermalink }}">{{ .Title }}</a></h4>
+            <p>{{ .Summary | plainify | truncate 160 }}</p>
+            <p class="read"><a href="{{ .RelPermalink }}">Read more →</a></p>
+          </li>
+        {{ end }}
+      </ul>
+    </section>
+    {{ end }}
 
     <section class="landing-body">
       {{ .Content }}
