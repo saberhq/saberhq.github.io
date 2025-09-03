@@ -113,3 +113,81 @@
   .landing-columns { grid-template-columns: 1fr; }
   .landing-posts .card-grid { grid-template-columns: 1fr; }
 }
+
+/* ----- Landing page layout polish (match Book demo spacing) ----- */
+
+/* Constrain and center the home content block like the demo */
+.landing-hero-head,
+.landing-columns,
+.landing-posts,
+.landing-body {
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Create a larger blank gap under the header before the hero */
+.landing-hero-head {
+  position: relative;
+  margin-top: 3.5rem;   /* increase this to grow the whitespace */
+  margin-bottom: 2.25rem;
+  display: block;
+}
+
+/* Put the “hero” title on its own line and size it like the demo */
+.hero-title h1 {
+  font-size: 3rem;
+  line-height: 1.15;
+  letter-spacing: .01em;
+  margin: 0 0 .25rem;
+}
+.hero-title p {
+  margin: .25rem 0 0;
+  opacity: .9;
+}
+
+/* Move your social links to the top-right of the home content block,
+   visually mimicking the demo’s header links */
+.hero-links {
+  position: absolute;
+  top: -2.25rem;   /* sits above the hero title, near the header */
+  right: 1rem;
+  display: flex;
+  gap: 1rem;
+  font-size: .95rem;
+  opacity: .9;
+}
+.hero-links a { text-decoration: none; }
+.hero-links a:hover { text-decoration: underline; }
+
+/* Tidy the two-column section spacing like the demo cards row */
+.landing-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 2rem;
+  margin-bottom: 2.5rem;
+}
+
+/* “Latest posts” card grid spacing */
+.landing-posts .card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 1rem;
+}
+.landing-posts .card {
+  border: 1px solid rgba(127,127,127,.25);
+  border-radius: .6rem;
+  padding: 1rem;
+}
+.landing-posts .section-head { margin: .25rem 0 1rem; }
+.landing-posts .see-all { font-size: .95rem; }
+
+/* Responsive: stack nicely on small screens */
+@media (max-width: 900px) {
+  .hero-links { position: static; justify-content: center; margin-top: .75rem; }
+  .landing-columns,
+  .landing-posts .card-grid { grid-template-columns: 1fr; }
+  .hero-title h1 { font-size: 2.4rem; }
+}
