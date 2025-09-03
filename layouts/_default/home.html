@@ -1,0 +1,18 @@
+{{ define "main" }}
+  <main class="landing">
+    <section class="landing-hero">
+      <h1>Hi, I’m Saber</h1>
+      <p>AI × Bio research, notes, and projects — start here.</p>
+      <div class="landing-cta">
+        <a class="btn" href="/blog/">Blog</a>
+        <a class="btn" href="/podcast/">Podcast</a>
+        <a class="btn" href="/newsletter/">Newsletter</a>
+        <a class="btn" href="/about/">About me</a>
+      </div>
+    </section>
+
+    <section class="landing-body">
+      {{ .Content }}
+    </section>
+  </main>
+{{ end }}

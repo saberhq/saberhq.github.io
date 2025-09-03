@@ -1,0 +1,13 @@
+{{/* Include site-specific CSS overrides with cache-busting + SRI */}}
+{{ $css := resources.Get "custom.css" | resources.Minify | resources.Fingerprint "sha384" }}
+{{ with $css }}
+  <link rel="stylesheet" href="{{ .RelPermalink }}" integrity="{{ .Data.Integrity }}" crossorigin="anonymous">
+{{ end }}
+{{ if .IsHome }}
+  <style>
+    /* Hide Book side panels on the landing page only */
+    .book-menu, .book-toc { display: none !important; }
+    .book-page { margin: 0 auto; max-width: 980px; }
+    .book-header { justify-content: center; }
+  </style>
+{{ end }}
