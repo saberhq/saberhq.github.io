@@ -1,0 +1,10 @@
+{{/* Render hook for Markdown headings: add Back to top link */}}
+{{ $lvl := .Level }}
+{{ $txt := .Text | safeHTML }}
+{{ $id := .Anchor | default (anchorize .Text) }}
+{{ if ge $lvl 2 }}
+  <h{{ $lvl }} id="{{ $id }}">{{ $txt }} <a class="back-to-top" href="#top" aria-label="Back to top">Back to top</a></h{{ $lvl }}>
+{{ else }}
+  <h{{ $lvl }} id="{{ $id }}">{{ $txt }}</h{{ $lvl }}>
+{{ end }}
+

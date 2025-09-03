@@ -2,8 +2,6 @@
 title: "Saber HQ"
 ---
 
-{{< avatar src="/saberhq_profile.jpeg" alt="Portrait of Saber Hafezqorani" size="160" >}}
-
 ## Welcome!
 
 My name is Saber. I’m a Research Scientist with 12 years of experience in genomics, data science, and machine learning. I earned my Ph.D. in Bioinformatics at the University of British Columbia (UBC), where I was advised by [Prof. Dr. Inanc Birol](https://www.bcgsc.ca/people/inanc-birol), working at the [Bioinformatics Technology Lab](https://www.birollab.ca/). During my Ph.D., I broadly worked on developing computational tools and software solutions for next-generation sequencing technologies. My doctoral dissertation (see [here](https://open.library.ubc.ca/soa/cIRcle/collections/ubctheses/24/items/1.0444844)) was focused on utilizing machine learning in transcriptome analysis. I am passionate about contributing to the understanding, controlling, and training of foundation models for biology.
