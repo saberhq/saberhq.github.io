@@ -191,3 +191,43 @@
   .landing-posts .card-grid { grid-template-columns: 1fr; }
   .hero-title h1 { font-size: 2.4rem; }
 }
+
+/* --- More breathing room like the Book demo --- */
+
+/* Bigger blank gap under header before hero */
+.landing-hero-head {
+  margin-top: 5.25rem;   /* was 3.5; bump up for more whitespace */
+  margin-bottom: 2.75rem;
+}
+
+/* More gap after the Podcast/Newsletter cards */
+.landing-columns {
+  gap: 2.25rem;          /* space between the two cards */
+  margin-bottom: 3.25rem;/* space below the whole section */
+}
+
+/* More gap before the “Latest posts” heading and after the grid */
+.landing-posts {
+  margin-bottom: 3rem;
+}
+.landing-posts .section-head {
+  margin: .5rem 0 1.25rem;
+}
+.landing-posts .card-grid {
+  gap: 1.15rem;
+}
+
+/* Make the “Back to top” anchors minimal & subtle */
+.book-page a.book-anchor,
+.book-page .anchor {
+  font-size: 0.82rem;         /* smaller */
+  opacity: 0.45;              /* subtler */
+  text-decoration: none;
+  margin-left: .25rem;
+}
+.book-page a.book-anchor:hover,
+.book-page .anchor:hover {
+  opacity: 0.7;
+  text-decoration: underline;
+}
+
