@@ -1,0 +1,85 @@
+/* Footer socials */
+.book-footer .footer-socials {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(127, 127, 127, 0.25);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
+.book-footer .footer-socials a { opacity: 0.85; }
+.book-footer .footer-socials a:hover { opacity: 1; text-decoration: underline; }
+
+/* Custom Blog block in menu */
+.book-menu .custom-blog-menu {
+  margin: 0.25rem 0 0.75rem 0;
+}
+.book-menu .custom-blog-menu .header a {
+  font-weight: 400; /* not bold by default */
+  font-size: 0.98rem; /* slightly larger */
+}
+.book-menu .custom-blog-menu ul { margin: 0.25rem 0 0 0; }
+.book-menu .custom-blog-menu li { list-style: none; }
+.book-menu .custom-blog-menu li a.active { font-weight: 600; }
+.book-menu .custom-blog-menu li.more a { opacity: 0.85; }
+.book-menu .custom-blog-menu li.more a:hover { opacity: 1; text-decoration: underline; }
+
+/* Removed previous pinned profile/socials block */
+
+/* Make default menu items not bold unless active */
+.book-menu nav a { font-weight: 400; }
+.book-menu nav a.active { font-weight: 600; }
+
+/* Tighten sidebar spacing and reduce width slightly */
+.book-menu { flex: 0 0 14rem; }
+.book-menu .book-menu-content { width: 14rem; }
+/* Moderate spacing like theme demo */
+.book-menu nav ul li { margin: 0.28rem 0; }
+.book-menu nav a { padding: 0.18rem 0; line-height: 1.32; }
+
+/* Hide hamburger icons on desktop, show on small screens */
+.book-header label[for="menu-control"],
+.book-header label[for="toc-control"] { display: none; }
+@media (max-width: 1000px) {
+  .book-header label[for="menu-control"],
+  .book-header label[for="toc-control"] { display: inline-block; }
+}
+
+/* Back to top link styling */
+.markdown .back-to-top {
+  font-size: 0.85rem;
+  margin-inline-start: 0.5rem;
+  opacity: 0.7;
+}
+.markdown .back-to-top:hover { opacity: 1; text-decoration: underline; }
+
+/* Visual hierarchy for Blog sub-items */
+.book-menu .custom-blog-menu .header {
+  margin: 0.25rem 0 0.25rem 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(127,127,127,0.25);
+}
+.book-menu .custom-blog-menu ul {
+  margin: 0.35rem 0 0 0.35rem;
+  padding-left: 0.65rem;
+  border-left: 1px solid rgba(127,127,127,0.25);
+}
+.book-menu .custom-blog-menu li a { font-size: 0.96rem; }
+
+/* More spacing above footer so content doesn't blend */
+.book-footer { margin-top: 2.25rem; }
+/* Landing page styles */
+.landing { padding: 2rem 1rem; }
+.landing-hero { text-align: center; margin: 2rem 0; }
+.landing-hero h1 { font-size: 2.2rem; margin-bottom: .5rem; }
+.landing-hero p { font-size: 1.05rem; opacity: .9; }
+
+.landing-cta { margin-top: 1rem; display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }
+.landing-cta .btn {
+  padding: .5rem .9rem; border: 1px solid rgba(127,127,127,.25); border-radius: .6rem;
+  text-decoration: none;
+}
+.landing-cta .btn:hover { border-color: rgba(127,127,127,.5); }
+
+.landing-body { margin: 2rem auto; max-width: 900px; }
