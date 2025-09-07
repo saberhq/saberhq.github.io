@@ -231,3 +231,13 @@
   text-decoration: underline;
 }
 
+/* Keep landing heading links styled like headings */
+.book-kind-home .markdown h2 a.title-link,
+.book-kind-home .markdown h3 a.title-link {
+  color: inherit;
+  text-decoration: none;
+}
+.book-kind-home .markdown h2 a.title-link:hover,
+.book-kind-home .markdown h3 a.title-link:hover {
+  text-decoration: underline;
+}

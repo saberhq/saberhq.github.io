@@ -4,6 +4,13 @@ title = "Saber HQ"
 theme = "book"
 enableRobotsTXT = true
 
+[markup]
+[markup.goldmark.renderer]
+  unsafe = true
+
+[markup.tableOfContents]
+  startLevel = 1
+
 [params]
   BookTheme = "auto"
   BookToC = true
@@ -13,18 +20,31 @@ enableRobotsTXT = true
 
 # Top navigation
 [menu]
-  [[menu.main]]
-    name = "Blog"
-    url  = "/blog/"
-    weight = 10
-  [[menu.main]]
-    name = "Podcast"
-    url  = "/podcast/"
+  # Links shown on landing page header (Book's landing layout uses menu.home)
+  [[menu.home]]
+  name = "GitHub"
+  url = "https://github.com/saberhq"
+  weight = 10
+
+  [[menu.home]]
+    name = "LinkedIn"
+    url = "https://www.linkedin.com/in/saberhq"
     weight = 20
-  [[menu.main]]
-    name = "Newsletter"
-    url  = "/newsletter/"
+
+  [[menu.home]]
+    name = "Google Scholar"
+    url = "https://scholar.google.com/citations?user=q2fsO2IAAAAJ&hl=en"
     weight = 30
+
+  [[menu.home]]
+    name = "YouTube"
+    url = "https://www.youtube.com/@saberhq"
+    weight = 40
+
+  [[menu.home]]
+    name = "X"
+    url = "https://x.com/saberhq"
+    weight = 50
 
 # Footer socials (optional)
 [params.social]

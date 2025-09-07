@@ -1,14 +1,18 @@
 {{/* Footer meta + social links */}}
 <div class="footer-meta">
-  <span>© {{ now.Format "2006" }} Saber HQ. All rights reserved.</span>
+  <span>© {{ now.Format "2006" }} Saber HQ. All rights reserved. </span>
 </div>
 
-{{ $soc := .Site.Params.social }}
-{{ if $soc }}
+
+{{/* Footer links sourced from menu.home (keeps same order) */}}
+{{ $home := .Site.Menus.home }}
+{{ if $home }}
   <div class="footer-socials">
-    {{ with $soc.github }}<a href="{{ . }}" target="_blank" rel="noopener noreferrer">GitHub</a>{{ end }}
-    {{ with $soc.linkedin }}<a href="{{ . }}" target="_blank" rel="noopener noreferrer">LinkedIn</a>{{ end }}
-    {{ with $soc.youtube }}<a href="{{ . }}" target="_blank" rel="noopener noreferrer">YouTube</a>{{ end }}
-    {{ with $soc.twitter }}<a href="{{ . }}" target="_blank" rel="noopener noreferrer">Twitter</a>{{ end }}
+    {{ range $home }}
+      <a href="{{ .URL }}" {{ if not .Page }}target="_blank" rel="noopener noreferrer"{{ end }}>
+        {{ .Name }}
+      </a>
+    {{ end }}
   </div>
 {{ end }}
+

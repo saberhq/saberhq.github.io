@@ -1,10 +1,11 @@
-{{/* Render hook for Markdown headings: add Back to top link */}}
+{{/* Render hook for Markdown headings: add Back to top link (disabled on landing or when bookHeadingAnchor=false) */}}
 {{ $lvl := .Level }}
 {{ $txt := .Text | safeHTML }}
 {{ $id := .Anchor | default (anchorize .Text) }}
-{{ if ge $lvl 2 }}
-  <h{{ $lvl }} id="{{ $id }}">{{ $txt }} <a class="back-to-top" href="#top" aria-label="Back to top">Back to top</a></h{{ $lvl }}>
-{{ else }}
+{{ $page := .Page }}
+{{ $disable := or (eq $page.Layout "landing") (not (default true $page.Params.bookHeadingAnchor)) }}
+{{ if or (lt $lvl 2) $disable }}
   <h{{ $lvl }} id="{{ $id }}">{{ $txt }}</h{{ $lvl }}>
+{{ else }}
+  <h{{ $lvl }} id="{{ $id }}">{{ $txt }} <a class="back-to-top" href="#top" aria-label="Back to top">Back to top</a></h{{ $lvl }}>
 {{ end }}
-
