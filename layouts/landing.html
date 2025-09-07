@@ -1,0 +1,22 @@
+{{ define "menu-container" }}
+<!-- -->
+{{ end }}
+
+{{ define "toc-container" }}
+<!-- -->
+{{ end }}
+
+{{ define "footer" }}
+<!-- -->
+{{ end }}
+
+{{ define "header" }}
+  {{ partial "docs/menu-hugo" .Site.Menus.home }}
+{{ end }}
+
+{{ define "main" }}
+  <article class="markdown book-article">
+    {{- .Content -}}
+  </article>
+{{ end }}
+
