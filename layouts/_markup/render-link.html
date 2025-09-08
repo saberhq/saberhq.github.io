@@ -1,0 +1,34 @@
+{{/* Override Book render-link: open external links in new tab on home page */}}
+{{- if .Page.Site.Params.BookPortableLinks -}}
+  {{- template "portable-link" . -}}
+{{- else -}}
+  {{- $isHome := .Page.IsHome -}}
+  {{- $isRemote := or (in .Destination ":") (strings.HasPrefix .Destination "//") -}}
+  <a href="{{ .Destination | safeURL }}"{{ with .Title}} title="{{ . }}"{{ end }}{{ if and $isHome $isRemote }} target="_blank" rel="noopener"{{ end }}>{{ .Text | safeHTML }}</a>
+{{- end -}}
+
+{{- define "portable-link" -}}
+  {{- $destination := .Destination }}
+  {{- $isRemote := or (in .Destination ":") (strings.HasPrefix .Destination "//") }}
+  {{- $isFragment := strings.HasPrefix .Destination "#" }}
+  {{- if and (not $isRemote) (not $isFragment) }}
+    {{- $url := urls.Parse .Destination }}
+    {{- $path := strings.TrimSuffix "/_index.md" $url.Path }}
+    {{- $path = strings.TrimSuffix "/_index" $path }}
+    {{- $path = strings.TrimSuffix ".md" $path }}
+    {{- $page := .Page.GetPage $path }}
+    {{- if $page }}
+      {{- $destination = $page.RelPermalink }}
+      {{- if $url.Fragment }}
+        {{- $destination = print $destination "#" $url.Fragment }}
+      {{- end }}
+    {{- else if fileExists (print .Page.File.Dir .Destination) }}
+      <!-- Nothing -->
+    {{- else -}}
+      {{- warnf "Page '%s' not found in '%s'" .Destination .Page.File }}
+    {{- end }}
+  {{- end }}
+  {{- $isHome := .Page.IsHome -}}
+  <a href="{{ $destination | safeURL }}"{{ with .Title}} title="{{ . }}"{{ end }}{{ if and $isHome $isRemote }} target="_blank" rel="noopener"{{ end }}>{{ .Text | safeHTML }}</a>
+{{- end -}}
+
