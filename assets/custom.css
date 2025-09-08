@@ -241,3 +241,26 @@
 .book-kind-home .markdown h3 a.title-link:hover {
   text-decoration: underline;
 }
+
+/* Section divider (matches footer line) */
+.landing .section-rule {
+  border: 0;
+  border-top: 1px solid rgba(127,127,127,.25);
+  margin: 2rem 0 1.5rem; /* tweak as you like */
+}
+
+/* Recent news: align bold dates in a fixed column */
+.book-article ul.recent-news { margin: .25rem 0 0 0; padding-left: 0; list-style: none; }
+.book-article ul.recent-news li {
+  display: grid;
+  grid-template-columns: 8ch 1fr; /* date width + text */
+  column-gap: .6rem;
+  align-items: start;
+  margin: .32rem 0;
+}
+.book-article ul.recent-news .date {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.book-article ul.recent-news .desc { min-width: 0; }
