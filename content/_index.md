@@ -26,17 +26,17 @@ Friendly notes on what I'm building, reading, and figuring out.
 
 {{% columns %}}
 - {{< card title="Card" image="" >}}
-  ### <a href="/blog/autoencoders" class="title-link">Why Autoencoders are so Effective?</a>
+  ### <a href="/blog/autoencoder" class="title-link">Why Autoencoders are so Effective?</a>
   Nullam feugiat urna massa, et fringilla metus consectetur molestie. Suspendisse sed congue orci, eu congue metus.
   {{< /card >}}
 
 - {{< card title="Card" image="" >}}
-  ### <a href="/blog/ntEmbd" class="title-link">ntEmbd for RNA embeddings</a>
+  ### <a href="#" class="title-link">ntEmbd for RNA embeddings</a>
   Suspendisse sed congue orci, eu congue metus. Nullam feugiat urna massa, et fringilla metus consectetur molestie.
   {{< /card >}}
 
 - {{< card title="Card" image="" >}}
-  ### <a href="/blog/NanoSim" class="title-link">NanoSim simulates ONT sequencing data</a>
+  ### <a href="/blog/nanosim" class="title-link">NanoSim simulates ONT sequencing data</a>
   Suspendisse sed congue orci, eu congue metus. Nullam feugiat urna massa, et fringilla metus consectetur molestie.
   {{< /card >}}
 {{% /columns %}}
