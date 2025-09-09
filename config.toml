@@ -14,7 +14,7 @@ enableRobotsTXT = true
 [params]
   BookTheme = "auto"
   BookToC = true
-  BookSection = "menu"
+  BookSection = "docs"
   BookDateFormat = "2006-01-02"
   BookRepo = "https://github.com/saberhq/saberhq.github.io"
 
@@ -52,3 +52,14 @@ enableRobotsTXT = true
   youtube = "https://www.youtube.com/@saberhq"
   linkedin = "https://www.linkedin.com/in/saberhq"
   twitter = "https://x.com/saberhq"
+
+# Bottom permanent links in left menu
+[[menu.after]]
+  name = "Contact me"
+  url = "mailto:hello@saberhq.com"
+  weight = 10
+
+[[menu.after]]
+  name = "GitHub"
+  url = "https://github.com/saberhq/saberhq.github.io"
+  weight = 20
