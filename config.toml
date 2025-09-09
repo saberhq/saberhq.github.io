@@ -56,7 +56,7 @@ enableRobotsTXT = true
 # Bottom permanent links in left menu
 [[menu.after]]
   name = "Contact me"
-  url = "mailto:hello@saberhq.com"
+  url = "mailto:saber.hafezqorani@gmail.com"
   weight = 10
 
 [[menu.after]]

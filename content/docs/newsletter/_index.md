@@ -1,8 +1,8 @@
 ---
 title: "Newsletter"
-weight: 20
+weight: 30
+bookFlatSection: true
 aliases: ["/newsletter/"]
 ---
 
 Short intro about your newsletter and what subscribers get.
-

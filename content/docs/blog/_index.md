@@ -1,7 +1,9 @@
 ---
 title: "Blog"
-weight: 30
-bookHref: "/blog/"
+weight: 10
+bookFlatSection: true
 ---
 
-Notes on writing and posts. Opens the full blog list.
+Notes on writing and posts.
+
+See all posts → [/blog/](/blog/)
