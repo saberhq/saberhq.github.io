@@ -11,32 +11,8 @@
 .book-footer .footer-socials a { opacity: 0.85; }
 .book-footer .footer-socials a:hover { opacity: 1; text-decoration: underline; }
 
-/* Custom Blog block in menu */
-.book-menu .custom-blog-menu {
-  margin: 0.25rem 0 0.75rem 0;
-}
-.book-menu .custom-blog-menu .header a {
-  font-weight: 400; /* not bold by default */
-  font-size: 0.98rem; /* slightly larger */
-}
-.book-menu .custom-blog-menu ul { margin: 0.25rem 0 0 0; }
-.book-menu .custom-blog-menu li { list-style: none; }
-.book-menu .custom-blog-menu li a.active { font-weight: 600; }
-.book-menu .custom-blog-menu li.more a { opacity: 0.85; }
-.book-menu .custom-blog-menu li.more a:hover { opacity: 1; text-decoration: underline; }
+/* Sidebar: revert to theme defaults (custom blog block and spacing removed) */
 
-/* Removed previous pinned profile/socials block */
-
-/* Make default menu items not bold unless active */
-.book-menu nav a { font-weight: 400; }
-.book-menu nav a.active { font-weight: 600; }
-
-/* Tighten sidebar spacing and reduce width slightly */
-.book-menu { flex: 0 0 14rem; }
-.book-menu .book-menu-content { width: 14rem; }
-/* Moderate spacing like theme demo */
-.book-menu nav ul li { margin: 0.28rem 0; }
-.book-menu nav a { padding: 0.18rem 0; line-height: 1.32; }
 
 /* Hide hamburger icons on desktop, show on small screens */
 .book-header label[for="menu-control"],
@@ -54,18 +30,7 @@
 }
 .markdown .back-to-top:hover { opacity: 1; text-decoration: underline; }
 
-/* Visual hierarchy for Blog sub-items */
-.book-menu .custom-blog-menu .header {
-  margin: 0.25rem 0 0.25rem 0;
-  padding-bottom: 0.25rem;
-  border-bottom: 1px solid rgba(127,127,127,0.25);
-}
-.book-menu .custom-blog-menu ul {
-  margin: 0.35rem 0 0 0.35rem;
-  padding-left: 0.65rem;
-  border-left: 1px solid rgba(127,127,127,0.25);
-}
-.book-menu .custom-blog-menu li a { font-size: 0.96rem; }
+/* (removed) blog sub-items styling */
 
 /* More spacing above footer so content doesn't blend */
 .book-footer { margin-top: 2.25rem; }
