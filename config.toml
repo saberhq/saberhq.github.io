@@ -1,4 +1,4 @@
-baseURL = "https://saberhq.github.io/"
+baseURL = "https://saberhq.com/"
 languageCode = "en-us"
 title = "Saber HQ"
 theme = "book"
