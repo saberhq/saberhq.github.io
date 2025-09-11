@@ -11,6 +11,10 @@ enableRobotsTXT = true
 [markup.tableOfContents]
   startLevel = 1
 
+[markup.highlight]
+  style = "github"
+  lineNumbers = false
+
 [params]
   BookTheme = "auto"
   BookToC = true

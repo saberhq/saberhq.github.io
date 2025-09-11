@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ $# -lt 1 ]; then
+  echo "Usage: scripts/new-post \"Post Title\"" >&2
+  exit 1
+fi
+
+title="$*"
+# slugify: lower, non-alnum -> dash, trim dashes
+slug=$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g;s/^-+//;s/-+$//')
+
+echo "Creating: content/docs/blog/${slug}/index.md"
+hugo new "docs/blog/${slug}/index.md"
+
+echo "Done. Edit: content/docs/blog/${slug}/index.md"
+
