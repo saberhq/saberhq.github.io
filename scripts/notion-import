@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Import a Notion-exported Markdown file into a Hugo Blog page bundle
+#
+# Usage:
+#   scripts/notion-import path/to/Page.md [--publish] [--date YYYY-MM-DD] [--slug custom-slug]
+#
+# Behavior:
+# - Creates content/docs/blog/<slug>/index.md
+# - Copies any exported media folder (images) alongside index.md
+# - Rewrites Notion image links to be relative within the page bundle
+# - Optionally converts standalone YouTube links to the {{< youtube >}} shortcode
+
+usage() {
+  cat <<'EOF' >&2
+Import a Notion-exported Markdown file into a Hugo Blog page bundle
+
+Usage:
+  scripts/notion-import path/to/Page.md [--publish] [--date YYYY-MM-DD] [--slug custom-slug]
+
+Options:
+  --publish           Set draft: false (default is draft: true)
+  --date YYYY-MM-DD   Set front matter date (default: today)
+  --slug custom-slug  Override the derived slug
+  -h, --help          Show this help
+EOF
+}
+
+publish=false
+date_val=$(date +%Y-%m-%d)
+slug=""
+mdfile=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --publish) publish=true; shift ;;
+    --date)    date_val=${2:?}; shift 2 ;;
+    --slug)    slug=${2:?}; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *)
+      if [[ -z "$mdfile" ]]; then
+        mdfile="$1"; shift
+      else
+        echo "Unknown argument: $1" >&2; usage; exit 2
+      fi
+      ;;
+  esac
+done
+
+if [[ -z "$mdfile" ]]; then
+  usage; exit 2
+fi
+if [[ ! -f "$mdfile" ]]; then
+  echo "Markdown file not found: $mdfile" >&2; exit 1
+fi
+
+# Derive title from first H1 or filename
+title=$(grep -m1 '^# ' "$mdfile" | sed -E 's/^# +//')
+if [[ -z "$title" ]]; then
+  title=$(basename "${mdfile%.*}")
+fi
+
+# Slugify helper
+slugify() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//'; }
+if [[ -z "$slug" ]]; then
+  slug=$(slugify "$title")
+fi
+
+dest_dir="content/docs/blog/${slug}"
+mkdir -p "$dest_dir"
+
+# Locate Notion asset directory ("<basename> *" next to the .md)
+src_dir=$(cd "$(dirname "$mdfile")" && pwd)
+base_name=$(basename "${mdfile%.*}")
+assets_dir=$(find "$src_dir" -maxdepth 1 -type d -name "${base_name}*" | head -n1 || true)
+
+assets_base=""
+if [[ -n "${assets_dir}" && -d "${assets_dir}" ]]; then
+  assets_base=$(basename "$assets_dir")
+  cp -R "$assets_dir"/* "$dest_dir/" 2>/dev/null || true
+fi
+
+tmp_md=$(mktemp)
+
+# Start with original content
+cat "$mdfile" > "$tmp_md"
+
+# Rewrite image links that reference the exported folder to be relative
+if [[ -n "$assets_base" ]]; then
+  # Pattern: ![alt](<assets_base>/image.png) -> ![alt](./image.png)
+  sed -i.bak -E "s#\((\.?/?)*${assets_base}/#(./#g" "$tmp_md" && rm -f "$tmp_md.bak"
+fi
+
+# Convert standalone YouTube links to shortcode
+# - https://youtu.be/VIDEOID
+# - https://www.youtube.com/watch?v=VIDEOID[&...]
+sed -i.bak -E 's~https://youtu\.be/([A-Za-z0-9_-]{6,})~{{< youtube id="\1" >}}~g' "$tmp_md"
+sed -i.bak -E 's~https?://(www\.)?youtube\.com/watch\?v=([A-Za-z0-9_-]{6,})([&][^ )"\]]*)?~{{< youtube id="\2" >}}~g' "$tmp_md"
+rm -f "$tmp_md.bak"
+
+# Compose front matter + body
+out="$dest_dir/index.md"
+{
+  echo "---"
+  printf 'title: "%s"\n' "$title"
+  printf 'date: %s\n' "$date_val"
+  if $publish; then echo "draft: false"; else echo "draft: true"; fi
+  echo 'description: ""'
+  echo 'tags: []'
+  echo 'categories: []'
+  printf 'url: "/blog/%s/"\n' "$slug"
+  echo 'bookToC: true'
+  echo "---"
+  echo
+  cat "$tmp_md"
+} > "$out"
+
+rm -f "$tmp_md"
+
+echo "Imported → $out"
+echo "Tip: hugo server -D  # to preview drafts"
+
