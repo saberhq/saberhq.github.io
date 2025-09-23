@@ -3,6 +3,84 @@
 {{ with $css }}
   <link rel="stylesheet" href="{{ .RelPermalink }}" integrity="{{ .Data.Integrity }}" crossorigin="anonymous">
 {{ end }}
+
+<!-- Person schema (site-wide) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Saber Hafezqorani",
+  "alternateName": ["Saber HQ", "saberhq"],
+  "jobTitle": "AI × Bio Research Scientist",
+  "description": "Computational scientist and bioinformatician working at the intersection of AI and biology.",
+  "url": "https://saberhq.com/",
+  "sameAs": [
+    "https://github.com/saberhq",
+    "https://scholar.google.com/citations?user=q2fsO2IAAAAJ",
+    "https://orcid.org/0000-0003-0553-9227",
+    "https://www.wikidata.org/wiki/Q96291183",
+    "https://x.com/saberhq",
+    "https://www.youtube.com/@saberhq",
+    "https://www.linkedin.com/in/saberhq/"
+  ],
+  "identifier": [
+    {
+      "@type": "PropertyValue",
+      "propertyID": "ORCID",
+      "value": "0000-0003-0553-9227",
+      "url": "https://orcid.org/0000-0003-0553-9227"
+    },
+    {
+      "@type": "PropertyValue",
+      "propertyID": "GoogleScholar",
+      "value": "q2fsO2IAAAAJ",
+      "url": "https://scholar.google.com/citations?user=q2fsO2IAAAAJ"
+    },
+    {
+      "@type": "PropertyValue",
+      "propertyID": "GitHub",
+      "value": "saberhq",
+      "url": "https://github.com/saberhq"
+    }
+  ],
+  "affiliation": [
+    {
+      "@type": "Organization",
+      "name": "University of British Columbia",
+      "sameAs": "https://www.ubc.ca/"
+    }
+  ],
+  "knowsAbout": [
+    "Bioinformatics",
+    "Computational biology",
+    "Artificial intelligence",
+    "Foundation models for biology",
+    "Transcriptomics",
+    "Long-read sequencing",
+    "Sequence embeddings"
+  ],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "professional",
+    "url": "https://saberhq.com/"
+  },
+  "image": "https://saberhq.com/saberhq_profile.jpeg",
+  "alumniOf": [
+    {
+      "@type": "CollegeOrUniversity",
+      "name": "University of British Columbia",
+      "sameAs": "https://www.ubc.ca/"
+    },
+    {
+      "@type": "CollegeOrUniversity",
+      "name": "Middle East Technical University (METU)",
+      "sameAs": "https://www.metu.edu.tr/"
+    }
+  ]
+}
+</script>
+
+
 {{ if and .IsHome (ne .Layout "landing") }}
   <style>
     /* Hide Book side panels on the landing page only */
