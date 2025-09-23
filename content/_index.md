@@ -11,7 +11,7 @@ Friendly notes on what I'm building, reading, and figuring out.
 
 [{{< badge style="info" title="Built by Hugo" value="v0.150.0" >}}](https://github.com/gohugoio/hugo) {{< badge style="default" title="Year" value="2025" >}}
 
-{{<button href="/resume">}}Resume{{</button>}}
+<a class="book-btn" href="/SaberHafezqorani_Resume.pdf" download>Resume</a>
 
 </div>
 
@@ -27,17 +27,17 @@ Friendly notes on what I'm building, reading, and figuring out.
 {{% columns %}}
 - {{< card title="Card" image="" >}}
   ### <a href="/blog/autoencoder" class="title-link">Why Autoencoders are so Effective?</a>
-  Nullam feugiat urna massa, et fringilla metus consectetur molestie. Suspendisse sed congue orci, eu congue metus.
+  Explore why autoencoders shine; this post pairs plain-language basics with demos, figures, and a walkthrough video.
   {{< /card >}}
 
 - {{< card title="Card" image="" >}}
-  ### <a href="#" class="title-link">ntEmbd for RNA embeddings</a>
-  Suspendisse sed congue orci, eu congue metus. Nullam feugiat urna massa, et fringilla metus consectetur molestie.
+  ### <a href="/blog/ntEmbd" class="title-link">ntEmbd for sequence embeddings</a>
+  ntEmbd turns nucleotide sequences into vector embeddings; explore training setup, benchmarks, and GitHub repo links.
   {{< /card >}}
 
 - {{< card title="Card" image="" >}}
   ### <a href="/blog/nanosim" class="title-link">NanoSim simulates ONT sequencing data</a>
-  Suspendisse sed congue orci, eu congue metus. Nullam feugiat urna massa, et fringilla metus consectetur molestie.
+  Trans-NanoSim captures nanopore transcript quirks; learn how benchmarks and simulations accelerate RNA tooling workflows.
   {{< /card >}}
 {{% /columns %}}
 
