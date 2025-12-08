@@ -171,6 +171,7 @@
   margin-bottom: 3.25rem;/* space below the whole section */
 }
 
+
 /* More gap before the “Latest posts” heading and after the grid */
 .landing-posts {
   margin-bottom: 3rem;
@@ -240,4 +241,131 @@
 .video, .embed { position: relative; padding-top: 56.25%; }
 .video iframe, .embed iframe {
   position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+}
+
+/* ===== Blog Post Cards with Images ===== */
+
+/* Card grid layout - matches landing-columns width */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  max-width: 1100px;
+  margin: 0 auto 3rem;
+  padding: 0 1rem;
+}
+
+/* On landing page, ensure card-grid matches columns width exactly */
+.book-kind-home .card-grid {
+  max-width: none;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 3.25rem;
+}
+
+/* Card container - unified border around image + content */
+.book-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  border-radius: 0.6rem;
+  overflow: hidden;
+  background: var(--body-background);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* Clickable cards get hover effects */
+a.book-card {
+  text-decoration: none;
+  color: inherit;
+}
+a.book-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Card image - fixed aspect ratio, cover crop */
+.book-card > img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  object-position: center;
+  flex-shrink: 0;
+}
+
+/* Card content area */
+.book-card .card-content {
+  padding: 0.85rem 1rem;
+  flex: 1;
+}
+.book-card .card-content h3 {
+  margin: 0 0 0.4rem 0;
+  font-size: 1rem;
+  line-height: 1.3;
+  font-weight: 600;
+}
+.book-card .card-content p {
+  margin: 0;
+  font-size: 0.88rem;
+  opacity: 0.8;
+  line-height: 1.45;
+  /* Truncate to 3 lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Responsive: 2 columns on medium, 1 on small */
+@media (max-width: 900px) {
+  .card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+  .book-card > img {
+    height: 160px;
+  }
+}
+
+/* ===== Blog Post Cover Images ===== */
+
+.post-cover {
+  margin: -1rem -1rem 2rem -1rem; /* bleed to edges */
+  position: relative;
+}
+
+.post-cover img {
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: 0.4rem;
+}
+
+/* Subtle gradient fade at bottom for title blending */
+.post-cover::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(to bottom, transparent, var(--body-background));
+  pointer-events: none;
+  border-radius: 0 0 0.4rem 0.4rem;
+}
+
+/* Taller cover on larger screens */
+@media (min-width: 900px) {
+  .post-cover img {
+    height: 350px;
+  }
+  .post-cover::after {
+    height: 80px;
+  }
 }

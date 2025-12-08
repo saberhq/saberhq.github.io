@@ -3,6 +3,7 @@ title: "ntEmbd: Deep learning embedding for nucleotide sequences"
 date: 2024-09-01
 draft: false
 url: "/blog/ntEmbd/"
+image: /images/art/green.jpg
 ---
 
 # ntEmbd: Deep learning embedding for nucleotide sequences

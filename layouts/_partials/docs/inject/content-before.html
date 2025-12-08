@@ -1,1 +1,6 @@
 <span id="top"></span>
+{{- with .Params.image -}}
+<div class="post-cover">
+  <img src="{{ . }}" alt="Cover image">
+</div>
+{{- end -}}
