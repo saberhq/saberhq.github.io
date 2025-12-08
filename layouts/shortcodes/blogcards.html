@@ -1,6 +1,7 @@
 {{- $limit := .Get "limit" | default 100 -}}
 {{- $section := .Get "section" | default "docs/blog" -}}
-{{- $posts := where (where .Site.RegularPages "Section" $section) ".Params.image" "!=" nil -}}
+{{- $blogSection := .Site.GetPage $section -}}
+{{- $posts := where $blogSection.RegularPages ".Params.image" "!=" nil -}}
 {{- $posts = $posts | first (int $limit) -}}
 
 <div class="card-grid">
