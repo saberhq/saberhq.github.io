@@ -4,6 +4,7 @@ date: 2024-09-01
 draft: false
 url: "/blog/ntEmbd/"
 image: /images/art/green.jpg
+description: "ntEmbd turns nucleotide sequences into vector embeddings; explore training setup, benchmarks, and GitHub repo links."
 ---
 
 # ntEmbd: Deep learning embedding for nucleotide sequences

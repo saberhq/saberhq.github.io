@@ -4,6 +4,7 @@ date: 2025-09-01
 draft: false
 url: "/blog/autoencoder/"
 image: /images/art/sky_01.jpg
+description: "Explore why autoencoders shine; this post pairs plain-language basics with demos, figures, and a walkthrough video."
 ---
 
 # Why Autoencoders are so Effective?

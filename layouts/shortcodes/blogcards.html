@@ -1,0 +1,16 @@
+{{- $limit := .Get "limit" | default 100 -}}
+{{- $section := .Get "section" | default "docs/blog" -}}
+{{- $posts := where (where .Site.RegularPages "Section" $section) ".Params.image" "!=" nil -}}
+{{- $posts = $posts | first (int $limit) -}}
+
+<div class="card-grid">
+{{- range $posts -}}
+  <a class="book-card" href="{{ .RelPermalink }}">
+    <img src="{{ .Params.image }}" alt="{{ .Title }}">
+    <div class="card-content">
+      <h3>{{ .Title }}</h3>
+      <p>{{ .Params.description | default (.Summary | truncate 150) }}</p>
+    </div>
+  </a>
+{{- end -}}
+</div>
