@@ -3,6 +3,7 @@ title: "Trans-NanoSim characterizes and simulates nanopore RNA-sequencing data"
 date: 2023-09-01
 draft: false
 url: "/blog/nanosim/"
+image: /images/art/earth.jpg
 ---
 
 # Trans-NanoSim characterizes and simulates nanopore RNA-sequencing data

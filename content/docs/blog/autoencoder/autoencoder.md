@@ -3,6 +3,7 @@ title: "Why Autoencoders are so Effective?"
 date: 2025-09-01
 draft: false
 url: "/blog/autoencoder/"
+image: /images/art/sky_01.jpg
 ---
 
 # Why Autoencoders are so Effective?
