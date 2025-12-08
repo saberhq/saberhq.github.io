@@ -15,38 +15,7 @@ Friendly notes on what I'm building, reading, and figuring out.
 
 </div>
 
-{{% columns %}}
-- ## <a href="/podcast/" class="title-link">Podcast</a>
-  I talk through new research papers in **AI and biology**, the ones shaping how we think about future. This is where I unpack the science I’m reading — new papers, big breakthroughs, and the occasional headline worth a second look. It’s half lab notebook, half **conversation with an AI sidekick.**
-
-- ## <a href="/newsletter/" class="title-link">Newsletter</a>
-  Like _Morning Brew_, but for people who read **preprints for fun!** Each week I break down the biggest AI × Bio ideas into quick, snackable updates you can read over coffee. It’s the stuff I’d be sending friends and labmates anyway — just wrapped up in one weekly note.
-{{% /columns %}}
-
-
-<div class="card-grid">
-  <a class="book-card" href="/blog/autoencoder">
-    <img src="/images/art/sky_01.jpg" alt="Why Autoencoders are so Effective?">
-    <div class="card-content">
-      <h3>Why Autoencoders are so Effective?</h3>
-      <p>Explore why autoencoders shine; this post pairs plain-language basics with demos, figures, and a walkthrough video.</p>
-    </div>
-  </a>
-  <a class="book-card" href="/blog/ntEmbd">
-    <img src="/images/art/green.jpg" alt="ntEmbd for sequence embeddings">
-    <div class="card-content">
-      <h3>ntEmbd for sequence embeddings</h3>
-      <p>ntEmbd turns nucleotide sequences into vector embeddings; explore training setup, benchmarks, and GitHub repo links.</p>
-    </div>
-  </a>
-  <a class="book-card" href="/blog/nanosim">
-    <img src="/images/art/earth.jpg" alt="NanoSim simulates ONT sequencing data">
-    <div class="card-content">
-      <h3>NanoSim simulates ONT sequencing data</h3>
-      <p>Trans-NanoSim captures nanopore transcript quirks; learn how benchmarks and simulations accelerate RNA tooling workflows.</p>
-    </div>
-  </a>
-</div>
+{{< blogcards limit="6" >}}
 
 
 {{% columns %}}

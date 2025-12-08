@@ -4,6 +4,7 @@ date: 2023-09-01
 draft: false
 url: "/blog/nanosim/"
 image: /images/art/earth.jpg
+description: "Trans-NanoSim captures nanopore transcript quirks; learn how benchmarks and simulations accelerate RNA tooling workflows."
 ---
 
 # Trans-NanoSim characterizes and simulates nanopore RNA-sequencing data
