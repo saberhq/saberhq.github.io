@@ -1,0 +1,19 @@
+<!-- @dsCard group="Motifs" viewport="700x180" subtitle="Hairline border, 6px radius, no shadow at rest — lift on hover" name="Cards" -->
+<!doctype html><html><head><link rel="stylesheet" href="../styles.css">
+<style>body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}
+.card{border:1px solid var(--rule);border-radius:var(--radius);padding:14px 16px;background:var(--surface-card);transition:box-shadow var(--dur) var(--ease),transform var(--dur) var(--ease)}
+.card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1);transform:translateY(-2px)}</style></head>
+<body>
+<div style="padding:18px 24px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+  <a class="card" href="#" style="text-decoration:none;color:inherit;display:block">
+    <div style="font-family:var(--font-mono);font-size:10.5px;color:var(--ink-3);margin-bottom:5px">2025-09-01 · BLOG</div>
+    <div style="font-size:15px;font-weight:600;letter-spacing:-0.012em;margin-bottom:4px">Why autoencoders are so effective</div>
+    <div style="font-size:12.5px;color:var(--ink-2);line-height:1.5">Plain-language basics with demos, figures, and a walkthrough video.</div>
+  </a>
+  <div class="card" style="box-shadow:0 4px 12px rgba(0,0,0,.1);transform:translateY(-2px)">
+    <div style="font-family:var(--font-mono);font-size:10.5px;color:var(--ink-3);margin-bottom:5px">HOVER STATE</div>
+    <div style="font-size:15px;font-weight:600;letter-spacing:-0.012em;margin-bottom:4px">Lift + shadow, nothing else</div>
+    <div style="font-size:12.5px;color:var(--ink-2);line-height:1.5">160ms ease · translateY(-2px) · 0 4px 12px @ 10%.</div>
+  </div>
+</div>
+</body></html>
