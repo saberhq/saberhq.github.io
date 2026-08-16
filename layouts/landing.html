@@ -13,7 +13,7 @@
     <section class="sq-hero sq-wrap">
       <div class="sq-kicker"><span class="sq-kicker-accent">AI × BIO</span> — RESEARCH, NOTES, AND PROJECTS</div>
       <h1 class="sq-display">Saber HQ</h1>
-      {{ with .Params.tagline }}<p class="sq-tagline">{{ . }}</p>{{ end }}
+      {{ with .Params.tagline }}<p class="sq-tagline">{{ $.RenderString (dict "display" "inline") . }}</p>{{ end }}
       <div class="sq-hero-actions">
         {{ with .Params.resume }}<a class="sq-btn" href="{{ . }}" download>Resume</a>{{ end }}
         {{ with .Params.contact }}<a class="sq-btn sq-btn--secondary" href="{{ . }}">Contact me</a>{{ end }}
