@@ -3,6 +3,10 @@ title: "Blog"
 weight: 10
 bookFlatSection: true
 url: "/blog/"
+type: blog
+cascade:
+  type: blog
+  bookHeadingAnchor: false
 ---
 
 # Blog

@@ -1,17 +1,9 @@
 {{- $limit := .Get "limit" | default 100 -}}
 {{- $section := .Get "section" | default "docs/blog" -}}
-{{- $blogSection := .Site.GetPage $section -}}
-{{- $posts := where $blogSection.RegularPages ".Params.image" "!=" nil -}}
-{{- $posts = $posts | first (int $limit) -}}
-
-<div class="card-grid">
-{{- range $posts -}}
-  <a class="book-card" href="{{ .RelPermalink }}">
-    <img src="{{ .Params.image }}" alt="{{ .Title }}">
-    <div class="card-content">
-      <h3>{{ .Title }}</h3>
-      <p>{{ .Params.description | default (.Summary | truncate 150) }}</p>
-    </div>
-  </a>
+{{- with .Site.GetPage $section -}}
+<div class="sq-card-grid">
+{{- range first (int $limit) .RegularPages.ByDate.Reverse -}}
+  {{ partial "saberhq/post-card" . }}
 {{- end -}}
 </div>
+{{- end -}}

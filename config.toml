@@ -16,6 +16,7 @@ enableRobotsTXT = true
   lineNumbers = false
 
 [params]
+  author = "Saber Hafezqorani"
   BookTheme = "auto"
   BookToC = true
   BookSection = "docs"
@@ -36,7 +37,7 @@ enableRobotsTXT = true
     weight = 20
 
   [[menu.home]]
-    name = "Google Scholar"
+    name = "Scholar"
     url = "https://scholar.google.com/citations?user=q2fsO2IAAAAJ&hl=en"
     weight = 30
 

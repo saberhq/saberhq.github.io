@@ -1,0 +1,11 @@
+{{/* Saber HQ theme toggle — any element with data-theme-toggle flips light/dark and persists the choice */}}
+<script>
+document.addEventListener('click', function (e) {
+  var btn = e.target.closest('[data-theme-toggle]');
+  if (!btn) return;
+  var root = document.documentElement;
+  var dark = root.getAttribute('data-theme') === 'dark';
+  if (dark) { root.removeAttribute('data-theme'); } else { root.setAttribute('data-theme', 'dark'); }
+  try { localStorage.setItem('saberhq-theme', dark ? 'light' : 'dark'); } catch (err) {}
+});
+</script>

@@ -1,0 +1,8 @@
+{{/* Saber HQ micro footer strip.
+     Context: dict with optional "crumb" (after SABERHQ.COM —) and "right" (right-hand text). */}}
+<footer class="sq-sitefooter">
+  <div class="sq-wrap sq-sitefooter-in">
+    <span>SABERHQ.COM {{ with .crumb }}<span class="sq-dash">—</span> {{ . }}{{ end }}</span>
+    <span>{{ .right | default "GEIST / GEIST MONO · VERMILLION #D55E00" }}</span>
+  </div>
+</footer>
