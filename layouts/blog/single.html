@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="{{ default .Site.Language.Lang .Site.LanguageCode }}" dir="{{ default "ltr" .Site.Language.LanguageDirection }}">
+<head>
+  {{ partial "docs/html-head" . }}
+  {{ partial "docs/inject/head" . }}
+</head>
+<body class="sq-shell book-type-blog">
+
+  {{ $blog := .CurrentSection }}
+  {{ partial "saberhq/site-header" (dict "page" . "crumb" "blog" "back" (dict "href" $blog.RelPermalink "label" "← all posts")) }}
+
+  <main>
+    <article class="sq-article">
+      <div class="sq-article-wrap">
+        <div class="sq-kicker"><span class="sq-kicker-accent">BLOG</span> · {{ .Date.Format "2006-01-02" }} · {{ .ReadingTime }} MIN</div>
+        <h1 class="sq-article-title">{{ .Title }}</h1>
+        {{ with .Description }}<p class="sq-article-desc">{{ . }}</p>{{ end }}
+        <div class="sq-byline">
+          <span class="sq-byline-author">{{ .Site.Params.author | default "Saber Hafezqorani" }}</span>
+          <span class="sq-byline-rule"></span>
+          {{ with .Params.links }}
+            <span class="sq-byline-links">
+              {{ range . }}<a href="{{ .url }}">[{{ .label }}]</a> {{ end }}
+            </span>
+          {{ end }}
+        </div>
+        {{ with .Params.image }}
+        <figure class="sq-cover">
+          <img src="{{ . | relURL }}" alt="{{ $.Title }}">
+        </figure>
+        {{ end }}
+        <div class="sq-prose">
+          {{ .Content }}
+        </div>
+      </div>
+    </article>
+  </main>
+
+  {{ partial "saberhq/site-footer" (dict "crumb" "BLOG" "right" (.Date.Format "2006-01-02")) }}
+  {{ partial "docs/inject/body" . }}
+</body>
+</html>

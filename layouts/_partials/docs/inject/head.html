@@ -1,4 +1,33 @@
-{{/* Include site-specific CSS overrides with cache-busting + SRI */}}
+{{/* Saber HQ brand: set data-theme before styles load to avoid a flash of the wrong theme.
+     Stored choice wins; otherwise follow the system preference. */}}
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('saberhq-theme');
+    if (!t && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) t = 'dark';
+    if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  } catch (e) {}
+})();
+</script>
+
+{{/* Geist + Geist Mono load from Google Fonts (variable) via tokens/fonts.css */}}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+{{/* Browser chrome color; values mirror --paper in tokens/colors.css (meta can't read CSS vars) */}}
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAF9F7">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#16130F">
+
+{{/* Design tokens (assets/tokens/*.css — the only source of color/type/spacing values) */}}
+{{ $tokens := slice
+  (resources.Get "tokens/fonts.css")
+  (resources.Get "tokens/colors.css")
+  (resources.Get "tokens/typography.css")
+  (resources.Get "tokens/spacing.css")
+  | resources.Concat "css/brand-tokens.css" | resources.Minify | resources.Fingerprint "sha384" }}
+<link rel="stylesheet" href="{{ $tokens.RelPermalink }}" integrity="{{ $tokens.Data.Integrity }}" crossorigin="anonymous">
+
+{{/* Site styles built on the tokens */}}
 {{ $css := resources.Get "custom.css" | resources.Minify | resources.Fingerprint "sha384" }}
 {{ with $css }}
   <link rel="stylesheet" href="{{ .RelPermalink }}" integrity="{{ .Data.Integrity }}" crossorigin="anonymous">
@@ -79,16 +108,3 @@
   ]
 }
 </script>
-
-
-{{ if and .IsHome (ne .Layout "landing") }}
-  <style>
-    /* Hide Book side panels on the landing page only */
-    .book-menu, .book-toc { display: none !important; }
-    .book-page { margin: 0 auto; max-width: 980px; }
-    .book-header { justify-content: center; }
-    .book-header h3 { display: none !important; }
-    /* Hide hamburger/toc toggles on the landing page */
-    label[for="menu-control"], label[for="toc-control"] { display: none !important; }
-  </style>
-{{ end }}

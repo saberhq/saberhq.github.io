@@ -1,0 +1,21 @@
+{{/* Saber HQ site header strip.
+     Context: dict "page" .  plus optional "crumb" (mono breadcrumb after the mark)
+     and "back" (dict "href" "label" — replaces the nav with a single back link). */}}
+{{ $p := .page }}
+<header class="sq-siteheader">
+  <div class="sq-wrap sq-siteheader-in">
+    <a class="sq-mark" href="{{ $p.Site.Home.RelPermalink }}">saberhq.com</a>
+    {{ with .crumb }}<span class="sq-crumb">/ {{ . }}</span>{{ end }}
+    <span class="sq-fill"></span>
+    {{ with .back }}
+      <a class="sq-back" href="{{ .href }}">{{ .label }}</a>
+    {{ else }}
+      <nav class="sq-nav">
+        {{ range $p.Site.Menus.home }}
+          <a href="{{ .URL }}" target="_blank" rel="noopener">{{ .Name }}</a>
+        {{ end }}
+      </nav>
+    {{ end }}
+    <button class="sq-theme-toggle" type="button" data-theme-toggle aria-label="Toggle color theme"></button>
+  </div>
+</header>
