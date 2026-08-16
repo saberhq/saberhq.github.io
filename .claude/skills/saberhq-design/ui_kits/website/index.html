@@ -1,0 +1,116 @@
+<!-- @dsCard group="Website" viewport="1280x760" subtitle="Home page in the new brand — real site content" name="Home" -->
+<!-- @startingPoint section="Screens" subtitle="saberhq.com home page in the Saber HQ brand" viewport="1280x760" -->
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saber HQ — home</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans);transition:background var(--dur) var(--ease),color var(--dur) var(--ease)}
+  a{color:var(--link);text-decoration:none}
+  a:hover{color:var(--link-hover);text-decoration:underline;text-underline-offset:2px}
+  ::selection{background:var(--accent-wash)}
+</style>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="../../components/core/fallback.js"></script>
+</head><body>
+<div id="root"></div>
+<script>
+const h = React.createElement;
+const { Button, Tag, Card, SectionHeader } = window.SaberHQCore;
+const mono = (s, extra) => Object.assign({ fontFamily: 'var(--font-mono)', fontSize: s }, extra);
+const posts = [
+  { date: '2025-09-01', title: 'Why autoencoders are so effective?', desc: 'Plain-language basics with demos, figures, and a walkthrough video.' },
+  { date: '2024-09-01', title: 'ntEmbd: Deep learning embedding for nucleotide sequences', desc: 'Turning nucleotide sequences into vector embeddings — training setup, benchmarks, and repo links.' },
+  { date: '2023-09-01', title: 'Trans-NanoSim characterizes and simulates nanopore RNA-seq data', desc: 'How benchmarks and simulations accelerate RNA tooling workflows.' },
+];
+const news = [
+  ['Sep 2025', 'Launched this website.'],
+  ['Jul 2025', 'Joined Genentech as a Computational Scientist.'],
+  ['Jun 2025', 'Attended ICML in Vancouver.'],
+  ['Dec 2024', 'Attended NeurIPS in Vancouver.'],
+  ['Jul 2024', 'Defended my PhD dissertation and graduated from UBC.'],
+  ['Jun 2024', 'The LRGASP research is published in Nature Methods.'],
+];
+function Page() {
+  const [dark, setDark] = React.useState(false);
+  React.useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : ''; }, [dark]);
+  const max = { maxWidth: 'var(--page-max)', margin: '0 auto', padding: '0 32px' };
+  return h('div', null,
+    h('header', { style: { borderBottom: '1px solid var(--rule)' } },
+      h('div', { style: Object.assign({}, max, { display: 'flex', alignItems: 'center', gap: 24, height: 56 }) },
+        h('span', { style: mono('13px', { fontWeight: 500 }) }, 'saberhq.com'),
+        h('span', { style: { flex: 1 } }),
+        h('nav', { style: Object.assign({ display: 'flex', gap: 20 }, mono('11.5px')) },
+          h('a', { href: 'https://github.com/saberhq' }, 'GitHub'),
+          h('a', { href: 'https://www.linkedin.com/in/saberhq' }, 'LinkedIn'),
+          h('a', { href: 'https://scholar.google.com/citations?user=q2fsO2IAAAAJ' }, 'Scholar'),
+          h('a', { href: 'https://www.youtube.com/@saberhq' }, 'YouTube'),
+          h('a', { href: 'https://x.com/saberhq' }, 'X')
+        ),
+        h('button', { onClick: () => setDark(d => !d), title: 'Toggle theme', style: Object.assign(mono('11px'), { background: 'none', border: '1px solid var(--rule)', borderRadius: 'var(--radius-sm)', color: 'var(--ink-3)', padding: '3px 8px', cursor: 'pointer' }) }, dark ? 'LIGHT' : 'DARK')
+      )
+    ),
+    h('section', { style: Object.assign({}, max, { padding: '72px 32px 56px' }) },
+      h('div', { style: mono('var(--label-size)', { fontWeight: 500, letterSpacing: 'var(--label-track)', color: 'var(--ink-3)', marginBottom: 14 }) },
+        h('span', { style: { color: 'var(--accent)' } }, 'AI × BIO'), ' — RESEARCH, NOTES, AND PROJECTS'),
+      h('h1', { style: { margin: 0, fontSize: 'var(--display-size)', fontWeight: 600, letterSpacing: '0.04em', lineHeight: 'var(--display-leading)', textTransform: 'uppercase' } }, 'Saber HQ'),
+      h('p', { style: { margin: '14px 0 0', fontSize: '17px', lineHeight: 1.55, color: 'var(--ink-2)', maxWidth: '52ch', textWrap: 'pretty' } }, "Friendly notes on what I'm building, reading, and figuring out."),
+      h('div', { style: { display: 'flex', gap: 12, marginTop: 28 } },
+        h(Button, { href: '#' }, 'Resume'),
+        h(Button, { variant: 'secondary', href: 'mailto:saber.hafezqorani@gmail.com' }, 'Contact me')
+      )
+    ),
+    h('section', { style: Object.assign({}, max, { paddingBottom: 56 }) },
+      h(SectionHeader, { number: '01', label: 'Latest posts', aside: h('a', { href: '#' }, 'see full list →') }),
+      h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 20 } },
+        posts.map((p, i) => h(Card, { key: i, href: '#', meta: p.date + ' · BLOG', title: p.title },
+          h('p', { style: { margin: 0, fontSize: '12.5px', color: 'var(--ink-2)', lineHeight: 1.5 } }, p.desc),
+          h('p', { style: Object.assign({ margin: '10px 0 0' }, mono('10.5px')) }, h('span', { style: { color: 'var(--accent)' } }, 'Read more →'))
+        ))
+      )
+    ),
+    h('section', { style: Object.assign({}, max, { paddingBottom: 56 }) },
+      h(SectionHeader, { number: '02', label: 'Podcast & newsletter' }),
+      h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 } },
+        h(Card, { title: 'Podcast' },
+          h('p', { style: { margin: '0 0 12px', fontSize: '13px', color: 'var(--ink-2)', lineHeight: 1.55 } }, 'Conversations and stories at the intersection of AI and biology. Notes and takeaways from each episode.'),
+          h(Button, { variant: 'secondary', size: 'sm', href: '#' }, 'Explore the podcast')
+        ),
+        h(Card, { title: 'The Attention — newsletter' },
+          h('p', { style: { margin: '0 0 12px', fontSize: '13px', color: 'var(--ink-2)', lineHeight: 1.55 } }, 'Occasional roundups on research, projects, and ideas worth sharing. Practical, concise, and human.'),
+          h(Button, { variant: 'secondary', size: 'sm', href: '#' }, 'Read the newsletter')
+        )
+      )
+    ),
+    h('section', { style: Object.assign({}, max, { paddingBottom: 64 }) },
+      h(SectionHeader, { number: '03', label: 'About & recent news' }),
+      h('div', { style: { display: 'grid', gridTemplateColumns: '96px 1fr 1fr', gap: 32, marginTop: 20 } },
+        h('img', { src: '../../assets/saberhq_profile.jpeg', alt: 'Saber Hafezqorani', style: { width: 96, height: 96, objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--rule)' } }),
+        h('div', null,
+          h('p', { style: { margin: 0, fontSize: 'var(--body-size)', lineHeight: 'var(--body-leading)', textWrap: 'pretty' } },
+            "My name is Saber. I'm a Research Scientist with 12+ years of experience in genomics, data science, and machine learning. I earned my Ph.D. in Bioinformatics at ",
+            h('a', { href: '#' }, 'UBC'),
+            ', working on computational tools for next-generation sequencing. I am passionate about contributing to the understanding, controlling, and training of foundation models for biology.'),
+          h('div', { style: { display: 'flex', gap: 6, marginTop: 14, flexWrap: 'wrap' } },
+            h(Tag, null, 'Perturb-seq'), h(Tag, null, 'representation learning'), h(Tag, null, 'long-read RNA-seq'), h(Tag, { accent: true }, 'Virtual Cell Challenge'))
+        ),
+        h('div', { style: { display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '7px 14px', alignContent: 'start' } },
+          news.flatMap((n, i) => [
+            h('span', { key: 'd' + i, style: mono('var(--meta-size)', { fontWeight: 500, whiteSpace: 'nowrap' }) }, n[0]),
+            h('span', { key: 't' + i, style: { fontSize: '13px', color: 'var(--ink-2)', lineHeight: 1.5 } }, '— ' + n[1])
+          ])
+        )
+      )
+    ),
+    h('footer', { style: { borderTop: '1px solid var(--rule)' } },
+      h('div', { style: Object.assign({}, max, { display: 'flex', justifyContent: 'space-between', padding: '16px 32px' }, mono('var(--micro-size)', { letterSpacing: 'var(--micro-track)', color: 'var(--ink-4)' })) },
+        h('span', null, 'SABERHQ.COM ', h('span', { style: { color: 'var(--rule)' } }, '—'), ' AI × BIO'),
+        h('span', null, 'GEIST / GEIST MONO · VERMILLION #D55E00')
+      )
+    )
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(h(Page));
+</script>
+</body></html>
