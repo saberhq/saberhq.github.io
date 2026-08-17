@@ -191,6 +191,10 @@ a.sq-card:hover {
   transition: color var(--dur) var(--ease);
 }
 .sq-action:hover { color: var(--accent); }
+/* Arrow glyphs are missing from Geist Mono, so the browser substitutes a fallback font
+   at a tiny optical size — render them in the sans stack, sized to the label text */
+.sq-glyph { font-family: var(--font-sans), system-ui, sans-serif; font-size: 1.3em; line-height: 1; vertical-align: -0.08em; }
+.sq-glyph--accent { color: var(--accent); }
 
 /* ---------- Blog article ---------- */
 .sq-article-wrap { max-width: 720px; margin: 0 auto; padding: var(--space-8) var(--space-6) 0; }

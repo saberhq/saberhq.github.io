@@ -14,7 +14,7 @@
       <h1 class="sq-display">Saber HQ</h1>
       {{ with .Params.tagline }}<p class="sq-tagline">{{ $.RenderString (dict "display" "inline") . }}</p>{{ end }}
       <div class="sq-hero-actions">
-        {{ with .Params.resume }}<a class="sq-btn" href="{{ . }}">Resume</a>{{ end }}
+        {{ with .Params.resume }}<a class="sq-btn" href="{{ . }}" target="_blank" rel="noopener">Résumé</a>{{ end }}
         {{ with .Params.contact }}<a class="sq-btn sq-btn--secondary" href="{{ . }}">Contact me</a>{{ end }}
       </div>
     </section>
