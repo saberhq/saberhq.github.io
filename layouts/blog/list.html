@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="{{ default .Site.Language.Lang .Site.LanguageCode }}" dir="{{ default "ltr" .Site.Language.LanguageDirection }}">
+<head>
+  {{ partial "docs/html-head" . }}
+  {{ partial "docs/inject/head" . }}
+</head>
+<body class="sq-shell book-type-blog">
+
+  {{ partial "saberhq/site-header" (dict "page" . "crumb" "blog") }}
+
+  <main class="sq-listing sq-wrap">
+    <div class="sq-kicker"><span class="sq-kicker-accent">BLOG</span> · {{ len .RegularPages }} POSTS</div>
+    <div class="sq-prose sq-listing-content">
+      {{ .Content }}
+    </div>
+  </main>
+
+  {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "BLOG" "href" .RelPermalink)) }}
+  {{ partial "docs/inject/body" . }}
+</body>
+</html>

@@ -1,381 +1,308 @@
-/* ===== Site Title (Saber HQ) in Sidebar ===== */
+/* ================================================================
+   Saber HQ site styles — built on the design tokens in assets/tokens/.
+   Tokens are the only source of color/type/spacing values; anything
+   visual here must reference a --token. Rules: one vermillion accent,
+   Geist voice + Geist Mono instrument panel, hairline structure,
+   dark mode via [data-theme="dark"] on <html>.
+   ================================================================ */
 
-/* All caps and larger on all pages */
-.book-brand span {
+/* ---------- Book theme variable remap (docs chrome inherits brand) ---------- */
+:root {
+  --gray-100: var(--surface-sunken);
+  --gray-200: var(--rule);
+  --gray-500: var(--ink-4);
+  --color-link: var(--link);
+  --color-visited-link: var(--link);
+  --body-background: var(--paper);
+  --body-font-color: var(--ink);
+  --icon-filter: none;
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  --icon-filter: brightness(0) invert(1);
+  color-scheme: dark;
+}
+/* Book's auto theme flips its vars on the system preference; the data-theme
+   attribute is our single source of truth, so pin the JS-less fallback light. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="dark"]) { --icon-filter: none; color-scheme: light; }
+}
+
+/* ---------- Base ---------- */
+body {
+  font-family: var(--font-sans);
+  font-size: var(--body-size);
+  line-height: var(--body-leading);
+  letter-spacing: var(--body-track);
+  background: var(--paper);
+  color: var(--ink);
+}
+::selection { background: var(--accent-wash); }
+a { color: var(--link); text-decoration: none; }
+a:visited { color: var(--link); } /* Book ships a visited-link color; the brand doesn't distinguish visited */
+a:hover { color: var(--link-hover); text-decoration: underline; text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+strong, b { font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
+
+/* ---------- Utilities ---------- */
+.sq-wrap { max-width: var(--page-max); margin: 0 auto; padding-left: var(--space-6); padding-right: var(--space-6); }
+.sq-fill { flex: 1; }
+
+/* Mono section kicker: 01-style labels, uppercase, tracked open */
+.sq-kicker {
+  font-family: var(--font-mono);
+  font-size: var(--label-size);
+  font-weight: 500;
+  letter-spacing: var(--label-track);
   text-transform: uppercase;
-  font-size: 1.15em;
-  letter-spacing: 0.04em;
-  font-weight: 700;
+  color: var(--ink-3);
 }
+.sq-kicker-accent { color: var(--accent); }
 
-/* Footer socials */
-.book-footer .footer-socials {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid rgba(127, 127, 127, 0.25);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1rem;
-  font-size: 0.9rem;
+/* ---------- Site header strip ---------- */
+.sq-siteheader { border-bottom: var(--rule-w) solid var(--rule); }
+.sq-siteheader-in {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  min-height: 56px; padding-top: var(--space-2); padding-bottom: var(--space-2);
 }
-.book-footer .footer-socials a { opacity: 0.85; }
-.book-footer .footer-socials a:hover { opacity: 1; text-decoration: underline; }
-
-/* Sidebar: revert to theme defaults (custom blog block and spacing removed) */
-
-
-/* Hide hamburger icons on desktop, show on small screens */
-.book-header label[for="menu-control"],
-.book-header label[for="toc-control"] { display: none; }
-@media (max-width: 1000px) {
-  .book-header label[for="menu-control"],
-  .book-header label[for="toc-control"] { display: inline-block; }
+/* Anchor components: selectors carry the `a` element to outrank Book's a[href] rule */
+a.sq-mark, a.sq-mark:visited { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--ink); }
+a.sq-mark:hover { color: var(--ink); }
+.sq-crumb { font-family: var(--font-mono); font-size: var(--label-size); color: var(--ink-3); }
+.sq-nav { display: flex; flex-wrap: wrap; gap: var(--space-2) 20px; font-family: var(--font-mono); font-size: var(--label-size); }
+.sq-back { font-family: var(--font-mono); font-size: var(--label-size); }
+.sq-theme-toggle {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: var(--meta-track);
+  background: none; border: var(--rule-w) solid var(--rule); border-radius: var(--radius-sm);
+  color: var(--ink-3); padding: 3px 8px; cursor: pointer;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
+.sq-theme-toggle:hover { border-color: var(--ink-4); color: var(--ink); }
+.sq-theme-toggle::after { content: "DARK"; }
+[data-theme="dark"] .sq-theme-toggle::after { content: "LIGHT"; }
 
-/* Back to top link styling */
-.markdown .back-to-top {
-  font-size: 0.85rem;
-  margin-inline-start: 0.5rem;
-  opacity: 0.7;
+/* ---------- Buttons: primary = solid ink, secondary = hairline. Accent is never a fill. ---------- */
+.sq-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  font-family: var(--font-sans); font-weight: 500; line-height: 1.2; font-size: 14px;
+  padding: 9px 16px; border-radius: var(--radius);
+  background: var(--btn-solid-bg); color: var(--btn-solid-text);
+  border: var(--rule-w) solid var(--btn-solid-bg);
+  cursor: pointer; text-decoration: none;
+  transition: opacity var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
-.markdown .back-to-top:hover { opacity: 1; text-decoration: underline; }
+a.sq-btn, a.sq-btn:visited { color: var(--btn-solid-text); }
+.sq-btn:hover, a.sq-btn:hover { opacity: 0.88; color: var(--btn-solid-text); text-decoration: none; }
+.sq-btn:active { opacity: 0.75; }
+.sq-btn--secondary, a.sq-btn--secondary, a.sq-btn--secondary:visited { background: transparent; color: var(--ink); border-color: var(--rule); }
+.sq-btn--secondary:hover, a.sq-btn--secondary:hover, .sq-btn--secondary:active { opacity: 1; border-color: var(--ink-4); color: var(--ink); }
+.sq-btn--sm { font-size: 12.5px; padding: 6px 12px; }
 
-/* (removed) blog sub-items styling */
-
-/* More spacing above footer so content doesn't blend */
-.book-footer { margin-top: 2.25rem; }
-/* Landing page styles */
-.landing { padding: 2rem 1rem; }
-.landing-hero { margin: 2rem 0 3rem; }
-.landing-hero-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; max-width: 1100px; margin: 0 auto; }
-.landing-hero .hero-title { margin-top: 0; }
-.landing-hero .hero-title h1 { font-size: 2.8rem; letter-spacing: .02em; margin: 0 0 .25rem 0; }
-.landing-hero .hero-title p { font-size: 1.05rem; opacity: .9; margin: 0.25rem 0 0.5rem; }
-.landing-hero .hero-links { margin-bottom: 2rem; text-align: right; }
-.landing-hero .hero-links a { margin-left: 1rem; white-space: nowrap; }
-.landing-badges { margin-top: .5rem; display: flex; gap: .5rem; flex-wrap: wrap; }
-
-.landing-cta { margin-top: 1rem; display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }
-.landing-cta .btn {
-  padding: .5rem .9rem; border: 1px solid rgba(127,127,127,.25); border-radius: .6rem;
-  text-decoration: none;
+/* ---------- Section header: strong ink rule + numbered mono label ---------- */
+.sq-section { padding-bottom: var(--space-8); }
+.sq-section-head {
+  display: flex; align-items: baseline; gap: var(--space-2);
+  border-top: var(--rule-w-strong) solid var(--rule-strong); padding-top: 6px;
+  font-family: var(--font-mono); font-size: var(--label-size); font-weight: 500;
 }
-.landing-cta .btn:hover { border-color: rgba(127,127,127,.5); }
+.sq-section-label { letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink); }
+.sq-section-fill { flex: 1; }
+a.sq-section-aside, a.sq-section-aside:visited { font-size: 10px; font-weight: 400; color: var(--link); }
 
-.landing-columns { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1.25rem; max-width: 1100px; margin: 1rem auto 2rem; }
-.landing-columns .col { border: none; border-radius: 0; padding: 0.25rem 0; }
-.landing-columns .col h3 { margin-top: 0; }
+/* ---------- Hero ---------- */
+.sq-hero { padding-top: var(--space-9); padding-bottom: var(--space-8); }
+.sq-display {
+  margin: 0;
+  font-size: var(--display-size); font-weight: 600;
+  letter-spacing: 0.04em; /* wordmark tracking (readme: SABER HQ, Geist 600, uppercase) */
+  line-height: var(--display-leading); text-transform: uppercase;
+}
+.sq-tagline { margin: 14px 0 0; font-size: 17px; line-height: 1.55; color: var(--ink-2); max-width: 52ch; text-wrap: pretty; }
+.sq-hero-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: 28px; }
 
-.landing-posts { max-width: 1100px; margin: 1rem auto 2rem; }
-.landing-posts .section-head { display: block; margin-bottom: 1rem; }
-.landing-posts .section-head h3 { margin: 0; font-weight: 600; }
-.landing-posts .section-head .sep { margin: 0 .4rem; }
-.landing-posts .section-head .see-all { font-size: .95rem; }
-.landing-posts h3 { margin-bottom: .5rem; }
-.landing-posts .card-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1rem; }
-.landing-posts .card { border: 1px solid rgba(127,127,127,.25); border-radius: .5rem; padding: 1rem; }
-.landing-posts .card h4 { margin: 0 0 .25rem 0; font-size: 1.1rem; }
-.landing-posts .card h4 a { color: inherit; text-decoration: none; }
-.landing-posts .card h4 a:hover { text-decoration: underline; }
-.landing-posts .card p { margin: 0; opacity: .85; font-size: .95rem; }
-.landing-posts .card p.read { margin-top: .4rem; }
-.landing-posts p.more { margin-top: .75rem; text-align: right; }
-
-.landing-body { margin: 2rem auto; max-width: 900px; }
-
-@media (max-width: 900px) {
-  .landing-hero .hero-title h1 { font-size: 2.2rem; }
-  .landing-columns { grid-template-columns: 1fr; }
-  .landing-posts .card-grid { grid-template-columns: 1fr; }
+/* ---------- Cards ---------- */
+.sq-card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin-top: 20px; }
+.sq-card {
+  display: block; border: var(--rule-w) solid var(--rule); border-radius: var(--radius);
+  background: var(--surface-card); padding: 14px 16px;
+  color: inherit; text-decoration: none;
+  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
-
-/* ----- Landing page layout polish (match Book demo spacing) ----- */
-
-/* Constrain and center the home content block like the demo */
-.landing-hero-head,
-.landing-columns,
-.landing-posts,
-.landing-body {
-  max-width: 1100px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-/* Create a larger blank gap under the header before the hero */
-.landing-hero-head {
-  position: relative;
-  margin-top: 3.5rem;   /* increase this to grow the whitespace */
-  margin-bottom: 2.25rem;
-  display: block;
-}
-
-/* Put the “hero” title on its own line and size it like the demo */
-.hero-title h1 {
-  font-size: 3rem;
-  line-height: 1.15;
-  letter-spacing: .01em;
-  margin: 0 0 .25rem;
-}
-.hero-title p {
-  margin: .25rem 0 0;
-  opacity: .9;
-}
-
-/* Move your social links to the top-right of the home content block,
-   visually mimicking the demo’s header links */
-.hero-links {
-  position: absolute;
-  top: -2.25rem;   /* sits above the hero title, near the header */
-  right: 1rem;
-  display: flex;
-  gap: 1rem;
-  font-size: .95rem;
-  opacity: .9;
-}
-.hero-links a { text-decoration: none; }
-.hero-links a:hover { text-decoration: underline; }
-
-/* Tidy the two-column section spacing like the demo cards row */
-.landing-columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  gap: 2rem;
-  margin-bottom: 2.5rem;
-}
-
-/* “Latest posts” card grid spacing */
-.landing-posts .card-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  gap: 1rem;
-}
-.landing-posts .card {
-  border: 1px solid rgba(127,127,127,.25);
-  border-radius: .6rem;
-  padding: 1rem;
-}
-.landing-posts .section-head { margin: .25rem 0 1rem; }
-.landing-posts .see-all { font-size: .95rem; }
-
-/* Responsive: stack nicely on small screens */
-@media (max-width: 900px) {
-  .hero-links { position: static; justify-content: center; margin-top: .75rem; }
-  .landing-columns,
-  .landing-posts .card-grid { grid-template-columns: 1fr; }
-  .hero-title h1 { font-size: 2.4rem; }
-}
-
-/* --- More breathing room like the Book demo --- */
-
-/* Bigger blank gap under header before hero */
-.landing-hero-head {
-  margin-top: 5.25rem;   /* was 3.5; bump up for more whitespace */
-  margin-bottom: 2.75rem;
-}
-
-/* More gap after the Podcast/Newsletter cards */
-.landing-columns {
-  gap: 2.25rem;          /* space between the two cards */
-  margin-bottom: 3.25rem;/* space below the whole section */
-}
-
-
-/* More gap before the “Latest posts” heading and after the grid */
-.landing-posts {
-  margin-bottom: 3rem;
-}
-.landing-posts .section-head {
-  margin: .5rem 0 1.25rem;
-}
-.landing-posts .card-grid {
-  gap: 1.15rem;
-}
-
-/* Make the “Back to top” anchors minimal & subtle */
-.book-page a.book-anchor,
-.book-page .anchor {
-  font-size: 0.82rem;         /* smaller */
-  opacity: 0.45;              /* subtler */
-  text-decoration: none;
-  margin-left: .25rem;
-}
-.book-page a.book-anchor:hover,
-.book-page .anchor:hover {
-  opacity: 0.7;
-  text-decoration: underline;
-}
-
-/* Keep landing heading links styled like headings */
-.book-kind-home .markdown h2 a.title-link,
-.book-kind-home .markdown h3 a.title-link {
-  color: inherit;
-  text-decoration: none;
-}
-.book-kind-home .markdown h2 a.title-link:hover,
-.book-kind-home .markdown h3 a.title-link:hover {
-  text-decoration: underline;
-}
-
-/* Section divider (matches footer line) */
-.landing .section-rule {
-  border: 0;
-  border-top: 1px solid rgba(127,127,127,.25);
-  margin: 2rem 0 1.5rem; /* tweak as you like */
-}
-
-/* Recent news: align bold dates in a fixed column */
-.book-article ul.recent-news { margin: .25rem 0 0 0; padding-left: 0; list-style: none; }
-.book-article ul.recent-news li {
-  display: grid;
-  grid-template-columns: 8ch 1fr; /* date width + text */
-  column-gap: .6rem;
-  align-items: start;
-  margin: .32rem 0;
-}
-.book-article ul.recent-news .date {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.book-article ul.recent-news .desc { min-width: 0; }
-
-/* Extra separation before bottom menu links */
-.book-menu nav > ul:last-child {
-  margin-top: 1rem;
-  padding-top: .75rem;
-  border-top: 1px solid rgba(127,127,127,.25);
-}
-
-.video, .embed { position: relative; padding-top: 56.25%; }
-.video iframe, .embed iframe {
-  position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
-}
-
-/* ===== Blog Post Cards with Images ===== */
-
-/* Card grid layout - matches landing-columns width */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-  max-width: 1100px;
-  margin: 0 auto 3rem;
-  padding: 0 1rem;
-}
-
-/* On landing page, ensure card-grid matches columns width exactly */
-.book-kind-home .card-grid {
-  max-width: none;
-  width: 100%;
-  padding: 0;
-  margin-bottom: 3.25rem;
-}
-
-/* Card container - unified border around image + content */
-.book-card {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid rgba(127, 127, 127, 0.25);
-  border-radius: 0.6rem;
-  overflow: hidden;
-  background: var(--body-background);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-/* Clickable cards get hover effects */
-a.book-card {
-  text-decoration: none;
-  color: inherit;
-}
-a.book-card:hover {
+a.sq-card, a.sq-card:visited { color: inherit; }
+a.sq-card:hover {
+  color: inherit; text-decoration: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
 }
+.sq-card-meta { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: var(--meta-track); color: var(--ink-3); margin-bottom: 5px; }
+.sq-card-title { font-size: 15px; font-weight: 600; letter-spacing: var(--h3-track); margin-bottom: 4px; color: var(--ink); }
+/* Compound selectors: on /blog/ the cards sit inside .sq-prose, whose `p` rule would
+   otherwise outrank these and inflate them to body type */
+.sq-card .sq-card-desc {
+  margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.5; letter-spacing: normal;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.sq-card .sq-card-read { margin: 10px 0 0; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: normal; color: var(--accent); }
 
-/* Card image - fixed aspect ratio, cover crop */
-.book-card > img {
-  width: 100%;
-  height: 140px;
-  object-fit: cover;
-  object-position: center;
-  flex-shrink: 0;
+/* ---------- Tags (mono instrument-panel chips; max one accent per group) ---------- */
+.sq-tag {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: var(--meta-track);
+  padding: 2px 7px; border-radius: var(--radius-sm); line-height: 1.6;
+  color: var(--ink-3); border: var(--rule-w) solid var(--rule); white-space: nowrap;
+}
+.sq-tag--accent { color: var(--accent); border-color: var(--accent); background: var(--accent-wash); }
+
+/* ---------- About & recent news ---------- */
+.sq-about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); margin-top: 20px; }
+.sq-about-copy p { margin: 0 0 12px; font-size: var(--body-size); line-height: var(--body-leading); text-wrap: pretty; }
+.sq-about-copy p:last-child { margin-bottom: 0; }
+.sq-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.sq-news { display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; align-content: start; }
+.sq-news-date { font-family: var(--font-mono); font-size: var(--meta-size); letter-spacing: var(--meta-track); font-weight: 500; white-space: nowrap; }
+.sq-news-item { font-size: var(--small-size); color: var(--ink-2); line-height: var(--small-leading); }
+
+/* ---------- Site footer strip ---------- */
+.sq-sitefooter { border-top: var(--rule-w) solid var(--rule); }
+.sq-sitefooter-in {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2) var(--space-4);
+  padding-top: var(--space-4); padding-bottom: var(--space-4);
+  font-family: var(--font-mono); font-size: var(--micro-size); letter-spacing: var(--micro-track);
+  color: var(--ink-4);
+}
+.sq-dash { color: var(--rule); }
+.sq-sitefooter a, .sq-sitefooter a:visited { color: var(--ink-4); }
+.sq-sitefooter a:hover { color: var(--ink); text-decoration: none; }
+
+/* ---------- End-of-article actions ---------- */
+.sq-post-actions {
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-4) var(--space-5);
+  border-top: var(--rule-w) solid var(--rule);
+  margin-top: var(--space-7); padding: var(--space-4) 0 var(--space-7);
+}
+.sq-action {
+  font-family: var(--font-mono); font-size: var(--label-size); letter-spacing: var(--meta-track);
+  color: var(--ink-3); background: none; border: none; padding: 0; cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+.sq-action:hover { color: var(--accent); }
+/* Arrow glyphs are missing from Geist Mono, so the browser substitutes a fallback font
+   at a tiny optical size — render them in the sans stack, sized to the label text */
+.sq-glyph { font-family: var(--font-sans), system-ui, sans-serif; font-size: 1.3em; line-height: 1; vertical-align: -0.08em; }
+.sq-glyph--accent { color: var(--accent); }
+
+/* ---------- Blog article ---------- */
+.sq-article-wrap { max-width: 720px; margin: 0 auto; padding: var(--space-8) var(--space-6) 0; }
+.sq-article-title {
+  margin: 14px 0 0;
+  font-size: var(--h1-size); font-weight: 600;
+  letter-spacing: var(--h1-track); line-height: var(--h1-leading); text-wrap: pretty;
+}
+.sq-article-desc { margin: 12px 0 0; font-size: 16px; color: var(--ink-2); }
+.sq-byline { display: flex; align-items: baseline; gap: var(--space-2); margin: 22px 0 30px; font-family: var(--font-mono); font-size: 11px; }
+.sq-byline-author { color: var(--ink-3); }
+.sq-byline-rule { flex: 1; border-top: var(--rule-w) solid var(--rule); }
+.sq-cover { margin: 0 0 34px; }
+.sq-cover img { display: block; width: 100%; height: 300px; object-fit: cover; border-radius: var(--radius); border: var(--rule-w) solid var(--rule); }
+
+/* ---------- Prose (markdown body on brand pages) ---------- */
+.sq-prose p { font-size: var(--body-size); line-height: var(--body-leading); letter-spacing: var(--body-track); text-wrap: pretty; margin: 0 0 18px; }
+.sq-prose h1 { font-size: var(--h1-size); font-weight: 600; letter-spacing: var(--h1-track); line-height: var(--h1-leading); margin: 0 0 10px; }
+.sq-prose h2 { font-size: var(--h2-size); font-weight: 600; letter-spacing: var(--h2-track); line-height: var(--h2-leading); margin: 40px 0 14px; }
+.sq-prose h3 { font-size: var(--h3-size); font-weight: 600; letter-spacing: var(--h3-track); line-height: var(--h3-leading); margin: 32px 0 10px; }
+.sq-prose ul, .sq-prose ol { margin: 0 0 18px; padding-left: 22px; }
+.sq-prose li { margin: 4px 0; }
+.sq-prose img { max-width: 100%; height: auto; border: var(--rule-w) solid var(--rule); border-radius: var(--radius); }
+.sq-prose figure { margin: 26px 0; }
+.sq-prose figcaption { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); margin-top: var(--space-2); line-height: 1.5; }
+/* Posts caption figures as an emphasized paragraph right after the image
+   (`![...](img)` then `*Figure N. ...*`) — style that convention as the kit's mono caption */
+.sq-prose p:has(> img) + p:has(> em:only-child) {
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3);
+  letter-spacing: normal; line-height: 1.5; margin: -10px 0 26px;
+}
+.sq-prose p:has(> img) + p > em:only-child { font-style: normal; }
+.sq-prose code {
+  font-family: var(--font-mono); font-size: 0.92em;
+  background: var(--accent-wash); padding: 1px 4px; border-radius: var(--radius-sm);
+}
+.sq-prose pre {
+  background: var(--surface-sunken); border: var(--rule-w) solid var(--rule);
+  border-radius: var(--radius); padding: 14px 16px; overflow-x: auto; margin: 0 0 18px;
+}
+.sq-prose pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.55; }
+.sq-prose blockquote { margin: 0 0 18px; padding: 2px 0 2px 16px; border-left: 2px solid var(--rule-strong); color: var(--ink-2); }
+.sq-prose blockquote p:last-child { margin-bottom: 0; }
+.sq-prose hr { border: 0; border-top: var(--rule-w) solid var(--rule); margin: var(--space-6) 0; }
+.sq-prose table { border-collapse: collapse; margin: 0 0 18px; }
+.sq-prose th {
+  font-family: var(--font-mono); font-size: var(--meta-size); letter-spacing: var(--meta-track);
+  font-weight: 500; text-align: left; padding: 6px 12px 6px 0;
+  border-bottom: var(--rule-w-strong) solid var(--rule-strong);
+}
+.sq-prose td { font-size: var(--small-size); padding: 6px 12px 6px 0; border-bottom: var(--rule-w) solid var(--rule); }
+
+/* The article template renders the front-matter title; posts repeat it as a leading H1 */
+.sq-article .sq-prose > h1:first-child { display: none; }
+
+/* ---------- Blog listing ---------- */
+.sq-listing { padding-top: var(--space-8); padding-bottom: var(--space-8); }
+.sq-listing-content { margin-top: 14px; }
+.sq-listing-content > p { color: var(--ink-2); font-size: 16px; max-width: 60ch; }
+.sq-listing .sq-card-grid { margin-top: var(--space-5); }
+
+/* ---------- Video / iframe embeds ---------- */
+.video, .embed {
+  position: relative; padding-top: 56.25%; margin: 0 0 18px;
+  border: var(--rule-w) solid var(--rule); border-radius: var(--radius); overflow: hidden;
+}
+.video iframe, .embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* ================================================================
+   Book chrome (docs pages: newsletter, podcast, misc) — re-themed
+   ================================================================ */
+.book-brand span { text-transform: uppercase; font-size: 1.05em; letter-spacing: 0.04em; font-weight: 600; }
+.book-menu { font-size: var(--small-size); }
+.book-menu a { color: var(--ink-2); }
+.book-menu a:hover { color: var(--ink); }
+.book-menu a.active { color: var(--accent); }
+.book-search input { background: var(--surface-sunken); border: var(--rule-w) solid var(--rule); border-radius: var(--radius-sm); }
+
+.markdown code { font-family: var(--font-mono); font-size: 0.92em; background: var(--accent-wash); padding: 1px 4px; border-radius: var(--radius-sm); }
+.markdown pre { background: var(--surface-sunken); border: var(--rule-w) solid var(--rule); border-radius: var(--radius); }
+.markdown pre code { background: none; }
+.markdown blockquote { border-left: 2px solid var(--rule-strong); border-radius: 0; }
+.markdown h1, .markdown h2, .markdown h3, .markdown h4 { font-weight: 600; }
+
+.book-footer { margin-top: var(--space-6); font-family: var(--font-mono); font-size: var(--meta-size); color: var(--ink-3); }
+.book-footer .footer-socials {
+  margin-top: var(--space-3); padding-top: var(--space-3);
+  border-top: var(--rule-w) solid var(--rule);
+  display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-4);
 }
 
-/* Card content area */
-.book-card .card-content {
-  padding: 0.85rem 1rem;
-  flex: 1;
-}
-.book-card .card-content h3 {
-  margin: 0 0 0.4rem 0;
-  font-size: 1rem;
-  line-height: 1.3;
-  font-weight: 600;
-}
-.book-card .card-content p {
-  margin: 0;
-  font-size: 0.88rem;
-  opacity: 0.8;
-  line-height: 1.45;
-  /* Truncate to 3 lines */
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+/* Back-to-top anchors on docs pages: micro, muted */
+.markdown .back-to-top { font-family: var(--font-mono); font-size: var(--micro-size); letter-spacing: var(--micro-track); color: var(--ink-4); margin-inline-start: var(--space-2); }
+.markdown .back-to-top:hover { color: var(--ink-2); }
 
-/* Responsive: 2 columns on medium, 1 on small */
+/* Cover image partial (docs pages with an image param) */
+.post-cover { margin: 0 0 var(--space-5); }
+.post-cover img { width: 100%; height: 280px; object-fit: cover; display: block; border-radius: var(--radius); border: var(--rule-w) solid var(--rule); }
+
+/* ---------- Responsive ---------- */
 @media (max-width: 900px) {
-  .card-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .sq-wrap { padding-left: var(--space-4); padding-right: var(--space-4); }
+  .sq-hero { padding-top: var(--space-7); padding-bottom: var(--space-7); }
+  .sq-card-grid { grid-template-columns: 1fr 1fr; }
+  .sq-about-grid { grid-template-columns: 1fr; }
+  .sq-article-wrap { padding-left: var(--space-4); padding-right: var(--space-4); }
 }
 @media (max-width: 600px) {
-  .card-grid {
-    grid-template-columns: 1fr;
-  }
-  .book-card > img {
-    height: 160px;
-  }
-}
-
-/* ===== Blog Post Cover Images ===== */
-
-.post-cover {
-  margin: -1rem -1rem 2rem -1rem; /* bleed to edges */
-  position: relative;
-}
-
-.post-cover img {
-  width: 100%;
-  height: 280px;
-  object-fit: cover;
-  object-position: center;
-  display: block;
-  border-radius: 0.4rem;
-}
-
-/* Subtle gradient fade at bottom for title blending */
-.post-cover::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: linear-gradient(to bottom, transparent, var(--body-background));
-  pointer-events: none;
-  border-radius: 0 0 0.4rem 0.4rem;
-}
-
-/* Taller cover on larger screens */
-@media (min-width: 900px) {
-  .post-cover img {
-    height: 350px;
-  }
-  .post-cover::after {
-    height: 80px;
-  }
+  .sq-card-grid { grid-template-columns: 1fr; }
+  .sq-cover img { height: 200px; }
 }

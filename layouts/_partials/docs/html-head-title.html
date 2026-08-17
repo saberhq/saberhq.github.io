@@ -1,0 +1,13 @@
+{{- /* Tab titles (shadows the Book theme partial).
+       Home: bare mark. Other pages: "saberhq.com - x" where x is the page's
+       `short` front-matter param when set (e.g. short: ntEmbd), else the title
+       (lowercased for section/list pages, kept as-is for regular pages). */ -}}
+{{- if .IsHome -}}
+saberhq.com
+{{- else if .Params.short -}}
+saberhq.com - {{ .Params.short }}
+{{- else if eq .Kind "page" -}}
+saberhq.com - {{ .Title }}
+{{- else -}}
+saberhq.com - {{ lower .Title }}
+{{- end -}}
