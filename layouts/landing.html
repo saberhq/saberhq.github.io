@@ -11,11 +11,10 @@
   <main class="sq-landing">
 
     <section class="sq-hero sq-wrap">
-      <div class="sq-kicker"><span class="sq-kicker-accent">AI × BIO</span> — RESEARCH, NOTES, AND PROJECTS</div>
       <h1 class="sq-display">Saber HQ</h1>
       {{ with .Params.tagline }}<p class="sq-tagline">{{ $.RenderString (dict "display" "inline") . }}</p>{{ end }}
       <div class="sq-hero-actions">
-        {{ with .Params.resume }}<a class="sq-btn" href="{{ . }}" download>Resume</a>{{ end }}
+        {{ with .Params.resume }}<a class="sq-btn" href="{{ . }}">Resume</a>{{ end }}
         {{ with .Params.contact }}<a class="sq-btn sq-btn--secondary" href="{{ . }}">Contact me</a>{{ end }}
       </div>
     </section>
@@ -24,7 +23,6 @@
     {{ with $blog }}
     <section class="sq-section sq-wrap">
       <div class="sq-section-head">
-        <span class="sq-section-num">01</span>
         <span class="sq-section-label">Latest posts</span>
         <span class="sq-section-fill"></span>
         <a class="sq-section-aside" href="{{ .RelPermalink }}">see full list →</a>
@@ -39,11 +37,9 @@
 
     <section class="sq-section sq-wrap">
       <div class="sq-section-head">
-        <span class="sq-section-num">02</span>
         <span class="sq-section-label">About &amp; recent news</span>
       </div>
       <div class="sq-about-grid">
-        <img class="sq-portrait" src="{{ "saberhq_profile.jpeg" | relURL }}" alt="Saber Hafezqorani" width="96" height="96">
         <div class="sq-about-copy">
           {{ .Content }}
           {{ if or .Params.topics .Params.topicAccent }}
@@ -64,7 +60,7 @@
 
   </main>
 
-  {{ partial "saberhq/site-footer" (dict "crumb" "AI × BIO") }}
+  {{ partial "saberhq/site-footer" (dict "page" .) }}
   {{ partial "docs/inject/body" . }}
 </body>
 </html>

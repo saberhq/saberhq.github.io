@@ -15,7 +15,7 @@
     </div>
   </main>
 
-  {{ partial "saberhq/site-footer" (dict "crumb" "BLOG") }}
+  {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "BLOG" "href" .RelPermalink)) }}
   {{ partial "docs/inject/body" . }}
 </body>
 </html>

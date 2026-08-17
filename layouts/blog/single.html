@@ -32,11 +32,12 @@
         <div class="sq-prose">
           {{ .Content }}
         </div>
+        {{ partial "saberhq/post-actions" . }}
       </div>
     </article>
   </main>
 
-  {{ partial "saberhq/site-footer" (dict "crumb" "BLOG" "right" (.Date.Format "2006-01-02")) }}
+  {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "BLOG" "href" $blog.RelPermalink)) }}
   {{ partial "docs/inject/body" . }}
 </body>
 </html>

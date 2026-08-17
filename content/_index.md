@@ -3,7 +3,7 @@ title: Home
 bookHeadingAnchor: false
 layout: landing
 tagline: Friendly notes on what I'm building, reading, and figuring out.
-resume: /SaberHafezqorani_Resume.pdf
+resume: /resume/
 contact: mailto:saber.hafezqorani@gmail.com
 topics:
   - Perturb-seq
