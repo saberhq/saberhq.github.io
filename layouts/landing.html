@@ -52,7 +52,7 @@
         <div class="sq-news">
           {{ range .Params.news }}
             <span class="sq-news-date">{{ .date }}</span>
-            <span class="sq-news-item">— {{ $.RenderString (dict "display" "inline") .text }}</span>
+            <span class="sq-news-item">{{ $.RenderString (dict "display" "inline") .text }}</span>
           {{ end }}
         </div>
       </div>
