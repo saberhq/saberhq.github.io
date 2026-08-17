@@ -1,0 +1,46 @@
+<!-- @dsCard group="Components" viewport="700x300" subtitle="Button · Tag · Card · SectionHeader" name="Core" -->
+<!doctype html><html><head>
+<link rel="stylesheet" href="../../styles.css">
+<style>body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}</style>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="fallback.js"></script>
+</head><body>
+<div id="root"></div>
+<script>
+const h = React.createElement;
+const { Button, Tag, Card, SectionHeader } = window.SaberHQCore;
+const M = { fontFamily: 'var(--font-mono)', fontSize: '9.5px', color: 'var(--ink-4)', marginBottom: 6 };
+function Demo() {
+  return h('div', { style: { padding: '16px 20px', display: 'grid', gap: 14 } },
+    h('div', null,
+      h('div', { style: M }, 'BUTTON — primary · secondary · ghost · sm · disabled'),
+      h('div', { style: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' } },
+        h(Button, null, 'Resume'),
+        h(Button, { variant: 'secondary' }, 'Read the newsletter'),
+        h(Button, { variant: 'ghost' }, 'See full list →'),
+        h(Button, { size: 'sm' }, 'Subscribe'),
+        h(Button, { disabled: true }, 'Disabled')
+      )
+    ),
+    h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 20 } },
+      h('div', null,
+        h('div', { style: M }, 'TAG — quiet · accent (max one per group)'),
+        h('div', { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
+          h(Tag, null, 'Perturb-seq'), h(Tag, null, 'PyTorch'), h(Tag, null, 'Nextflow'), h(Tag, { accent: true }, 'Virtual Cell Challenge')
+        ),
+        h('div', { style: Object.assign({}, M, { marginTop: 14 }) }, 'SECTIONHEADER'),
+        h(SectionHeader, { number: '01', label: 'Experience', aside: h('span', null, 'full list →') })
+      ),
+      h('div', null,
+        h('div', { style: M }, 'CARD — clickable, hover to lift'),
+        h(Card, { href: '#', meta: '2025-09-01 · BLOG', title: 'Why autoencoders are so effective' },
+          h('p', { style: { margin: 0, fontSize: '12.5px', color: 'var(--ink-2)', lineHeight: 1.5 } }, 'Plain-language basics with demos, figures, and a walkthrough video.')
+        )
+      )
+    )
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body></html>

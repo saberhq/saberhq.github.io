@@ -1,22 +1,66 @@
-{{ define "menu-container" }}
-<!-- -->
-{{ end }}
+<!DOCTYPE html>
+<html lang="{{ default .Site.Language.Lang .Site.LanguageCode }}" dir="{{ default "ltr" .Site.Language.LanguageDirection }}">
+<head>
+  {{ partial "docs/html-head" . }}
+  {{ partial "docs/inject/head" . }}
+</head>
+<body class="sq-shell book-kind-home">
 
-{{ define "toc-container" }}
-<!-- -->
-{{ end }}
+  {{ partial "saberhq/site-header" (dict "page" .) }}
 
-{{ define "footer" }}
-<!-- -->
-{{ end }}
+  <main class="sq-landing">
 
-{{ define "header" }}
-  {{ partial "docs/menu-hugo" .Site.Menus.home }}
-{{ end }}
+    <section class="sq-hero sq-wrap">
+      <h1 class="sq-display">Saber HQ</h1>
+      {{ with .Params.tagline }}<p class="sq-tagline">{{ $.RenderString (dict "display" "inline") . }}</p>{{ end }}
+      <div class="sq-hero-actions">
+        {{ with .Params.resume }}<a class="sq-btn" href="{{ . }}" target="_blank" rel="noopener">Résumé</a>{{ end }}
+        {{ with .Params.contact }}<a class="sq-btn sq-btn--secondary" href="{{ . }}">Contact me</a>{{ end }}
+      </div>
+    </section>
 
-{{ define "main" }}
-  <article class="markdown book-article">
-    {{- .Content -}}
-  </article>
-{{ end }}
+    {{ $blog := .Site.GetPage "docs/blog" }}
+    {{ with $blog }}
+    <section class="sq-section sq-wrap">
+      <div class="sq-section-head">
+        <span class="sq-section-label">Latest posts</span>
+        <span class="sq-section-fill"></span>
+        <a class="sq-section-aside" href="{{ .RelPermalink }}">see full list →</a>
+      </div>
+      <div class="sq-card-grid">
+        {{ range first 6 .RegularPages.ByDate.Reverse }}
+          {{ partial "saberhq/post-card" . }}
+        {{ end }}
+      </div>
+    </section>
+    {{ end }}
 
+    <section class="sq-section sq-wrap">
+      <div class="sq-section-head">
+        <span class="sq-section-label">About &amp; recent news</span>
+      </div>
+      <div class="sq-about-grid">
+        <div class="sq-about-copy">
+          {{ .Content }}
+          {{ if or .Params.topics .Params.topicAccent }}
+          <div class="sq-topics">
+            {{ range .Params.topics }}<span class="sq-tag">{{ . }}</span>{{ end }}
+            {{ with .Params.topicAccent }}<span class="sq-tag sq-tag--accent">{{ . }}</span>{{ end }}
+          </div>
+          {{ end }}
+        </div>
+        <div class="sq-news">
+          {{ range .Params.news }}
+            <span class="sq-news-date">{{ .date }}</span>
+            <span class="sq-news-item">— {{ $.RenderString (dict "display" "inline") .text }}</span>
+          {{ end }}
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  {{ partial "saberhq/site-footer" (dict "page" .) }}
+  {{ partial "docs/inject/body" . }}
+</body>
+</html>

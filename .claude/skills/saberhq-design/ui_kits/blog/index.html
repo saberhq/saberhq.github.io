@@ -1,0 +1,75 @@
+<!-- @dsCard group="Blog" viewport="900x760" subtitle="Article template — real post content" name="Article" -->
+<!-- @startingPoint section="Screens" subtitle="Blog article template in the Saber HQ brand" viewport="900x760" -->
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why autoencoders are so effective? — Saber HQ</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans)}
+  a{color:var(--link);text-decoration:none}
+  a:hover{color:var(--link-hover);text-decoration:underline;text-underline-offset:2px}
+  ::selection{background:var(--accent-wash)}
+  .wrap{max-width:720px;margin:0 auto;padding:0 32px}
+  .mono{font-family:var(--font-mono)}
+  p{font-size:var(--body-size);line-height:var(--body-leading);letter-spacing:var(--body-track);text-wrap:pretty;margin:0 0 18px}
+  h2{font-size:var(--h2-size);font-weight:600;letter-spacing:var(--h2-track);line-height:var(--h2-leading);margin:40px 0 14px}
+  code{font-family:var(--font-mono);font-size:0.92em;background:var(--accent-wash);padding:1px 4px;border-radius:var(--radius-sm)}
+  .ph{background:repeating-linear-gradient(-45deg,var(--surface-sunken),var(--surface-sunken) 10px,var(--paper) 10px,var(--paper) 20px);border:1px solid var(--rule);border-radius:var(--radius);display:flex;align-items:center;justify-content:center}
+  .cap{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-3);margin:8px 0 26px;line-height:1.5}
+  figure{margin:26px 0 0}
+</style>
+</head><body>
+
+<header style="border-bottom:1px solid var(--rule)">
+  <div class="wrap" style="display:flex;align-items:center;gap:24px;height:56px">
+    <span class="mono" style="font-size:13px;font-weight:500"><a href="../website/index.html" style="color:var(--ink)">saberhq.com</a></span>
+    <span class="mono" style="font-size:11.5px;color:var(--ink-3)">/ blog</span>
+    <span style="flex:1"></span>
+    <span class="mono" style="font-size:11.5px"><a href="#">← all posts</a></span>
+  </div>
+</header>
+
+<article>
+  <div class="wrap" style="padding-top:56px">
+    <div class="mono" style="font-size:var(--label-size);font-weight:500;letter-spacing:var(--label-track);text-transform:uppercase;color:var(--ink-3)"><span style="color:var(--accent)">BLOG</span> · 2025-09-01 · 6 MIN</div>
+    <h1 style="margin:14px 0 0;font-size:var(--h1-size);font-weight:600;letter-spacing:var(--h1-track);line-height:var(--h1-leading);text-wrap:pretty">Why Autoencoders are so Effective?</h1>
+    <p style="margin:12px 0 0;font-size:16px;color:var(--ink-2)">Plain-language basics paired with demos, figures, and a walkthrough video.</p>
+    <div style="display:flex;align-items:baseline;gap:8px;margin:22px 0 30px">
+      <span class="mono" style="font-size:11px;color:var(--ink-3)">Saber Hafezqorani</span>
+      <span style="flex:1;border-top:1px solid var(--rule)"></span>
+      <span class="mono" style="font-size:11px"><a href="#">[Video]</a> <a href="#">[Code]</a></span>
+    </div>
+    <div class="ph" style="height:300px;margin-bottom:34px"><span class="mono" style="font-size:10.5px;color:var(--ink-3)">cover image — static/images/art/sky_01.jpg</span></div>
+
+    <p>With the recent advances in the artificial intelligence and machine learning field, we now have access to a wide range of technologies that enable computer systems to tackle a variety of data problems efficiently. Autoencoders are an unsupervised learning technique in which we leverage neural networks to learn features of our input data implicitly.</p>
+    <p>Whether you want to perform dimensionality reduction, denoise images, detect anomalies in time series, or even perform image segmentation, an autoencoder model can be a solution.</p>
+
+    <h2>What is an autoencoder?</h2>
+    <p>An autoencoder is a type of artificial neural network that takes some kind of input data — images, vectors, audio, whatever — first compresses it into a lower dimension, and then uses this lower-dimensional representation to recreate the original input.</p>
+    <p>In fact, we don't care about the output but rather the compressed representation. By training to minimize the error between the original data and its reconstruction, the model finds the most efficient representation of the input — summarized in the <code>latent space</code>.</p>
+
+    <figure>
+      <div class="ph" style="height:220px"><span class="mono" style="font-size:10.5px;color:var(--ink-3)">figure — autoencoder_architecture.webp</span></div>
+      <figcaption class="cap"><span style="color:var(--accent);font-weight:500">FIG. 1</span> — Encoder, bottleneck, and decoder stages working together to learn compressed representations.</figcaption>
+    </figure>
+
+    <h2>Applications</h2>
+    <p>Anomaly detection is a perfect example: train the model on normal instances, and outliers reveal themselves through reconstruction loss. Denoising autoencoders reconstruct clean targets from augmented inputs. Neural inpainting powers tools like Magic Eraser by reconstructing blocked-out regions from contextual cues.</p>
+
+    <div style="border:1px solid var(--rule);border-radius:var(--radius);padding:16px 18px;margin:36px 0 0;display:flex;align-items:center;gap:16px">
+      <div style="flex:1">
+        <div class="mono" style="font-size:10.5px;letter-spacing:0.14em;color:var(--accent);font-weight:500;margin-bottom:4px">THE ATTENTION</div>
+        <div style="font-size:13px;color:var(--ink-2);line-height:1.5">Recent advances in the AI × BIO space, and notes from work life as a computational scientist.</div>
+      </div>
+      <a href="#" class="mono" style="font-size:11.5px;background:var(--btn-solid-bg);color:var(--btn-solid-text);padding:8px 14px;border-radius:var(--radius);white-space:nowrap">Subscribe →</a>
+    </div>
+  </div>
+</article>
+
+<footer style="border-top:1px solid var(--rule);margin-top:56px">
+  <div class="wrap mono" style="display:flex;justify-content:space-between;padding:16px 32px;font-size:var(--micro-size);letter-spacing:var(--micro-track);color:var(--ink-4)">
+    <span>SABERHQ.COM <span style="color:var(--rule)">—</span> BLOG</span>
+    <span>2025-09-01</span>
+  </div>
+</footer>
+</body></html>
