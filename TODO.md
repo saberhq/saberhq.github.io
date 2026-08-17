@@ -3,6 +3,7 @@
 Idea ledger for the site. Drop anything here anytime; move it up as priority grows; strike it into Done when shipped.
 
 ## Now
+- [ ] About text — Saber is drafting it personally; drop into content/_index.md when ready, then push → PR → release v1.1.0
 - [ ] Sidechain writeup post — then add links to the Aug 2026 news entry and the About "Now" section
 - [ ] scverse Conference 2025 reflection post — then link it from the Nov 2025 news entry
 
