@@ -6,12 +6,12 @@
 </head>
 <body class="sq-shell book-kind-home">
 
-  {{ partial "saberhq/site-header" (dict "page" .) }}
+  {{ partial "saberhq/site-header" (dict "page" . "hideMark" true) }}
 
   <main class="sq-landing">
 
     <section class="sq-hero sq-wrap">
-      <h1 class="sq-display">Saber HQ</h1>
+      <h1 class="sq-display sq-display--mark">saberhq.com</h1>
       {{ with .Params.tagline }}<p class="sq-tagline">{{ $.RenderString (dict "display" "inline") . }}</p>{{ end }}
       <div class="sq-hero-actions">
         {{ with .Params.resume }}<a class="sq-btn" href="{{ . }}" target="_blank" rel="noopener">Résumé</a>{{ end }}
@@ -52,7 +52,7 @@
         <div class="sq-news">
           {{ range .Params.news }}
             <span class="sq-news-date">{{ .date }}</span>
-            <span class="sq-news-item">— {{ $.RenderString (dict "display" "inline") .text }}</span>
+            <span class="sq-news-item">{{ $.RenderString (dict "display" "inline") .text }}</span>
           {{ end }}
         </div>
       </div>
