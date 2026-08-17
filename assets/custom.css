@@ -71,7 +71,7 @@ strong, b { font-weight: 600; }
   min-height: 56px; padding-top: var(--space-2); padding-bottom: var(--space-2);
 }
 /* Anchor components: selectors carry the `a` element to outrank Book's a[href] rule */
-a.sq-mark, a.sq-mark:visited { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--ink); }
+a.sq-mark, a.sq-mark:visited { font-family: var(--font-pixel); font-size: 15px; font-weight: 400; color: var(--ink); }
 a.sq-mark:hover { color: var(--ink); }
 .sq-crumb { font-family: var(--font-mono); font-size: var(--label-size); color: var(--ink-3); }
 .sq-nav { display: flex; flex-wrap: wrap; gap: var(--space-2) 20px; font-family: var(--font-mono); font-size: var(--label-size); }
@@ -178,6 +178,7 @@ a.sq-card:hover {
 .sq-dash { color: var(--rule); }
 .sq-sitefooter a, .sq-sitefooter a:visited { color: var(--ink-4); }
 .sq-sitefooter a:hover { color: var(--ink); text-decoration: none; }
+.sq-sitefooter-in > span:first-child { font-family: var(--font-pixel); font-size: 11px; letter-spacing: 0.04em; }
 
 /* ---------- End-of-article actions ---------- */
 .sq-post-actions {
