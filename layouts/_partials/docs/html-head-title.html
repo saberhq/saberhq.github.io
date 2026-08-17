@@ -1,0 +1,3 @@
+{{- /* Tab titles (shadows the Book theme partial): descriptive for the home page,
+       "Page · Saber HQ" elsewhere — brand punctuation, no pipe. */ -}}
+{{- if .IsHome -}}Saber HQ · AI × Bio notes &amp; projects{{- else -}}{{ partial "docs/title" . }} · {{ .Site.Title -}}{{- end -}}
