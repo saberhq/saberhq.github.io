@@ -20,3 +20,6 @@
 
   /* weights: 400 body · 500 mono emphasis · 600 headings. 700 rare, 300 large-display only. */
 }
+
+/* pixel display accent (the mark only — never body text) */
+:root { --font-pixel: 'Geist Pixel', var(--font-mono); }
