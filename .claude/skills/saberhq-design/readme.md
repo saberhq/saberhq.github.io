@@ -47,7 +47,6 @@ No icon set exists in the sources — the typefaces provide the glyphs (see Cont
 - `components/core/` — Button, Tag, Card, SectionHeader (`.jsx` + `.d.ts` + `.prompt.md`)
 - `ui_kits/website/index.html` — home page sample in the new brand (real site content)
 - `ui_kits/blog/index.html` — blog article template (real post content)
-- `assets/saberhq_profile.jpeg` — profile photo from the site
 - `SKILL.md` — portable instructions for reusing this system in other agentic sessions
 - `github.md` — source repo association + sync state
 

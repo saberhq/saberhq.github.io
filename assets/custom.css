@@ -103,6 +103,36 @@ a.sq-btn, a.sq-btn:visited { color: var(--btn-solid-text); }
 .sq-btn--secondary:hover, a.sq-btn--secondary:hover, .sq-btn--secondary:active { opacity: 1; border-color: var(--ink-4); color: var(--ink); }
 .sq-btn--sm { font-size: 12.5px; padding: 6px 12px; }
 
+/* ---------- The live button (Sidechain): the one moving thing on a still page ----------
+   The same hairline button as its neighbors, plus a single vermillion light running the
+   border — the accent as a line, never a fill. The label is a split-flap board (think
+   Solari departure boards): mono cells one character wide, so the word never jitters
+   while the flap script (bottom of layouts/landing.html) spins the letters.
+   Reduced-motion gets the still version: no light, and the script never starts. */
+@property --sq-trace { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.sq-btn--live { position: relative; isolation: isolate; }
+.sq-btn--live::before {
+  content: ""; position: absolute; inset: calc(-1 * var(--rule-w)); z-index: -1;
+  border-radius: inherit; padding: var(--rule-w); pointer-events: none;
+  /* comet: a bright head with a tail fading back to nothing, one lap every 3.6s */
+  background: conic-gradient(from var(--sq-trace), transparent 0 66%, var(--accent) 100%);
+  /* keep only the ring: paint everything, cut out the content box */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: sq-trace 3.6s linear infinite;
+}
+@keyframes sq-trace { to { --sq-trace: 360deg; } }
+.sq-btn--live .sq-glyph { font-size: 1.1em; vertical-align: -0.02em; }
+
+/* the flap cells: Geist Mono so every character is the same width */
+.sq-btn--live .sq-flip { display: inline-flex; font-family: var(--font-mono); font-size: 13px; font-weight: 500; letter-spacing: 0; }
+.sq-flip > span { display: inline-block; width: 1ch; text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sq-btn--live::before { display: none; }
+}
+
 /* ---------- Section header: strong ink rule + numbered mono label ---------- */
 .sq-section { padding-bottom: var(--space-8); }
 .sq-section-head {
