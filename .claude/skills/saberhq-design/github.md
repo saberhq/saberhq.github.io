@@ -6,7 +6,7 @@ date: 2026-08-16T18:41:14Z
 
 ### Updated in this project
 - Read site config, landing layout, custom.css, and 3 blog posts to ground brand tokens and UI-kit content
-- Copied assets/saberhq_profile.jpeg from static/
+- No profile photo: the site dropped its portrait (static/saberhq_profile.jpeg removed), so the kit renders the About section text-only
 - Built design-system tokens and website/blog UI kits from real site content (new brand, not a theme recreation)
 
 ## Screen map

@@ -14,8 +14,16 @@
       <h1 class="sq-display sq-display--mark">saberhq.com</h1>
       {{ with .Params.tagline }}<p class="sq-tagline">{{ $.RenderString (dict "display" "inline") . }}</p>{{ end }}
       <div class="sq-hero-actions">
-        {{ with .Params.resume }}<a class="sq-btn" href="{{ . }}" target="_blank" rel="noopener">Résumé</a>{{ end }}
-        {{ with .Params.contact }}<a class="sq-btn sq-btn--secondary" href="{{ . }}">Contact me</a>{{ end }}
+        {{/* Sidechain is the one live thing on an otherwise still page: a vermillion light
+             runs its hairline border, and the label is a split-flap board — every so often
+             (and on hover) the letters spin in a chain reaction, then settle back to solid.
+             The flap script sits at the bottom of this template. */}}
+        {{ with .Params.sidechain }}
+        <a class="sq-btn sq-btn--secondary sq-btn--live" href="{{ . }}" aria-label="Sidechain">
+          <span class="sq-flip" aria-hidden="true">{{ range split "Sidechain" "" }}<span>{{ . }}</span>{{ end }}</span><span class="sq-glyph" aria-hidden="true">→</span>
+        </a>
+        {{ end }}
+        {{ with .Params.resume }}<a class="sq-btn sq-btn--secondary" href="{{ . }}" target="_blank" rel="noopener">Résumé</a>{{ end }}
       </div>
     </section>
 
@@ -62,5 +70,49 @@
 
   {{ partial "saberhq/site-footer" (dict "page" .) }}
   {{ partial "docs/inject/body" . }}
+
+  {{/* Split-flap Sidechain label. Occasionally — and on hover or keyboard focus — each
+       letter flips through a few random characters, starting one after another down the
+       word (the chain reaction), then settles back to "Sidechain" and rests. Skipped
+       entirely for visitors who prefer reduced motion; without JS the word just stands. */}}
+  <script>
+  (function () {
+    var el = document.querySelector('.sq-btn--live');
+    if (!el || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    var spans = Array.prototype.slice.call(el.querySelectorAll('.sq-flip > span'));
+    var word = spans.map(function (s) { return s.textContent; });
+    var drum = 'abcdefghijklmnopqrstuvwxyz';
+    var spinning = false, timer = null;
+
+    function spin() {
+      if (spinning) return;
+      spinning = true;
+      var settled = 0;
+      spans.forEach(function (s, i) {
+        var flips = 4 + Math.floor(Math.random() * 4); // how many characters this flap shows before locking
+        setTimeout(function tick() {
+          if (flips-- > 0) {
+            var ch = drum[Math.floor(Math.random() * drum.length)];
+            s.textContent = /[A-Z]/.test(word[i]) ? ch.toUpperCase() : ch;
+            setTimeout(tick, 55 + Math.random() * 25);
+          } else {
+            s.textContent = word[i];
+            if (++settled === spans.length) { spinning = false; schedule(); }
+          }
+        }, 90 * i); // each flap starts just after its neighbor
+      });
+    }
+    function schedule() {
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        if (document.hidden) { schedule(); return; } // don't spin in a background tab
+        spin();
+      }, 6000 + Math.random() * 4000);
+    }
+    el.addEventListener('mouseenter', spin);
+    el.addEventListener('focus', spin);
+    setTimeout(spin, 1200); // the board flickers awake shortly after load
+  })();
+  </script>
 </body>
 </html>

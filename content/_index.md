@@ -4,7 +4,7 @@ bookHeadingAnchor: false
 layout: landing
 tagline: Friendly notes on what I'm building, reading, and figuring out.
 resume: /resume/
-contact: mailto:saber.hafezqorani@gmail.com
+sidechain: /sidechain/
 topics:
   - Perturb-seq
   - representation learning
