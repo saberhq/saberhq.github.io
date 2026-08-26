@@ -6,7 +6,7 @@ user-invocable: true
 
 Read the README.md file within this skill, and explore the other available files.
 
-Brand in one line: warm paper + near-black ink, ONE accent (Okabe–Ito vermillion #D55E00, dark-mode #F08A3E), Geist Sans for all reading text, Geist Mono for the "instrument panel" (dates, locations, section labels, tags, metrics). Sections open with a 1.5px ink rule + numbered mono label. Other Okabe–Ito colors are data-viz only. No emoji; punctuation (— · × / → ↗) is the icon set. The mark is typographic: `saberhq.com` in Geist Mono — never draw a logo.
+Brand in one line: warm paper + near-black ink, ONE accent (Okabe–Ito vermillion #D55E00, dark-mode #F08A3E) plus a companion accent held in reserve (carmine #A62B4D, dark-mode #DE5A78 — see readme.md before spending it), Geist Sans for all reading text, Geist Mono for the "instrument panel" (dates, locations, section labels, tags, metrics). Sections open with a 1.5px ink rule + numbered mono label. Other Okabe–Ito colors are data-viz only. No emoji; punctuation (— · × / → ↗) is the icon set. The mark is typographic: `saberhq.com` in Geist Mono — never draw a logo.
 
 If creating visual artifacts (slides, mocks, throwaway prototypes, etc), copy assets out and create static HTML files for the user to view: link `styles.css` (or inline the token values from `tokens/*.css`) and follow readme.md. If working on production code (e.g. the Hugo site at saberhq/saberhq.github.io), copy the token CSS and read the rules here to become an expert in designing with this brand.
 

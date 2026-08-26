@@ -25,7 +25,15 @@ enableRobotsTXT = true
 
 # Top navigation
 [menu]
-  # Links shown on landing page header (Book's landing layout uses menu.home)
+  # Links shown on landing page header (Book's landing layout uses menu.home).
+  # accent = true draws the entry in carmine (--accent-2) — Sidechain only.
+  [[menu.home]]
+    name = "Sidechain"
+    url = "/sidechain/"
+    weight = 5
+    [menu.home.params]
+      accent = true
+
   [[menu.home]]
   name = "GitHub"
   url = "https://github.com/saberhq"
