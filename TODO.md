@@ -16,9 +16,14 @@ Idea ledger for the site. Drop anything here anytime; move it up as priority gro
 - [ ] Decide what Share / Copy link on blog posts should ultimately do (currently: system share sheet / email draft, clipboard)
 
 ## Done
+- [x] Aug 2026 — Carmine adopted as the brand's companion accent (`--accent-2` #A62B4D / dark #DE5A78),
+      promoted out of the Sidechain site into `assets/tokens/colors.css`. It names one thing per surface;
+      here that thing is Sidechain — the header link and the hero button's border light. Vermillion keeps
+      everything else. Rules and the measurements behind the value are in the design skill's readme.md
 - [x] Aug 2026 — Hero links to Sidechain: the Contact me button became a live `Sidechain →` button —
-      same hairline chrome as Résumé, a vermillion light lapping its border, and a split-flap label
-      (letters spin Solari-board style every so often and on hover; script in layouts/landing.html)
+      same hairline chrome as Résumé, a light lapping its border (vermillion at first; carmine since the
+      companion accent landed), and a split-flap label (letters spin Solari-board style every so often
+      and on hover; script in layouts/landing.html)
 - [x] Aug 2026 — Sidechain site live at saberhq.com/sidechain, built in the Sidechain repo (a public
       repo named `sidechain` with GitHub Pages on publishes there automatically, because this user
       site carries the custom domain)
