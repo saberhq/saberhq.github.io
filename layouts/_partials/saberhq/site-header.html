@@ -11,9 +11,14 @@
     {{ with .back }}
       <a class="sq-back" href="{{ .href }}">{{ .label }}</a>
     {{ else }}
+      {{/* Off-site socials open in a new tab; in-site links (Sidechain) don't. A menu entry
+           with `accent = true` is drawn in carmine — reserved for Sidechain. */}}
       <nav class="sq-nav">
         {{ range $p.Site.Menus.home }}
-          <a href="{{ .URL }}" target="_blank" rel="noopener">{{ .Name }}</a>
+          {{ $external := hasPrefix .URL "http" }}
+          <a href="{{ .URL }}"
+             {{ with .Params.accent }}class="sq-nav-accent"{{ end }}
+             {{ if $external }}target="_blank" rel="noopener"{{ end }}>{{ .Name }}</a>
         {{ end }}
       </nav>
     {{ end }}

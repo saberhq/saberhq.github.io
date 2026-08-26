@@ -75,6 +75,10 @@ a.sq-mark, a.sq-mark:visited { font-family: var(--font-pixel); font-size: 18px; 
 a.sq-mark:hover { color: var(--ink); }
 .sq-crumb { font-family: var(--font-mono); font-size: var(--label-size); color: var(--ink-3); }
 .sq-nav { display: flex; flex-wrap: wrap; gap: var(--space-2) 20px; font-family: var(--font-mono); font-size: var(--label-size); }
+/* Sidechain sits among the socials in carmine — the companion accent's one job in the
+   chrome. Ink-on-hover like every other link, so only the resting state carries the color. */
+a.sq-nav-accent, a.sq-nav-accent:visited { color: var(--accent-2); }
+a.sq-nav-accent:hover { color: var(--ink); }
 .sq-back { font-family: var(--font-mono); font-size: var(--label-size); }
 .sq-theme-toggle {
   font-family: var(--font-mono); font-size: 11px; letter-spacing: var(--meta-track);
@@ -104,8 +108,9 @@ a.sq-btn, a.sq-btn:visited { color: var(--btn-solid-text); }
 .sq-btn--sm { font-size: 12.5px; padding: 6px 12px; }
 
 /* ---------- The live button (Sidechain): the one moving thing on a still page ----------
-   The same hairline button as its neighbors, plus a single vermillion light running the
-   border — the accent as a line, never a fill. The label is a split-flap board (think
+   The same hairline button as its neighbors, plus a single carmine light running the border
+   — the companion accent as a line, never a fill, and the same color that marks Sidechain up
+   in the header strip. The label is a split-flap board (think
    Solari departure boards): mono cells one character wide, so the word never jitters
    while the flap script (bottom of layouts/landing.html) spins the letters.
    Reduced-motion gets the still version: no light, and the script never starts. */
@@ -115,7 +120,7 @@ a.sq-btn, a.sq-btn:visited { color: var(--btn-solid-text); }
   content: ""; position: absolute; inset: calc(-1 * var(--rule-w)); z-index: -1;
   border-radius: inherit; padding: var(--rule-w); pointer-events: none;
   /* comet: a bright head with a tail fading back to nothing, one lap every 3.6s */
-  background: conic-gradient(from var(--sq-trace), transparent 0 66%, var(--accent) 100%);
+  background: conic-gradient(from var(--sq-trace), transparent 0 66%, var(--accent-2) 100%);
   /* keep only the ring: paint everything, cut out the content box */
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
