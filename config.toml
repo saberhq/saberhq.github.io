@@ -3,6 +3,9 @@ languageCode = "en-us"
 title = "Saber HQ"
 theme = "book"
 enableRobotsTXT = true
+# Tags are card chips and future organization, not pages (yet): keep Hugo from
+# generating unstyled /tags/... listings until we design them.
+disableKinds = ["taxonomy", "term"]
 
 [markup]
 [markup.goldmark.renderer]

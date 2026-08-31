@@ -1,0 +1,25 @@
+{{- /* Site RSS. One change from Hugo's embedded template: an item's link honors
+     `external:` front matter, so a stub post that lives on another site (e.g. the
+     Sidechain writeup) syndicates with its real URL instead of an empty link. */ -}}
+{{- printf "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>" | safeHTML }}
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>{{ if eq .Title .Site.Title }}{{ .Site.Title }}{{ else }}{{ with .Title }}{{ . }} on {{ end }}{{ .Site.Title }}{{ end }}</title>
+    <link>{{ .Permalink }}</link>
+    <description>Recent content {{ if ne .Title .Site.Title }}{{ with .Title }}in {{ . }} {{ end }}{{ end }}on {{ .Site.Title }}</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>{{ site.Language.LanguageCode }}</language>
+    {{ with .OutputFormats.Get "RSS" }}{{ printf "<atom:link href=%q rel=\"self\" type=%q />" .Permalink .MediaType | safeHTML }}{{ end }}
+    {{ $pages := .RegularPages }}{{ if .IsHome }}{{ $pages = .Site.RegularPages }}{{ end }}
+    {{ range $pages.ByDate.Reverse }}
+    {{- $link := or .Params.external .Permalink }}
+    <item>
+      <title>{{ .Title }}</title>
+      <link>{{ $link }}</link>
+      <pubDate>{{ .Date.Format "Mon, 02 Jan 2006 15:04:05 -0700" }}</pubDate>
+      <guid>{{ $link }}</guid>
+      <description>{{ with .Description }}{{ . | transform.XMLEscape | safeHTML }}{{ else }}{{ .Summary | plainify | transform.XMLEscape | safeHTML }}{{ end }}</description>
+    </item>
+    {{ end }}
+  </channel>
+</rss>
