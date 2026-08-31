@@ -36,7 +36,7 @@
         <a class="sq-section-aside" href="{{ .RelPermalink }}">see full list →</a>
       </div>
       <div class="sq-card-grid">
-        {{ range first 6 .RegularPages.ByDate.Reverse }}
+        {{ range first 3 .RegularPages.ByDate.Reverse }}
           {{ partial "saberhq/post-card" . }}
         {{ end }}
       </div>
