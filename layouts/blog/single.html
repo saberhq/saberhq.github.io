@@ -12,6 +12,13 @@
   <main>
     <article class="sq-article">
       <div class="sq-article-wrap">
+        {{/* The photo opens the post — before the kicker, like the Sidechain site's
+             banners — so it reads as the cover, not as part of the post's media. */}}
+        {{ with .Params.image }}
+        <figure class="sq-cover">
+          <img src="{{ . | relURL }}" alt="{{ $.Title }}">
+        </figure>
+        {{ end }}
         <div class="sq-kicker"><span class="sq-kicker-accent">BLOG</span> · {{ .Date.Format "2006-01-02" }} · {{ .ReadingTime }} MIN</div>
         <h1 class="sq-article-title">{{ .Title }}</h1>
         {{ with .Description }}<p class="sq-article-desc">{{ . }}</p>{{ end }}
@@ -24,11 +31,6 @@
             </span>
           {{ end }}
         </div>
-        {{ with .Params.image }}
-        <figure class="sq-cover">
-          <img src="{{ . | relURL }}" alt="{{ $.Title }}">
-        </figure>
-        {{ end }}
         <div class="sq-prose">
           {{ .Content }}
         </div>

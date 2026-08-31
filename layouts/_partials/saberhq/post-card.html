@@ -1,17 +1,12 @@
 {{/* Blog post card — hairline border, mono meta topline, lifts on hover. Context: a page.
      `external:` in front matter means the post lives on another site (its page here is a
      never-rendered stub): the card links out in a new tab, like the news links do.
-     Tags render as the same chips the About topics use; the Sidechain tag wears carmine,
-     because carmine marks Sidechain and nothing else (assets/tokens/colors.css). */}}
+     Posts carry `tags:` as dormant front matter only — chips were tried and pulled
+     (2026-08-31, too few posts to be worth showing); revisit when topics multiply. */}}
 {{ $ext := .Params.external }}
 <a class="sq-card" href="{{ $ext | default .RelPermalink }}"{{ if $ext }} target="_blank" rel="noopener"{{ end }}>
   <div class="sq-card-meta">{{ .Date.Format "2006-01-02" }} · BLOG</div>
   <div class="sq-card-title">{{ .Title }}</div>
   <p class="sq-card-desc">{{ .Params.description | default (.Summary | plainify | truncate 150) }}</p>
-  {{ with .Params.tags }}
-  <div class="sq-card-tags">
-    {{ range . }}<span class="sq-tag{{ if eq (lower .) "sidechain" }} sq-tag--carmine{{ end }}">{{ . }}</span>{{ end }}
-  </div>
-  {{ end }}
   <p class="sq-card-read">Read more →</p>
 </a>
