@@ -12,7 +12,7 @@ topics:
 topicAccent: Virtual Cell Challenge
 news:
   - date: Aug 2026
-    text: "Building Sidechain, my solo entry to Arc Institute's Virtual Cell Challenge 2026. Writeup coming."
+    text: "Building Sidechain, my solo entry to Arc Institute's Virtual Cell Challenge 2026. The writeup: [What Sidechain is](https://saberhq.com/sidechain/posts/what-sidechain-is/)."
   - date: Aug 2026
     text: "Redesigned typeface and color scheme for site ([v1.0.0](https://github.com/saberhq/saberhq.github.io/releases/tag/v1.0.0))."
   - date: Jul 2026
