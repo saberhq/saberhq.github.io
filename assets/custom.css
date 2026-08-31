@@ -194,6 +194,10 @@ a.sq-card:hover {
   color: var(--ink-3); border: var(--rule-w) solid var(--rule); white-space: nowrap;
 }
 .sq-tag--accent { color: var(--accent); border-color: var(--accent); background: var(--accent-wash); }
+.sq-tag--carmine { color: var(--accent-2); border-color: var(--accent-2); background: var(--accent-2-wash); }
+
+/* Tag chips on a blog card — sit between the description and "Read more". */
+.sq-card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 
 /* ---------- About & recent news ---------- */
 .sq-about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); margin-top: 20px; }
