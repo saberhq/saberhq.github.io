@@ -417,4 +417,10 @@ section.page { width: 8.5in; height: 11in; background: #fff; overflow: hidden; b
 .sq-print-hint button:hover { color: #191613; border-color: #9C968D; }
 @media print { .sq-print-hint { display: none } }
 </style>
+<!-- GoatCounter. This page is hand-written HTML under static/, so it bypasses Hugo's
+     layouts and the docs/inject/body partial never reaches it - hence the copy here.
+     No hugo.IsProduction guard is possible in a static file; count.js skips localhost
+     on its own, so a local preview still isn't counted. -->
+<script data-goatcounter="https://saberhq.goatcounter.com/count"
+        async src="https://gc.zgo.at/count.js"></script>
 </body></html>
