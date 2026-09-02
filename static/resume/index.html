@@ -423,4 +423,18 @@ section.page { width: 8.5in; height: 11in; background: #fff; overflow: hidden; b
      on its own, so a local preview still isn't counted. -->
 <script data-goatcounter="https://saberhq.goatcounter.com/count"
         async src="https://gc.zgo.at/count.js"></script>
+<!-- Outbound clicks, as a GoatCounter event. Same listener as the Hugo partial in
+     layouts/_partials/docs/inject/body.html, inlined because this page bypasses layouts.
+     All 21 external links here open in a new tab, so nothing races the navigation. The
+     www. strip is what stops the three www.saberhq.com links counting as outbound. -->
+<script>
+document.addEventListener('click', function (e) {
+  var a = e.target && e.target.closest && e.target.closest('a[href^="http"]');
+  if (!a) return;
+  var host = a.host.replace(/^www\./, '');
+  if (host === location.host.replace(/^www\./, '')) return;
+  if (!window.goatcounter || !window.goatcounter.count) return;
+  window.goatcounter.count({ path: 'out/' + host, title: a.href, event: true });
+});
+</script>
 </body></html>
