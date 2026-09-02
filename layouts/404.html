@@ -1,0 +1,85 @@
+{{/* Shadows themes/book/layouts/404.html.
+
+     Why we override it: the theme's 404 is a giant numeral and a link home, which is a
+     dead end for anyone arriving on a stale link. The one that actually gets hit is
+     /SaberHafezqorani_Resume.pdf — tracked until commit 8ecb9da, when static/resume/index.html
+     replaced it. GitHub Pages cannot redirect a .pdf to an HTML page (Content-Type follows the
+     extension, so a file named .pdf is served as application/pdf whatever is inside it), and
+     resurrecting the PDF would mean maintaining a second copy of the résumé. Sending 404s
+     somewhere useful costs nothing and catches every other stale link too.
+
+     Colours come from assets/tokens/colors.css, so this follows the light/dark theme like
+     everything else. docs/inject/body carries the GoatCounter tag, which is what records
+     WHICH dead URL a visitor asked for. */}}
+<!DOCTYPE html>
+<html lang="{{ .Site.Language.Lang }}">
+
+  <head>
+    {{ partial "docs/html-head" . }}
+    {{ partial "docs/inject/head" . }}
+
+    <style>
+      /* The Book theme's .flex/.justify-center utilities assume its sidebar grid, which
+         this page does not use, so centre it here instead of inheriting a half-width column. */
+      body { margin: 0; }
+      .sq-404 {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        width: 100%;
+      }
+      .not-found { text-align: center; padding: 3rem 1.25rem; max-width: 34rem; }
+      .not-found h1 {
+        margin: 0;
+        opacity: .18;
+        font-size: 28vmin;
+        line-height: .9;
+        letter-spacing: -.04em;
+        color: var(--ink);
+      }
+      .not-found h2 { margin: .25em 0 .5em; color: var(--ink); }
+      .not-found p { color: var(--text-secondary); margin: 0 auto 1.75rem; }
+      .not-found ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem .75rem;
+        justify-content: center;
+      }
+      .not-found li a {
+        display: inline-block;
+        padding: .4rem .85rem;
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        color: var(--link);
+        text-decoration: none;
+      }
+      .not-found li a:hover { color: var(--link-hover); border-color: var(--rule-strong); }
+    </style>
+  </head>
+
+  <body>
+    <main class="sq-404">
+      <div class="not-found">
+        <h1>404</h1>
+        <h2>This page has moved or never existed</h2>
+        <p>
+          If you followed a link to a résumé PDF, that file was retired — the résumé
+          lives as a page now, and prints to PDF from your browser.
+        </p>
+        <ul>
+          <li><a href="/resume/">Résumé</a></li>
+          <li><a href="{{ .Site.Home.RelPermalink }}">Home</a></li>
+          <li><a href="/blog/">Blog</a></li>
+          <li><a href="/sidechain/">Sidechain</a></li>
+        </ul>
+      </div>
+    </main>
+
+    {{ partial "docs/inject/body" . }}
+  </body>
+
+</html>
