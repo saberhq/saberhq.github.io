@@ -23,15 +23,19 @@
           <span class="sq-flip" aria-hidden="true">{{ range split "Sidechain" "" }}<span>{{ . }}</span>{{ end }}</span><span class="sq-glyph" aria-hidden="true">→</span>
         </a>
         {{ end }}
-        {{ with .Params.resume }}<a class="sq-btn sq-btn--secondary" href="{{ . }}" target="_blank" rel="noopener">Résumé</a>{{ end }}
+        {{/* The about text lives on its own page now (layouts/about.html), which also
+             carries the résumé link. Same tab: it's part of the site, like Sidechain. */}}
+        {{ with .Params.about }}<a class="sq-btn sq-btn--secondary" href="{{ . }}">About me</a>{{ end }}
       </div>
     </section>
 
+    {{/* The section labels are real h2s, as on /about/ and /vibes/, so screen readers can jump
+         between sections; the stylesheet keeps them the size of the mono label. */}}
     {{ $blog := .Site.GetPage "docs/blog" }}
     {{ with $blog }}
     <section class="sq-section sq-wrap">
       <div class="sq-section-head">
-        <span class="sq-section-label">Latest posts</span>
+        <h2 class="sq-section-label">Latest posts</h2>
         <span class="sq-section-fill"></span>
         <a class="sq-section-aside" href="{{ .RelPermalink }}">see full list →</a>
       </div>
@@ -43,28 +47,43 @@
     </section>
     {{ end }}
 
+    {{/* About & recent news, side by side as the landing had them before the About page:
+         Saber's short note on the left — `bio` in content/_index.md, markdown, so its links
+         work — then the way through to the long version on /about/; the news on the right,
+         newest first, in one column. Stacked under 901px: the note, then the news.
+         The landing has no markdown body (the long text lives on /about/), so .Content is
+         not rendered here. The render-link hook opens remote links in a new tab on this
+         page; the replaceRE adds hidden text that tells screen readers so. In the note, a
+         non-breaking space ties the last word to the one before it, so a closing ":)" never
+         sits alone on a line (it skips a note that ends inside a link). */}}
+    {{ $newTab := `(?s)(<a [^>]*target="_blank"[^>]*>)(.*?)</a>` }}
+    {{ $newTabTo := `$1$2<span class="sq-sr-only"> (opens in a new tab)</span></a>` }}
+    {{ if or .Params.bio .Params.news }}
     <section class="sq-section sq-wrap">
       <div class="sq-section-head">
-        <span class="sq-section-label">About &amp; recent news</span>
+        <h2 class="sq-section-label">{{ if .Params.bio }}About &amp; recent news{{ else }}Recent news{{ end }}</h2>
+        <span class="sq-section-fill"></span>
       </div>
-      <div class="sq-about-grid">
-        <div class="sq-about-copy">
-          {{ .Content }}
-          {{ if or .Params.topics .Params.topicAccent }}
-          <div class="sq-topics">
-            {{ range .Params.topics }}<span class="sq-tag">{{ . }}</span>{{ end }}
-            {{ with .Params.topicAccent }}<span class="sq-tag sq-tag--accent">{{ . }}</span>{{ end }}
-          </div>
-          {{ end }}
+      <div class="sq-bio-grid">
+        {{ with .Params.bio }}
+        <div class="sq-bio">
+          <p class="sq-bio-text">{{ $.RenderString (dict "display" "inline") . | replaceRE $newTab $newTabTo | replaceRE ` ([^\s<>]+)$` "&nbsp;$1" | safeHTML }}</p>
+          {{ with $.Params.about }}<a class="sq-bio-more" href="{{ . }}">More about me <span class="sq-glyph" aria-hidden="true">→</span></a>{{ end }}
         </div>
-        <div class="sq-news">
-          {{ range .Params.news }}
+        {{ end }}
+        {{ with .Params.news }}
+        <ul class="sq-news" role="list">
+          {{ range . }}
+          <li class="sq-news-row">
             <span class="sq-news-date">{{ .date }}</span>
-            <span class="sq-news-item">{{ $.RenderString (dict "display" "inline") .text }}</span>
+            <span class="sq-news-item">{{ $.RenderString (dict "display" "inline") .text | replaceRE $newTab $newTabTo | safeHTML }}</span>
+          </li>
           {{ end }}
-        </div>
+        </ul>
+        {{ end }}
       </div>
     </section>
+    {{ end }}
 
   </main>
 

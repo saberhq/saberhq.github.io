@@ -1,0 +1,558 @@
+#!/usr/bin/env python3
+"""Saber Vibes login: connect your Spotify account to the website."""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import datetime as dt
+import errno
+import getpass
+import hmac
+import html
+import http.server
+import importlib.machinery
+import importlib.util
+import os
+import re
+import secrets
+import shutil
+import string
+import subprocess
+import sys
+import threading
+import urllib.parse
+import webbrowser
+from pathlib import Path
+
+sys.dont_write_bytecode = True
+
+
+def _load_sync():
+    """Use vibes-sync's Spotify code (same folder), so both scripts read Spotify the same way."""
+    path = Path(__file__).resolve().with_name("vibes-sync")
+    loader = importlib.machinery.SourceFileLoader("vibes_sync", str(path))
+    spec = importlib.util.spec_from_loader("vibes_sync", loader)
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+sync = _load_sync()
+
+PORT = 8888
+CALLBACK_PATH = "/callback"
+WAIT_S = 300
+REMIND_AFTER_DAYS = 150
+DASHBOARD = "https://developer.spotify.com/dashboard"
+WORKFLOW = "hugo.yml"
+
+_log = sync.Log(prefix="vibes-login")
+
+
+class LoginError(Exception):
+    """Something Saber can fix."""
+
+
+def say(text: str = "") -> None:
+    """Print for Saber."""
+    print(_log.redact(text), flush=True)
+
+
+def nice_date(day: dt.date) -> str:
+    return f"{day.day} {day.strftime('%b %Y')}"
+
+
+def today_utc() -> dt.date:
+    return dt.datetime.now(dt.timezone.utc).date()
+
+
+# Step 1: the app's keys
+
+def app_keys(env) -> tuple[str, str]:
+    client_id = env.get("SPOTIFY_CLIENT_ID", "").strip()
+    client_secret = env.get("SPOTIFY_CLIENT_SECRET", "").strip()
+    if not (client_id and client_secret):
+        say(f"  Find them at {DASHBOARD} → your app → Settings (click \"View client secret\").")
+    try:
+        if client_id:
+            say("  Client ID: from SPOTIFY_CLIENT_ID")
+        else:
+            client_id = input("  Client ID: ").strip()
+        if client_secret:
+            say("  Client secret: from SPOTIFY_CLIENT_SECRET")
+        else:
+            client_secret = getpass.getpass("  Client secret (stays hidden while you paste it): ").strip()
+    except EOFError:
+        say()
+    if not client_id or not client_secret:
+        raise LoginError("Both the Client ID and the Client secret are needed. Copy them from "
+                         f"{DASHBOARD} → your app → Settings, then run scripts/vibes-login again.")
+    _log.protect(client_secret, mask=False)
+    for label, value in (("Client ID", client_id), ("Client secret", client_secret)):
+        if not re.fullmatch(r"[0-9A-Fa-f]{32}", value):
+            say(f"  Note: Spotify's {label} is usually 32 letters and digits, and this one isn't. Trying anyway.")
+    return client_id, client_secret
+
+
+# Step 2: the browser login and the one-time local server
+
+def redirect_uri(port: int = PORT) -> str:
+    return f"http://127.0.0.1:{port}{CALLBACK_PATH}"
+
+
+def authorize_url(client_id: str, state: str, redirect: str, accounts: str = sync.SPOTIFY_ACCOUNTS) -> str:
+    query = urllib.parse.urlencode({
+        "client_id": client_id,
+        "response_type": "code",
+        "redirect_uri": redirect,
+        "scope": sync.SCOPE,
+        "state": state,
+        "show_dialog": "true",
+    })
+    return f"{accounts.rstrip('/')}/authorize?{query}"
+
+
+def check_answer(params: dict, expected_state: str):
+    """Spotify's answer from the redirect → ("code", code) or ("error", LoginError)."""
+    state = params.get("state", "")
+    if not hmac.compare_digest(state.encode("utf-8"), expected_state.encode("utf-8")):
+        return "error", LoginError(
+            "The answer from Spotify doesn't belong to this login (maybe it came from an older browser "
+            "tab). Nothing was saved. Close the old Spotify tabs and run scripts/vibes-login again.")
+    error = params.get("error")
+    if error == "access_denied":
+        return "error", LoginError("You clicked Cancel on Spotify's page, so nothing changed. "
+                                   "Run scripts/vibes-login again when you're ready.")
+    if error:
+        return "error", LoginError(f"Spotify said \"{sync.one_line(error, 80)}\". Nothing was saved; "
+                                   "run scripts/vibes-login again.")
+    code = params.get("code", "")
+    if not code:
+        return "error", LoginError("Spotify's answer had no login code in it. Run scripts/vibes-login again.")
+    return "code", code
+
+
+PAGE = string.Template("""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$title</title>
+<style>
+  :root { color-scheme: light dark; --paper: #FAF9F7; --ink: #191613; --ink-3: #6F6A62; --accent: #006CA9; }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper: #16130F; --ink: #ECE7DF; --ink-3: #999183; --accent: #56B4E9; }
+  }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--paper);
+         color: var(--ink); font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; }
+  main { max-width: 32rem; padding: 2rem 1.5rem; }
+  .label { font: 12px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .08em; color: var(--accent); }
+  h1 { font-size: 1.6rem; line-height: 1.2; margin: .75rem 0 .5rem; }
+  p { margin: 0; color: var(--ink-3); }
+</style></head>
+<body><main><div class="label">SABER VIBES · SPOTIFY LOGIN</div><h1>$title</h1><p>$text</p></main></body></html>
+""")
+
+
+class CallbackServer(http.server.ThreadingHTTPServer):
+    """Listens on 127.0.0.1 for the one redirect from Spotify, then stops."""
+
+    daemon_threads = True
+
+    def __init__(self, port: int, expected_state: str):
+        super().__init__(("127.0.0.1", port), CallbackHandler)
+        self.expected_state = expected_state
+        self.outcome = None
+        self.done = threading.Event()
+        self._lock = threading.Lock()
+
+    def take(self, params: dict):
+        """Record the first answer."""
+        with self._lock:
+            if self.outcome is not None:
+                return None
+            self.outcome = check_answer(params, self.expected_state)
+        if self.outcome[0] == "code":
+            return 200, "Saber Vibes is connected", "Spotify said yes. You can close this tab and go back to Terminal."
+        return 400, "Not connected", "Nothing was saved. Go back to Terminal to see what happened and what to do."
+
+
+class CallbackHandler(http.server.BaseHTTPRequestHandler):
+    timeout = 15
+    server_version = "vibes-login"
+
+    def do_GET(self):
+        parts = urllib.parse.urlsplit(self.path)
+        if parts.path != CALLBACK_PATH:
+            self.page(404, "Nothing here", "This little server only waits for Spotify's answer.")
+            return
+        params = {key: values[0] for key, values in
+                  urllib.parse.parse_qs(parts.query, keep_blank_values=True).items() if values}
+        answer = self.server.take(params)
+        if answer is None:
+            self.page(200, "Already done", "You can close this tab.")
+            return
+        try:
+            self.page(*answer)
+        finally:
+            self.server.done.set()
+
+    def page(self, status: int, title: str, text: str) -> None:
+        body = PAGE.substitute(title=html.escape(title), text=html.escape(text)).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *args):
+        pass
+
+
+def start_server(port: int, state: str) -> CallbackServer:
+    try:
+        return CallbackServer(port, state)
+    except OSError as err:
+        if err.errno == errno.EADDRINUSE:
+            raise LoginError(
+                f"Port {port} on this Mac is busy, often because a Jupyter notebook is running. Close "
+                f"whatever uses it (or stop Jupyter), then run scripts/vibes-login again. The port can't "
+                f"change: Spotify only accepts http://127.0.0.1:{port}/callback.") from None
+        raise LoginError(f"Couldn't start the little login server on port {port} ({err}).") from None
+
+
+def browser_login(client_id: str, accounts: str, port: int) -> str:
+    """Open Spotify's login page and wait for the redirect."""
+    state = secrets.token_urlsafe(24)
+    url = authorize_url(client_id, state, redirect_uri(port), accounts)
+    server = start_server(port, state)
+    thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.2}, daemon=True)
+    thread.start()
+    try:
+        say("  Opening Spotify in your browser. Log in with the account that owns the playlist,")
+        say("  then click \"Agree\". If no browser window opens, copy this link into one:")
+        print(f"    {url}", flush=True)
+        say("  If Spotify shows \"INVALID_CLIENT: Invalid redirect URI\", open your app's settings,")
+        say(f"  add exactly {redirect_uri(port)} under Redirect URIs, click Save, and run this again.")
+        say(f"  Waiting for Spotify (up to {WAIT_S // 60} minutes; Ctrl+C stops)...")
+        try:
+            webbrowser.open(url, new=2)
+        except Exception:
+            pass
+        if not server.done.wait(WAIT_S):
+            raise LoginError(
+                f"No answer from Spotify after {WAIT_S // 60} minutes, so nothing was saved. Usually one of:\n"
+                "  - the Spotify tab is still waiting for you to click \"Agree\";\n"
+                f"  - Spotify showed \"Invalid redirect URI\": the app's Redirect URI must be exactly "
+                f"{redirect_uri(port)};\n"
+                "  - Spotify showed \"Invalid client\": the Client ID has a typo.\n"
+                "Then run scripts/vibes-login again.")
+    finally:
+        server.shutdown()
+        server.server_close()
+    kind, value = server.outcome
+    if kind == "error":
+        raise value
+    return value
+
+
+def exchange_code(client_id: str, client_secret: str, code: str, redirect: str,
+                  accounts: str = sync.SPOTIFY_ACCOUNTS) -> dict:
+    """Swap the one-time code for keys: {"access_token", "refresh_token", ...}."""
+    form = urllib.parse.urlencode({"grant_type": "authorization_code", "code": code, "redirect_uri": redirect})
+    basic = "Basic " + base64.b64encode(f"{client_id}:{client_secret}".encode("utf-8")).decode("ascii")
+    try:
+        status, _, body = sync.http_request(
+            "POST", f"{accounts.rstrip('/')}/api/token", data=form.encode("ascii"),
+            headers={"Authorization": basic, "Accept": "application/json",
+                     "Content-Type": "application/x-www-form-urlencoded"})
+    except sync.NetworkError as err:
+        raise LoginError(f"Couldn't reach Spotify ({err}). Check the internet connection, then run "
+                         "scripts/vibes-login again.") from None
+    payload = sync.parse_json(body) if status == 200 else None
+    if isinstance(payload, dict) and payload.get("access_token") and payload.get("refresh_token"):
+        _log.protect(payload["access_token"], mask=False)
+        _log.protect(payload["refresh_token"], mask=False)
+        return payload
+    if status == 200:
+        raise LoginError("Spotify's answer didn't include the login keys. Run scripts/vibes-login again.")
+    error, description = sync.oauth_error(body)
+    if error == "invalid_client":
+        raise LoginError("Spotify didn't accept the Client ID and Client secret together. Copy both again from "
+                         f"{DASHBOARD} → your app → Settings (\"View client secret\"), then run "
+                         "scripts/vibes-login again.")
+    if error == "invalid_grant":
+        raise LoginError(f"Spotify didn't accept the login ({description or 'invalid_grant'}). The code is "
+                         "single-use and expires within minutes, and the app's Redirect URI must be exactly "
+                         f"{redirect}. Run scripts/vibes-login again.")
+    detail = error + (f": {description}" if description else "") if error else f"HTTP {status}"
+    raise LoginError(f"Spotify said no to the login ({detail}). Run scripts/vibes-login again in a minute.")
+
+
+# Step 3: try the new login
+
+ADVICE = {
+    "premium": "Spotify says the app owner needs Premium. The Spotify account that created the app at "
+               f"{DASHBOARD} must have an active Premium plan. If you have just renewed it, give "
+               "Spotify a few hours, then run scripts/vibes-login again.",
+    "not_registered": "Spotify says this account isn't allowed to use the app yet. Open "
+                      f"{DASHBOARD} → your app → Settings → User Management, add yourself (your name and "
+                      "the email of your Spotify account), wait about 15 minutes, then run "
+                      "scripts/vibes-login again.",
+    "forbidden": "Spotify won't show this playlist's songs to the account you just logged in with. Log in "
+                 "with the account that owns the playlist. If the browser logged you in automatically, "
+                 "log out at spotify.com first, then run scripts/vibes-login again. If that already is the "
+                 f"playlist's owner, open {DASHBOARD} → your app → Settings → User Management, add that "
+                 "account (your name and its email), wait about 15 minutes, then try again.",
+    "not_found": "Spotify can't find the playlist. Check the playlist: line in content/vibes/index.md (use "
+                 "the playlist's Share → Copy link to playlist).",
+    "quota": "Spotify says the app has made too many requests for now. Try again in an hour.",
+    "rate_limited": "Spotify says the app has made too many requests for now. Try again in an hour.",
+}
+
+
+def explain(problem) -> str:
+    advice = ADVICE.get(problem.kind)
+    if advice:
+        return f"{advice}\n  (Spotify's answer: {problem.detail or problem.message})"
+    message = problem.message.replace("; run scripts/vibes-login", "")
+    if problem.status == "reauth":
+        return f"{message}. Run scripts/vibes-login again."
+    return f"{message}. Spotify may be having a moment; try again in a few minutes."
+
+
+KEEPABLE = {"premium", "not_registered", "not_found", "quota", "rate_limited", "server", "timeout",
+            "bad_response", "http", "login_failed"}
+
+
+def login_client(client_id, client_secret, tokens, accounts, api):
+    """A Spotify client for the new login."""
+    return sync.Spotify(client_id, client_secret, tokens["refresh_token"], _log, accounts=accounts, api=api,
+                        access_token=tokens["access_token"])
+
+
+def try_playlist(client_id, client_secret, tokens, playlist_id, accounts, api, client=None):
+    """Read the playlist with the new keys."""
+    client = client or login_client(client_id, client_secret, tokens, accounts, api)
+    _meta, entries, _total = sync.read_playlist(client, playlist_id)
+    tracks, _skipped = sync.build_tracks(entries)
+    return client, tracks
+
+
+def save_local_preview(client, playlist_id) -> None:
+    """Write the playlist to data/vibes.json too, so `hugo server` on this Mac shows the real songs."""
+    try:
+        data = sync.read_vibes(client, playlist_id, _log, sync.Result())
+        sync.stamp(data, None)
+        sync.write_json(sync.DEFAULT_OUT, data)
+    except Exception as err:
+        say(f"  (Couldn't save a preview copy for this Mac: {sync.one_line(err, 120)}. That's fine.)")
+        return
+    say("  Saved a copy to data/vibes.json, so `hugo server` on this Mac shows the real songs (it stays out of git).")
+
+
+def describe_found(tracks: list) -> str:
+    if not tracks:
+        return "Found 0 songs: the playlist is empty right now. That's fine; the page shows an empty wall until you add some."
+    count = len(tracks)
+    text = f"Found {count} song{'s' if count != 1 else ''}, e.g. {sync.describe_song(tracks[0])}."
+    if count > sync.MAX_TRACKS:
+        text += f" (The page shows the first {sync.MAX_TRACKS}.)"
+    return text
+
+
+def ask_yes(question: str, default: bool) -> bool:
+    try:
+        answer = input(question).strip().lower()
+    except EOFError:
+        say()
+        return default
+    return default if not answer else answer in ("y", "yes")
+
+
+# Step 4: GitHub
+
+GH_MISSING = ("GitHub's command-line tool (gh) isn't installed. Install it with `brew install gh`, then run "
+              "`gh auth login`, then run scripts/vibes-login again. (Or run scripts/vibes-login --no-github "
+              "to copy the keys into GitHub by hand.)")
+
+
+def gh(args: list, stdin: str | None = None) -> subprocess.CompletedProcess:
+    """Run gh in the website folder."""
+    env = dict(os.environ, GH_PROMPT_DISABLED="1", GH_NO_UPDATE_NOTIFIER="1", NO_COLOR="1")
+    try:
+        return subprocess.run(["gh", *args], input=stdin if stdin is not None else "", capture_output=True,
+                              text=True, cwd=str(sync.REPO_ROOT), env=env, timeout=120)
+    except FileNotFoundError:
+        raise LoginError(GH_MISSING) from None
+    except subprocess.TimeoutExpired:
+        raise LoginError("gh didn't finish within two minutes. Check the internet connection, then run "
+                         "scripts/vibes-login again.") from None
+
+
+def gh_said(result: subprocess.CompletedProcess) -> str:
+    lines = [line for line in (result.stderr or result.stdout or "").splitlines() if line.strip()]
+    return _log.redact(sync.one_line(lines[-1] if lines else f"exit code {result.returncode}", 200))
+
+
+def github_repo(env) -> str:
+    """Check gh is installed and logged in; return the website's repository (owner/name)."""
+    if not shutil.which("gh"):
+        raise LoginError(GH_MISSING)
+    if gh(["auth", "status"]).returncode != 0:
+        raise LoginError("gh isn't logged in to GitHub. Run `gh auth login`, then run scripts/vibes-login again.")
+    repo = env.get("VIBES_GITHUB_REPO", "").strip()
+    if not repo:
+        result = gh(["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"])
+        repo = result.stdout.strip() if result.returncode == 0 else ""
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
+        raise LoginError("Couldn't tell which GitHub repository the website lives in. Run this from the website's "
+                         "folder, or set VIBES_GITHUB_REPO=owner/name.")
+    return repo
+
+
+def save_to_github(repo: str, client_id: str, client_secret: str, refresh_token: str, today: str) -> None:
+    for name, value in (("SPOTIFY_CLIENT_ID", client_id), ("SPOTIFY_CLIENT_SECRET", client_secret),
+                        ("SPOTIFY_REFRESH_TOKEN", refresh_token)):
+        result = gh(["secret", "set", name, "--app", "actions", "--repo", repo], stdin=value)
+        if result.returncode != 0:
+            raise LoginError(f"GitHub didn't take the secret {name} ({gh_said(result)}). Check `gh auth status`, "
+                             "then run scripts/vibes-login again.")
+        say(f"  saved secret {name}")
+    result = gh(["variable", "set", "SPOTIFY_AUTHORIZED_AT", "--body", today, "--repo", repo])
+    if result.returncode == 0:
+        say(f"  saved variable SPOTIFY_AUTHORIZED_AT = {today} (for the reminder)")
+    else:
+        say(f"  Couldn't save the SPOTIFY_AUTHORIZED_AT variable ({gh_said(result)}). Everything works without "
+            "it, but GitHub won't remind you before the login expires.")
+
+
+def site_has_vibes(repo: str):
+    """Does the deploy workflow on GitHub's default branch run the Saber Vibes sync yet?"""
+    result = gh(["api", f"repos/{repo}/contents/.github/workflows/{WORKFLOW}",
+                 "-H", "Accept: application/vnd.github.raw"])
+    if result.returncode != 0:
+        return None
+    return "vibes-sync" in (result.stdout or "")
+
+
+def offer_deploy(repo: str) -> None:
+    if site_has_vibes(repo) is False:
+        say("  The live site doesn't have the Saber Vibes page yet. Once those changes are merged into main,")
+        say("  the page shows the playlist on its own.")
+        return
+    if not ask_yes("  Update the website now, so the page shows the playlist? [Y/n] ", default=True):
+        say("  OK. The site picks the playlist up on the next daily run (06:23 UTC) or the next push.")
+        return
+    result = gh(["workflow", "run", WORKFLOW, "--repo", repo])
+    if result.returncode == 0:
+        say(f"  Started. The site updates in about two minutes: https://github.com/{repo}/actions/workflows/{WORKFLOW}")
+    else:
+        say(f"  GitHub didn't start it ({gh_said(result)}). The site picks the playlist up on the next daily "
+            "run (06:23 UTC) or the next push.")
+
+
+def print_manual_steps(client_id: str, refresh_token: str, today: str) -> None:
+    say("  On github.com, open the website's repository → Settings → Secrets and variables → Actions.")
+    say("  Secrets tab → \"New repository secret\", three times:")
+    print(f"    SPOTIFY_CLIENT_ID       {client_id}", flush=True)
+    say("    SPOTIFY_CLIENT_SECRET   the Client secret from your Spotify app's Settings page")
+    print(f"    SPOTIFY_REFRESH_TOKEN   {refresh_token}", flush=True)
+    say("  Variables tab → \"New repository variable\":")
+    say(f"    SPOTIFY_AUTHORIZED_AT   {today}")
+    say("  Careful: SPOTIFY_REFRESH_TOKEN works like a password for reading your playlists. Paste it only")
+    say("  into GitHub, then clear this Terminal window (Cmd+K).")
+
+
+# The whole thing
+
+def run(args, env, accounts: str, api: str, port: int, playlist_id: str) -> int:
+    say("Saber Vibes · connect Spotify to the website")
+    say("This lets the website read your Saber Vibes playlist every day. It takes about a minute.")
+    say()
+
+    repo = None
+    if not args.no_github:
+        repo = github_repo(env)
+
+    say("Step 1 of 4 · Your Spotify app's keys")
+    client_id, client_secret = app_keys(env)
+    say()
+
+    say("Step 2 of 4 · Log in to Spotify")
+    code = browser_login(client_id, accounts, port)
+    tokens = exchange_code(client_id, client_secret, code, redirect_uri(port), accounts)
+    say("  Logged in.")
+    say()
+
+    say("Step 3 of 4 · Checking the playlist with the new login")
+    client = login_client(client_id, client_secret, tokens, accounts, api)
+    try:
+        _client, tracks = try_playlist(client_id, client_secret, tokens, playlist_id, accounts, api, client=client)
+    except sync.Problem as problem:
+        say("  " + explain(problem))
+        if problem.kind not in KEEPABLE or not ask_yes(
+                "  Keep this login anyway? It starts working once that's fixed. [y/N] ", default=False):
+            say()
+            say("Stopped. Nothing was saved.")
+            return 1
+    else:
+        say("  " + describe_found(tracks))
+        save_local_preview(client, playlist_id)
+    refresh_token = client.refresh_token
+    say()
+
+    today = today_utc().isoformat()
+    if args.no_github:
+        say("Step 4 of 4 · Copy the keys into GitHub yourself")
+        print_manual_steps(client_id, refresh_token, today)
+    else:
+        say(f"Step 4 of 4 · Saving to GitHub ({repo})")
+        save_to_github(repo, client_id, client_secret, refresh_token, today)
+        offer_deploy(repo)
+    say()
+    remind = nice_date(today_utc() + dt.timedelta(days=REMIND_AFTER_DAYS))
+    if args.no_github:
+        say("Once those are pasted, the site picks the playlist up on the next daily run (06:23 UTC) or the "
+            f"next push. Spotify logins last six months; GitHub will remind you around {remind}.")
+    else:
+        say(f"All set. Spotify logins last six months, so GitHub will open an issue to remind you around "
+            f"{remind}. Then run scripts/vibes-login again.")
+    return 0
+
+
+def main(argv: list | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="vibes-login",
+        description="Connect Spotify to the website for the Saber Vibes page. Run it once, then about every "
+                    "five months.",
+        epilog=f"Before the first run: Spotify Premium on the app owner's account, and an app at {DASHBOARD} "
+               f"with the Redirect URI {redirect_uri()}.",
+    )
+    parser.add_argument("--no-github", action="store_true",
+                        help="don't use gh; print what to paste into GitHub instead")
+    args = parser.parse_args(argv)
+    env = os.environ
+    try:
+        accounts = sync.loopback_base(env, "VIBES_ACCOUNTS_BASE", sync.SPOTIFY_ACCOUNTS)
+        api = sync.loopback_base(env, "VIBES_API_BASE", sync.SPOTIFY_API)
+        port = int(env.get("VIBES_LOGIN_PORT", "").strip() or PORT)
+        playlist_id, _source = sync.resolve_playlist(env, _log)
+    except (sync.UsageError, ValueError) as err:
+        print(f"vibes-login: {err}", file=sys.stderr)
+        return 2
+    try:
+        return run(args, env, accounts, api, port, playlist_id)
+    except LoginError as err:
+        say()
+        say(f"Stopped. {err}")
+        return 1
+    except KeyboardInterrupt:
+        say()
+        say("Stopped (Ctrl+C).")
+        return 130
+
+
+if __name__ == "__main__":
+    sys.exit(main())

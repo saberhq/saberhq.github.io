@@ -51,6 +51,12 @@ strong, b { font-weight: 600; }
 /* ---------- Utilities ---------- */
 .sq-wrap { max-width: var(--page-max); margin: 0 auto; padding-left: var(--space-6); padding-right: var(--space-6); }
 .sq-fill { flex: 1; }
+/* Read out by screen readers, never shown — e.g. "(opens in a new tab)" on a link whose ↗ is
+   only visual */
+.sq-sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
 
 /* Mono section kicker: 01-style labels, uppercase, tracked open */
 .sq-kicker {
@@ -73,13 +79,31 @@ strong, b { font-weight: 600; }
 /* Anchor components: selectors carry the `a` element to outrank Book's a[href] rule */
 a.sq-mark, a.sq-mark:visited { font-family: var(--font-pixel); font-size: 18px; font-weight: 400; line-height: 1; color: var(--ink); }
 a.sq-mark:hover { color: var(--ink); }
-.sq-crumb { font-family: var(--font-mono); font-size: var(--label-size); color: var(--ink-3); }
-.sq-nav { display: flex; flex-wrap: wrap; gap: var(--space-2) 20px; font-family: var(--font-mono); font-size: var(--label-size); }
+.sq-crumb { font-family: var(--font-mono); font-size: var(--small-size); color: var(--ink-3); }
+.sq-nav { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) 20px; font-family: var(--font-mono); font-size: var(--small-size); }
+/* The off-site links: in the row on wide screens (the wrapper adds no box of its own), folded
+   into one "Elsewhere" entry that opens a small menu on tablets and phones (see Responsive). */
+.sq-nav-social { display: contents; }
+.sq-nav-group { display: none; position: relative; }
+.sq-nav-group > summary { list-style: none; cursor: pointer; color: var(--link); }
+.sq-nav-group > summary::-webkit-details-marker { display: none; }
+.sq-nav-group > summary::after { content: " +"; }
+.sq-nav-group[open] > summary::after { content: " –"; }
+.sq-nav-group > summary:hover { color: var(--link-hover); }
+.sq-nav-group-links {
+  position: absolute; top: calc(100% + var(--space-2)); left: calc(-1 * var(--space-3)); z-index: 10;
+  display: grid; gap: var(--space-2); min-width: 9.5em; padding: var(--space-3);
+  background: var(--surface-card); border: var(--rule-w) solid var(--rule); border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
 /* Sidechain sits among the socials in carmine — the companion accent's one job in the
    chrome. Ink-on-hover like every other link, so only the resting state carries the color. */
 a.sq-nav-accent, a.sq-nav-accent:visited { color: var(--accent-2); }
 a.sq-nav-accent:hover { color: var(--ink); }
-.sq-back { font-family: var(--font-mono); font-size: var(--label-size); }
+/* Saber Vibes sits beside it in its own naming color, blue hour — same resting-only rule. */
+a.sq-nav-accent-3, a.sq-nav-accent-3:visited { color: var(--accent-3); }
+a.sq-nav-accent-3:hover { color: var(--ink); }
+.sq-back { font-family: var(--font-mono); font-size: var(--small-size); }
 .sq-theme-toggle {
   font-family: var(--font-mono); font-size: 11px; letter-spacing: var(--meta-track);
   background: none; border: var(--rule-w) solid var(--rule); border-radius: var(--radius-sm);
@@ -146,6 +170,9 @@ a.sq-btn, a.sq-btn:visited { color: var(--btn-solid-text); }
   font-family: var(--font-mono); font-size: var(--label-size); font-weight: 500;
 }
 .sq-section-label { letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink); }
+/* The landing's labels are real h2s (like /about/'s): drop the browser's and Book's heading
+   size, weight and margins, so they stay the mono label above */
+.sq-landing .sq-section-label { margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit; }
 .sq-section-fill { flex: 1; }
 a.sq-section-aside, a.sq-section-aside:visited { font-size: 10px; font-weight: 400; color: var(--link); }
 
@@ -195,20 +222,35 @@ a.sq-card:hover {
 }
 .sq-tag--accent { color: var(--accent); border-color: var(--accent); background: var(--accent-wash); }
 
-/* ---------- About & recent news ---------- */
-.sq-about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); margin-top: 20px; }
-.sq-about-copy p { margin: 0 0 12px; font-size: var(--body-size); line-height: var(--body-leading); text-wrap: pretty; }
-.sq-about-copy p:last-child { margin-bottom: 0; }
-.sq-about-copy h3 {
-  font-family: var(--font-mono); font-size: var(--label-size); font-weight: 500;
-  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink-3);
-  margin: 20px 0 8px;
-}
-.sq-about-copy code { font-family: var(--font-mono); font-size: 0.92em; background: var(--accent-wash); padding: 1px 4px; border-radius: var(--radius-sm); }
+/* Topic chips under a block of text (the About page) */
 .sq-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
-.sq-news { display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; align-content: start; }
+
+/* ---------- About & recent news (landing) ----------
+   Saber's short note beside the news, as the landing had them before the About page took
+   the long text: two equal columns with the About page's 64px gutter, their first lines on
+   one baseline. Under 901px they stack, the note first. Either one alone spans the width. */
+.sq-bio-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: baseline;
+  gap: var(--space-6) var(--space-8); margin-top: 20px;
+}
+.sq-bio-grid > :only-child { grid-column: 1 / -1; }
+/* The note at the tagline's size: a few lines in his own voice */
+.sq-bio-text { margin: 0; max-width: 36em; font-size: 17px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
+.sq-bio-text a { white-space: nowrap; } /* names stay whole: "Saber Vibes", not "Saber / Vibes" */
+a.sq-bio-more, a.sq-bio-more:visited {
+  display: inline-block; margin-top: 14px;
+  font-family: var(--font-mono); font-size: var(--meta-size); letter-spacing: var(--meta-track); color: var(--link);
+}
+a.sq-bio-more:hover { color: var(--link-hover); }
+.sq-bio-more .sq-glyph { font-size: 1.1em; }
+/* The news: one column, newest first. Dates are all "Mon YYYY" in mono, so they line up. */
+.sq-news { list-style: none; margin: 0; padding: 0; }
+.sq-news-row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: var(--space-3);
+  padding-bottom: var(--space-2);
+}
 .sq-news-date { font-family: var(--font-mono); font-size: var(--meta-size); letter-spacing: var(--meta-track); font-weight: 500; white-space: nowrap; }
-.sq-news-item { font-size: var(--small-size); color: var(--ink-2); line-height: var(--small-leading); }
+.sq-news-item { font-size: var(--small-size); color: var(--ink-2); line-height: var(--small-leading); text-wrap: pretty; }
 
 /* ---------- Site footer strip ---------- */
 .sq-sitefooter { border-top: var(--rule-w) solid var(--rule); }
@@ -299,6 +341,74 @@ a.sq-card:hover {
 .sq-listing-content > p { color: var(--ink-2); font-size: 16px; max-width: 60ch; }
 .sq-listing .sq-card-grid { margin-top: var(--space-5); }
 
+/* ---------- About page (layouts/about.html) ----------
+   A sibling of the home and Sidechain heroes: a mono kicker, a Geist Pixel line whose full stop
+   is vermillion, the tagline, two hairline buttons, and Saber's photo as a circle at the right
+   edge. Below it, the home page's own section blocks (1.5px ink rule + mono label). After the
+   generic .sq-prose rules on purpose: same specificity, later wins. Vermillion is the page's
+   one accent (About speaks in the house voice). Under 901px: one column, photo first. */
+/* Book rings every :focus, mouse clicks included; keep the ring for the keyboard (as on /vibes/) */
+.sq-me-page :focus:not(:focus-visible) { outline: none; }
+.sq-me-hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center; column-gap: var(--space-8);
+}
+.sq-me-intro { min-width: 0; }
+/* 52.6px lands Geist Pixel's grid on whole 2px cells — the Sidechain wordmark's size */
+.sq-me-mark {
+  margin: 14px 0 0;
+  font-family: var(--font-pixel); font-weight: 400; font-size: 52.6px;
+  line-height: 1; letter-spacing: 0; color: var(--ink);
+}
+.sq-me-dot { color: var(--accent); }
+
+/* The photo: a circle with a hairline ring a few pixels out. The figure's padding holds the
+   ring, so its outer edge (not the photo's) meets the shell edge and the section rules below.
+   No filter, no shadow, the same picture in dark mode. Sizes mirror `sizes` in the template. */
+.sq-me-photo { --ring-gap: 6px; margin: 0; padding: calc(var(--ring-gap) + var(--rule-w)); }
+.sq-me-photo picture { display: block; }
+.sq-me-photo img {
+  display: block; width: 224px; height: 224px; max-width: none; object-fit: cover;
+  border-radius: 50%;
+  background: var(--surface-sunken); /* holds the circle's tone until the photo arrives */
+  outline: var(--rule-w) solid var(--rule); outline-offset: var(--ring-gap);
+}
+
+/* Section heads here are real h2s: drop Book's heading size and margins */
+.sq-me .sq-section-label { margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit; }
+/* One column of text keeps ~75 characters a line (Geist runs wide: 56ch is about 550px) */
+.sq-me-prose { margin-top: 20px; max-width: 56ch; }
+.sq-me-prose > :last-child { margin-bottom: 0; }
+/* The long version: two newspaper columns, like the home page's news (read down, then across).
+   Each paragraph stays whole in its column. One column under 901px — or anywhere, by dropping
+   the sq-me-cols class in the template. */
+.sq-me-cols { max-width: none; columns: 2; column-gap: var(--space-8); }
+.sq-me-cols p { break-inside: avoid; }
+
+/* Below the <!--more--> line: every rendered "## heading" is drawn as the site's section head,
+   and the text under it is set at the tagline's size, so the personal part reads as a note */
+.sq-me-more > h2 {
+  margin: 0 0 20px; padding-top: 6px;
+  border-top: var(--rule-w-strong) solid var(--rule-strong);
+  font-family: var(--font-mono); font-size: var(--label-size); font-weight: 500; line-height: 1.6;
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink);
+}
+.sq-me-more > h2 ~ h2 { margin-top: var(--space-8); } /* collapses with the 18px paragraph margin above: 64px, like .sq-section */
+.sq-me-more p { max-width: 36em; font-size: 17px; line-height: 1.55; color: var(--ink-2); }
+.sq-me-more > :last-child { margin-bottom: 0; }
+
+/* Elsewhere: one row of mono links, ink with a vermillion ↗ — not a second copy of the
+   vermillion header nav. "Email" is a mailto link; the address is never shown. */
+.sq-me-links {
+  list-style: none; margin: 20px 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6);
+  font-family: var(--font-mono); font-size: 13px; letter-spacing: var(--meta-track);
+}
+.sq-me-links li { margin: 0; }
+a.sq-me-link, a.sq-me-link:visited { color: var(--ink-2); white-space: nowrap; }
+a.sq-me-link:hover { color: var(--ink); }
+.sq-me-link .sq-glyph { color: var(--accent); font-size: 1.1em; }
+
 /* ---------- Video / iframe embeds ---------- */
 .video, .embed {
   position: relative; padding-top: 56.25%; margin: 0 0 18px;
@@ -342,10 +452,27 @@ a.sq-card:hover {
   .sq-wrap { padding-left: var(--space-4); padding-right: var(--space-4); }
   .sq-hero { padding-top: var(--space-7); padding-bottom: var(--space-7); }
   .sq-card-grid { grid-template-columns: 1fr 1fr; }
-  .sq-about-grid { grid-template-columns: 1fr; }
+  .sq-bio-grid { grid-template-columns: minmax(0, 1fr); }
+  .sq-me-hero { grid-template-columns: minmax(0, 1fr); }
+  .sq-me-photo { --ring-gap: 5px; order: -1; justify-self: start; margin-bottom: var(--space-4); }
+  .sq-me-photo img { width: 136px; height: 136px; }
+  .sq-me-cols { columns: 1; max-width: 56ch; }
   .sq-article-wrap { padding-left: var(--space-4); padding-right: var(--space-4); }
+}
+/* Tablets and phones: the off-site links fold into the "Elsewhere" entry, so the header keeps
+   to one short row of Saber's own pages. */
+@media (max-width: 960px) {
+  .sq-nav-social { display: none; }
+  .sq-nav-group { display: block; }
+}
+/* Narrower still, the mark, the crumb, the links and the theme toggle no longer share one row:
+   the links get a row of their own under the mark and the toggle (left to wrap around them, the
+   toggle ends up alone on a row of its own). */
+@media (max-width: 700px) {
+  .sq-siteheader-in .sq-nav { order: 1; flex-basis: 100%; }
 }
 @media (max-width: 600px) {
   .sq-card-grid { grid-template-columns: 1fr; }
+  .sq-me-mark { font-size: 44px; }
   .sq-cover img { height: 200px; }
 }

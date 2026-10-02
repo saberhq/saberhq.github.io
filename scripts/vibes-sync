@@ -1,0 +1,976 @@
+#!/usr/bin/env python3
+"""Saber Vibes sync: copy the "Saber Vibes" Spotify playlist into data/vibes.json."""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import datetime as dt
+import http.client
+import json
+import os
+import re
+import socket
+import sys
+import tempfile
+import time
+import traceback
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+PAGE_FILE = REPO_ROOT / "content" / "vibes" / "index.md"
+DEFAULT_OUT = REPO_ROOT / "data" / "vibes.json"
+
+DEFAULT_PLAYLIST_ID = "0t4TwMJJm9grrUAb7tUliu"
+DEFAULT_FALLBACK_URL = "https://saberhq.com/vibes/vibes.json"
+SPOTIFY_ACCOUNTS = "https://accounts.spotify.com"
+SPOTIFY_API = "https://api.spotify.com/v1"
+SCOPE = "playlist-read-private"
+CREDENTIALS = ("SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_SECRET", "SPOTIFY_REFRESH_TOKEN")
+
+MAX_TRACKS = 10
+PAGE_SIZE = 50
+MAX_PAGES = 40
+TIMEOUT_S = 20
+BACKOFF_S = (2, 8, 30)
+RETRY_AFTER_CAP_S = 60
+RATE_LIMIT_RETRIES = 2
+TIME_BUDGET_S = 300
+MAX_BODY_BYTES = 5_000_000
+USER_AGENT = "saberhq-vibes-sync/1.0 (+https://saberhq.com/vibes/)"
+
+_SLEEP_SCALE = 1.0
+
+
+# Small helpers
+
+class UsageError(Exception):
+    """A wrong command line or setting: exit code 2."""
+
+
+class Problem(Exception):
+    """Spotify could not be read."""
+
+    def __init__(self, status: str, message: str, kind: str = "error", detail: str = ""):
+        super().__init__(message)
+        self.status = status
+        self.message = message
+        self.kind = kind
+        self.detail = detail
+
+
+class NetworkError(Exception):
+    """No usable HTTP answer at all (no connection, timeout, cut-off answer)."""
+
+
+def one_line(text: object, limit: int = 300) -> str:
+    """Squash text into one printable line of at most `limit` characters."""
+    flat = re.sub(r"[\x00-\x1f\x7f]+", " ", str(text))
+    flat = re.sub(r"\s+", " ", flat).strip()
+    return flat if len(flat) <= limit else flat[: limit - 1] + "…"
+
+
+def _gh_escape(text: str) -> str:
+    """Escape a message for a GitHub Actions workflow command (::warning:: and friends)."""
+    return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
+class Log:
+    """One-line messages that never contain a secret."""
+
+    def __init__(self, github: bool = False, prefix: str = "vibes-sync"):
+        self.github = github
+        self.prefix = prefix
+        self._secrets: list[str] = []
+
+    def protect(self, value: object, mask: bool = True) -> None:
+        if not isinstance(value, str) or len(value) < 8:
+            return
+        if value not in self._secrets:
+            self._secrets.append(value)
+            self._secrets.sort(key=len, reverse=True)
+            if mask and self.github:
+                sys.stdout.write(f"::add-mask::{value}\n")
+                sys.stdout.flush()
+
+    def redact(self, text: object) -> str:
+        out = str(text)
+        for secret in self._secrets:
+            out = out.replace(secret, "***")
+        return out
+
+    def _emit(self, stream, text: str) -> None:
+        stream.write(self.redact(text) + "\n")
+        stream.flush()
+
+    def info(self, message: str) -> None:
+        self._emit(sys.stdout, f"{self.prefix}: {message}")
+
+    def warn(self, message: str) -> None:
+        if self.github:
+            self._emit(sys.stdout, "::warning title=Saber Vibes::" + _gh_escape(self.redact(message)))
+        else:
+            self._emit(sys.stderr, f"{self.prefix}: warning: {message}")
+
+    def notice(self, message: str) -> None:
+        if self.github:
+            self._emit(sys.stdout, "::notice title=Saber Vibes::" + _gh_escape(self.redact(message)))
+        else:
+            self.info(message)
+
+    def problem(self, status: str, message: str) -> None:
+        """The end result when Spotify couldn't be read (a warning annotation on GitHub)."""
+        if self.github:
+            self.warn(f"{status}: {message}")
+        else:
+            self._emit(sys.stderr, f"{self.prefix}: {status}: {message}")
+
+
+def sleep(seconds: float) -> None:
+    if seconds > 0 and _SLEEP_SCALE > 0:
+        time.sleep(seconds * _SLEEP_SCALE)
+
+
+def utc_now() -> str:
+    return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+_ISO_RE = re.compile(
+    r"^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:?\d{2})$"
+)
+
+
+def iso_z(value: object) -> str | None:
+    """An ISO-8601 time as "2026-09-12T08:31:04Z" (UTC), or None if it isn't one."""
+    if not isinstance(value, str):
+        return None
+    match = _ISO_RE.match(value.strip())
+    if not match:
+        return None
+    try:
+        stamp = dt.datetime(*(int(match.group(i)) for i in range(1, 7)))
+    except ValueError:
+        return None
+    zone = match.group(7)
+    if zone != "Z":
+        sign = 1 if zone[0] == "+" else -1
+        digits = zone[1:].replace(":", "")
+        stamp -= sign * dt.timedelta(hours=int(digits[:2]), minutes=int(digits[2:]))
+    return stamp.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def parse_json(body: bytes) -> object:
+    """JSON from an HTTP body, or None if it isn't JSON."""
+    try:
+        return json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError, RecursionError):
+        return None
+
+
+def api_error(body: bytes) -> dict:
+    """{"message", "reason"} from a Web API error body: {"error": {"status", "message", "reason"}}."""
+    payload = parse_json(body)
+    error = payload.get("error") if isinstance(payload, dict) else None
+    if isinstance(error, dict):
+        return {
+            "message": one_line(error.get("message") or "", 200),
+            "reason": one_line(error.get("reason") or "", 60),
+        }
+    if isinstance(error, str):
+        return {"message": one_line(error, 200), "reason": ""}
+    return {"message": "", "reason": ""}
+
+
+def oauth_error(body: bytes) -> tuple[str, str]:
+    """(error, description) from the token endpoint: {"error": ..., "error_description": ...}."""
+    payload = parse_json(body)
+    if not isinstance(payload, dict):
+        return "", ""
+    error = payload.get("error")
+    description = payload.get("error_description")
+    return (
+        one_line(error, 60) if isinstance(error, str) else "",
+        one_line(description, 200) if isinstance(description, str) else "",
+    )
+
+
+# HTTP
+
+class _NoRedirects(urllib.request.HTTPRedirectHandler):
+    """Spotify calls never follow redirects, so a login header can't travel to another host."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+_OPENERS = {
+    False: urllib.request.build_opener(_NoRedirects),
+    True: urllib.request.build_opener(),
+}
+
+
+def _why(err: BaseException) -> str:
+    reason = getattr(err, "reason", None) if isinstance(err, urllib.error.URLError) else None
+    if isinstance(reason, BaseException):
+        err = reason
+    if isinstance(err, socket.timeout) or "timed out" in str(err):
+        return "timed out"
+    return one_line(str(err) or type(err).__name__, 160)
+
+
+def _read_body(response) -> bytes:
+    data = response.read(MAX_BODY_BYTES + 1)
+    if len(data) > MAX_BODY_BYTES:
+        raise NetworkError("the answer was too large")
+    return data
+
+
+def http_request(method: str, url: str, headers: dict | None = None, data: bytes | None = None,
+                 follow_redirects: bool = False, timeout: float = TIMEOUT_S):
+    """Send one request."""
+    request = urllib.request.Request(url, data=data, method=method)
+    request.add_header("User-Agent", USER_AGENT)
+    for key, value in (headers or {}).items():
+        request.add_unredirected_header(key, value)
+    try:
+        response = _OPENERS[follow_redirects].open(request, timeout=timeout)
+    except urllib.error.HTTPError as err:
+        try:
+            body = _read_body(err)
+        except Exception:
+            body = b""
+        finally:
+            err.close()
+        return err.code, err.headers, body
+    except (OSError, http.client.HTTPException, ValueError) as err:
+        raise NetworkError(_why(err)) from None
+    with response:
+        try:
+            return response.status, response.headers, _read_body(response)
+        except (OSError, http.client.HTTPException) as err:
+            raise NetworkError(_why(err)) from None
+
+
+def retry_after(headers) -> int:
+    """Seconds to wait from a Retry-After header (default 5), capped at RETRY_AFTER_CAP_S."""
+    raw = headers.get("Retry-After") if headers is not None else None
+    try:
+        seconds = int(float(str(raw).strip()))
+    except (TypeError, ValueError):
+        seconds = 5
+    return max(1, min(RETRY_AFTER_CAP_S, seconds))
+
+
+# Spotify
+
+class Spotify:
+    """A very small Spotify Web API client: the refresh-token login plus GET, with retries."""
+
+    def __init__(self, client_id: str, client_secret: str, refresh_token: str, log: Log,
+                 accounts: str = SPOTIFY_ACCOUNTS, api: str = SPOTIFY_API,
+                 on_new_refresh_token=None, access_token: str | None = None):
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.refresh_token = refresh_token
+        self.log = log
+        self.accounts = accounts.rstrip("/")
+        self.api = api.rstrip("/")
+        self.on_new_refresh_token = on_new_refresh_token
+        self.access_token = access_token
+        self.rotated = False
+        self._renewed_after_401 = False
+        self._started = time.monotonic()
+        for secret in (client_id, client_secret, refresh_token, access_token):
+            log.protect(secret, mask=False)
+
+    def basic_auth(self) -> str:
+        raw = f"{self.client_id}:{self.client_secret}".encode("utf-8")
+        return "Basic " + base64.b64encode(raw).decode("ascii")
+
+    def _wait(self, seconds: int, why: str) -> None:
+        if time.monotonic() - self._started + seconds > TIME_BUDGET_S:
+            raise Problem("error", f"{why}; gave up after {TIME_BUDGET_S // 60} minutes of trying", "timeout")
+        self.log.info(f"{why}; waiting {seconds}s before trying again")
+        sleep(seconds)
+
+    def send(self, method: str, url: str, what: str, headers: dict, data: bytes | None = None):
+        """One request with the retry rules above."""
+        server_retries = 0
+        rate_retries = 0
+        while True:
+            try:
+                status, response_headers, body = http_request(method, url, headers=headers, data=data)
+            except NetworkError as err:
+                trouble = f"couldn't reach Spotify for {what} ({err})"
+            else:
+                if status == 429:
+                    if api_error(body)["reason"] == "QUOTA_EXCEEDED":
+                        raise Problem("error", "Spotify says this app has used up its request quota for now "
+                                      "(QUOTA_EXCEEDED); the next daily run will try again", "quota")
+                    if rate_retries >= RATE_LIMIT_RETRIES:
+                        raise Problem("error", f"Spotify kept saying \"too many requests\" for {what} "
+                                      f"(HTTP 429, {rate_retries + 1} tries)", "rate_limited")
+                    rate_retries += 1
+                    self._wait(retry_after(response_headers), f"Spotify asked to slow down ({what}, HTTP 429)")
+                    continue
+                if not 500 <= status <= 599:
+                    return status, response_headers, body
+                trouble = f"Spotify had a server problem with {what} (HTTP {status})"
+            if server_retries >= len(BACKOFF_S):
+                raise Problem("error", f"{trouble}; tried {server_retries + 1} times", "server")
+            self._wait(BACKOFF_S[server_retries], trouble)
+            server_retries += 1
+
+    def renew_access_token(self) -> str:
+        """Swap the refresh token for a one-hour access token, and keep any new refresh token."""
+        form = urllib.parse.urlencode({"grant_type": "refresh_token", "refresh_token": self.refresh_token})
+        status, _, body = self.send(
+            "POST", f"{self.accounts}/api/token", "the Spotify login",
+            {"Authorization": self.basic_auth(), "Accept": "application/json",
+             "Content-Type": "application/x-www-form-urlencoded"},
+            form.encode("ascii"),
+        )
+        if status == 200:
+            payload = parse_json(body)
+            token = payload.get("access_token") if isinstance(payload, dict) else None
+            if not isinstance(token, str) or not token:
+                raise Problem("error", "Spotify's login service sent an answer without an access key", "bad_response")
+            self.log.protect(token)
+            new_refresh = payload.get("refresh_token")
+            if isinstance(new_refresh, str) and new_refresh and new_refresh != self.refresh_token:
+                self.log.protect(new_refresh)
+                self.refresh_token = new_refresh
+                self.rotated = True
+                if self.on_new_refresh_token is not None:
+                    self.on_new_refresh_token(new_refresh)
+            self.access_token = token
+            return token
+        error, description = oauth_error(body)
+        detail = (error + (f": {description}" if description else "")) if error else f"HTTP {status}"
+        if status in (400, 401) and error in ("invalid_grant", "invalid_client", "unauthorized_client"):
+            raise Problem("reauth", f"Spotify turned down the saved login ({detail}); run scripts/vibes-login",
+                          error, detail)
+        raise Problem("error", f"Spotify's login service said no ({detail})", "login_failed", detail)
+
+    def get(self, url: str, what: str) -> dict:
+        """GET an API URL and return its JSON object, or raise Problem."""
+        if not self.access_token:
+            self.renew_access_token()
+        while True:
+            status, _, body = self.send("GET", url, what, {
+                "Authorization": f"Bearer {self.access_token}", "Accept": "application/json"})
+            if status == 401 and not self._renewed_after_401:
+                self._renewed_after_401 = True
+                self.log.info(f"Spotify turned down the access key for {what} (HTTP 401); "
+                              "getting a fresh one and trying once more")
+                self.renew_access_token()
+                continue
+            break
+        if status == 200:
+            payload = parse_json(body)
+            if not isinstance(payload, dict):
+                raise Problem("error", f"Spotify sent an unreadable answer for {what}", "bad_response")
+            return payload
+        message = api_error(body)["message"]
+        said = f": {message}" if message else ""
+        detail = f"HTTP {status}{said}"
+        if status == 401:
+            raise Problem("reauth", f"Spotify keeps turning down fresh access keys for {what} "
+                          f"({detail}); run scripts/vibes-login", "unauthorized", detail)
+        if status == 403:
+            lowered = message.lower()
+            if "premium" in lowered:
+                raise Problem("reauth", f"Spotify says the app owner needs Premium ({detail})", "premium", detail)
+            if "regist" in lowered:
+                raise Problem("reauth", f"Spotify says this account may not use the app ({detail}); "
+                              "add yourself under User Management at developer.spotify.com, then run "
+                              "scripts/vibes-login", "not_registered", detail)
+            raise Problem("error", f"Spotify refused access to {what} ({detail})", "forbidden", detail)
+        if status == 404:
+            raise Problem("error", f"Spotify can't find {what} ({detail}); check the playlist link "
+                          "in content/vibes/index.md", "not_found", detail)
+        raise Problem("error", f"Spotify answered HTTP {status} for {what}{said}", "http", detail)
+
+
+def read_playlist(spotify: Spotify, playlist_id: str):
+    """(metadata, every entry, Spotify's own count) for a playlist, following every page."""
+    pid = urllib.parse.quote(playlist_id, safe="")
+    fields = urllib.parse.urlencode({"fields": "id,name,external_urls,images,snapshot_id"})
+    meta = spotify.get(f"{spotify.api}/playlists/{pid}?{fields}", "the playlist")
+    url = f"{spotify.api}/playlists/{pid}/items?limit={PAGE_SIZE}&additional_types=track,episode"
+    entries: list = []
+    total = None
+    for _ in range(MAX_PAGES):
+        page = spotify.get(url, "the playlist's songs")
+        items = page.get("items")
+        if not isinstance(items, list):
+            raise Problem("error", "Spotify's answer for the playlist's songs has no song list", "bad_response")
+        if total is None and isinstance(page.get("total"), int):
+            total = page["total"]
+        entries.extend(items)
+        next_url = page.get("next")
+        if not next_url:
+            return meta, entries, total
+        if not isinstance(next_url, str) or not next_url.startswith(spotify.api + "/"):
+            raise Problem("error", "Spotify's link to the next page of songs points somewhere unexpected",
+                          "bad_response")
+        url = next_url
+    raise Problem("error", f"the playlist has more than {MAX_PAGES * PAGE_SIZE} entries; stopped reading",
+                  "bad_response")
+
+
+# Turning Spotify's answers into the page's data (the contract in data/vibes.json)
+
+def _text(value: object) -> str | None:
+    return value if isinstance(value, str) and value else None
+
+
+def _number(value: object):
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return value if isinstance(value, (int, float)) else None
+
+
+def _spotify_url(obj: object) -> str | None:
+    links = obj.get("external_urls") if isinstance(obj, dict) else None
+    return _text(links.get("spotify")) if isinstance(links, dict) else None
+
+
+def _images(images: object) -> list:
+    """Spotify image objects, kept as given: [{url, width, height}, ...]."""
+    out = []
+    for image in images if isinstance(images, list) else []:
+        if isinstance(image, dict) and _text(image.get("url")):
+            out.append({"url": image["url"], "width": _number(image.get("width")),
+                        "height": _number(image.get("height"))})
+    return out
+
+
+def normalise_entry(entry: object) -> dict | None:
+    """One playlist entry → one song for the page, or None when it can't be shown."""
+    if not isinstance(entry, dict):
+        return None
+    item = entry.get("item")
+    if item is None:
+        item = entry.get("track")
+    if not isinstance(item, dict) or entry.get("is_local") or item.get("is_local"):
+        return None
+    song_id, name = _text(item.get("id")), _text(item.get("name"))
+    if not song_id or not name:
+        return None
+    is_episode = item.get("type") == "episode" or isinstance(item.get("show"), dict)
+    kind = "episode" if is_episode else "track"
+    duration = _number(item.get("duration_ms"))
+    if is_episode:
+        show = item.get("show") if isinstance(item.get("show"), dict) else {}
+        show_name, show_url = _text(show.get("name")), _spotify_url(show)
+        artists = [{"name": show_name, "url": show_url}] if show_name else []
+        album = {"name": show_name, "url": show_url,
+                 "images": _images(item.get("images")) or _images(show.get("images"))}
+    else:
+        artists = [{"name": artist["name"], "url": _spotify_url(artist)}
+                   for artist in (item.get("artists") if isinstance(item.get("artists"), list) else [])
+                   if isinstance(artist, dict) and _text(artist.get("name"))]
+        album_obj = item.get("album") if isinstance(item.get("album"), dict) else {}
+        album = {"name": _text(album_obj.get("name")), "url": _spotify_url(album_obj),
+                 "images": _images(album_obj.get("images"))}
+    added = iso_z(entry.get("added_at"))
+    if added and added < "2008":
+        added = None
+    return {
+        "id": song_id,
+        "name": name,
+        "url": _spotify_url(item) or f"https://open.spotify.com/{kind}/{song_id}",
+        "duration_ms": duration if duration is not None else 0,
+        "added_at": added,
+        "artists": artists,
+        "album": album,
+    }
+
+
+def build_tracks(entries: list) -> tuple[list, int]:
+    """(songs that can be shown, in playlist order; how many entries were skipped)."""
+    tracks = []
+    for entry in entries:
+        track = normalise_entry(entry)
+        if track is not None:
+            tracks.append(track)
+    return tracks, len(entries) - len(tracks)
+
+
+def build_playlist(meta: dict, playlist_id: str) -> dict:
+    pid = _text(meta.get("id")) or playlist_id
+    return {
+        "id": pid,
+        "name": _text(meta.get("name")) or "",
+        "url": _spotify_url(meta) or f"https://open.spotify.com/playlist/{pid}",
+        "images": _images(meta.get("images")),
+        "snapshot_id": _text(meta.get("snapshot_id")),
+    }
+
+
+def comparable(snapshot: dict) -> dict:
+    """Only what decides "did the playlist change?": the songs (as on the page) and snapshot_id."""
+    playlist = snapshot.get("playlist") if isinstance(snapshot.get("playlist"), dict) else {}
+    songs = []
+    for track in snapshot.get("tracks") or []:
+        if not isinstance(track, dict):
+            continue
+        album = track.get("album") if isinstance(track.get("album"), dict) else {}
+        songs.append({
+            "id": track.get("id"), "name": track.get("name"), "url": track.get("url"),
+            "duration_ms": _number(track.get("duration_ms")), "added_at": iso_z(track.get("added_at")),
+            "artists": [{"name": a.get("name"), "url": a.get("url")}
+                        for a in track.get("artists") or [] if isinstance(a, dict)],
+            "album": {"name": album.get("name"), "url": album.get("url"),
+                      "images": [{"url": i.get("url"), "width": _number(i.get("width")),
+                                  "height": _number(i.get("height"))}
+                                 for i in album.get("images") or [] if isinstance(i, dict)]},
+        })
+    return {"snapshot_id": playlist.get("snapshot_id"), "tracks": songs}
+
+
+def _text_or_none(value: object) -> bool:
+    return value is None or isinstance(value, str)
+
+
+def _number_or_none(value: object) -> bool:
+    return value is None or (isinstance(value, (int, float)) and not isinstance(value, bool))
+
+
+def _images_ok(images: object) -> bool:
+    return images is None or (isinstance(images, list) and all(
+        isinstance(image, dict) and isinstance(image.get("url"), str)
+        and _number_or_none(image.get("width")) and _number_or_none(image.get("height"))
+        for image in images))
+
+
+def looks_like_vibes(snapshot: object) -> bool:
+    """True if `snapshot` has every part of the shape layouts/vibes.html reads."""
+    if not isinstance(snapshot, dict):
+        return False
+    playlist = snapshot.get("playlist")
+    if not isinstance(playlist, dict) or not _images_ok(playlist.get("images")) or not all(
+            _text_or_none(playlist.get(key)) for key in ("id", "name", "url", "snapshot_id")):
+        return False
+    tracks = snapshot.get("tracks")
+    if not isinstance(tracks, list):
+        return False
+    for track in tracks:
+        if not isinstance(track, dict) or not _text(track.get("id")) or not isinstance(track.get("name"), str):
+            return False
+        if not _text_or_none(track.get("url")) or not _number_or_none(track.get("duration_ms")):
+            return False
+        if track.get("added_at") is not None and iso_z(track.get("added_at")) is None:
+            return False
+        artists = track.get("artists")
+        if artists is not None and not (isinstance(artists, list) and all(
+                isinstance(artist, dict) and _text_or_none(artist.get("name")) and _text_or_none(artist.get("url"))
+                for artist in artists)):
+            return False
+        album = track.get("album")
+        if album is not None and not (isinstance(album, dict) and _text_or_none(album.get("name"))
+                                      and _text_or_none(album.get("url")) and _images_ok(album.get("images"))):
+            return False
+    updated = snapshot.get("updated_at")
+    return updated is None or iso_z(updated) is not None
+
+
+# Settings
+
+_ID = r"([A-Za-z0-9]{16,32})"
+
+
+def extract_playlist_id(value: str) -> str | None:
+    """The id from a playlist link, a spotify:playlist: URI or a bare id."""
+    text = re.sub(r"\s+#.*$", "", value.strip()).strip().strip("'\"").strip()
+    patterns = (
+        r"^https?://open\.spotify\.com/(?:intl-[A-Za-z-]+/)?(?:embed/)?playlist/" + _ID + r"(?:[/?#].*)?$",
+        r"^spotify:playlist:" + _ID + r"$",
+        r"^" + _ID + r"$",
+    )
+    for pattern in patterns:
+        match = re.match(pattern, text)
+        if match:
+            return match.group(1)
+    return None
+
+
+def playlist_from_page(path: Path) -> tuple[str | None, str]:
+    """(playlist id, what happened) from the `playlist:` line in the page's front matter."""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return None, f"{path.name} not found"
+    except (OSError, UnicodeDecodeError) as err:
+        return None, f"couldn't read {path.name} ({_why(err)})"
+    block = lines
+    if lines and lines[0].strip() in ("---", "+++"):
+        fence = lines[0].strip()
+        for end in range(1, len(lines)):
+            if lines[end].strip() == fence:
+                block = lines[1:end]
+                break
+    for line in block:
+        match = re.match(r"^playlist\s*[:=]\s*(.+)$", line)
+        if match:
+            found = extract_playlist_id(match.group(1))
+            return found, ("found" if found else "the playlist: line has no playlist link in it")
+    return None, "no playlist: line"
+
+
+def resolve_playlist(env, log: Log) -> tuple[str, str]:
+    """(playlist id, where it came from)."""
+    override = env.get("VIBES_PLAYLIST_ID", "").strip()
+    if override:
+        found = extract_playlist_id(override)
+        if not found:
+            raise UsageError("VIBES_PLAYLIST_ID must be a Spotify playlist id or an open.spotify.com playlist link")
+        return found, "VIBES_PLAYLIST_ID"
+    found, what = playlist_from_page(PAGE_FILE)
+    if found:
+        return found, "content/vibes/index.md"
+    if what.startswith("the playlist:") or what.startswith("couldn't"):
+        log.warn(f"content/vibes/index.md: {what}; using the built-in Saber Vibes playlist")
+    return DEFAULT_PLAYLIST_ID, f"built-in default; {what}"
+
+
+def loopback_base(env, name: str, default: str) -> str:
+    """A Spotify base URL; tests may point it at 127.0.0.1, nothing else is allowed."""
+    value = env.get(name, "").strip()
+    if not value:
+        return default
+    parts = urllib.parse.urlsplit(value)
+    if parts.scheme not in ("http", "https") or parts.hostname not in ("127.0.0.1", "localhost", "::1"):
+        raise UsageError(f"{name} is only for tests and must point at 127.0.0.1")
+    return value.rstrip("/")
+
+
+class Config:
+    def __init__(self, args, env, log: Log):
+        global _SLEEP_SCALE
+        scale = env.get("VIBES_SLEEP_SCALE", "").strip()
+        if scale:
+            try:
+                _SLEEP_SCALE = max(0.0, float(scale))
+            except ValueError:
+                raise UsageError("VIBES_SLEEP_SCALE must be a number") from None
+        self.accounts = loopback_base(env, "VIBES_ACCOUNTS_BASE", SPOTIFY_ACCOUNTS)
+        self.api = loopback_base(env, "VIBES_API_BASE", SPOTIFY_API)
+
+        self.playlist_id, self.playlist_from = resolve_playlist(env, log)
+
+        fallback = env.get("VIBES_FALLBACK_URL", "").strip() or DEFAULT_FALLBACK_URL
+        if fallback.lower() in ("off", "none", "no"):
+            self.fallback_url = None
+        else:
+            parts = urllib.parse.urlsplit(fallback)
+            loopback = parts.hostname in ("127.0.0.1", "localhost", "::1")
+            if not (parts.scheme == "https" or (parts.scheme == "http" and loopback)) or not parts.hostname:
+                raise UsageError("VIBES_FALLBACK_URL must be an https:// address (or \"off\")")
+            self.fallback_url = fallback
+
+        self.out = Path(args.out) if args.out else DEFAULT_OUT
+        self.dry_run = args.dry_run
+        self.token_file = env.get("VIBES_NEW_REFRESH_TOKEN_FILE", "").strip() or None
+        self.credentials = {name: env.get(name, "").strip() for name in CREDENTIALS}
+
+
+# The sync
+
+def fetch_live_list(url: str | None, log: Log) -> dict | None:
+    """The list that is live on the site now (the page publishes it), or None."""
+    if not url:
+        return None
+    for attempt in (1, 2):
+        try:
+            status, _, body = http_request("GET", url, headers={"Accept": "application/json"},
+                                           follow_redirects=True)
+        except NetworkError as err:
+            trouble = f"couldn't reach the live list at {url} ({err})"
+        else:
+            if status == 200:
+                snapshot = parse_json(body)
+                if looks_like_vibes(snapshot):
+                    count = len(snapshot["tracks"])
+                    log.info(f"the live list at {url} has {count} song{'s' if count != 1 else ''}")
+                    return snapshot
+                log.warn(f"the live list at {url} isn't a Saber Vibes list; ignoring it")
+                return None
+            if status == 404:
+                log.info(f"there is no live list at {url} yet (HTTP 404)")
+                return None
+            trouble = f"the live list at {url} answered HTTP {status}"
+            if status < 500:
+                log.info(f"{trouble}; carrying on without it")
+                return None
+        if attempt == 1:
+            log.info(f"{trouble}; trying once more in 2s")
+            sleep(2)
+        else:
+            log.info(f"{trouble}; carrying on without it")
+    return None
+
+
+def save_new_refresh_token(token: str, path: str | None, log: Log) -> None:
+    """Keep a rotated refresh token for the workflow: a 0600 file, never printed."""
+    if not path:
+        log.warn("Spotify handed out a new login key, but VIBES_NEW_REFRESH_TOKEN_FILE isn't set, so it "
+                 "can't be kept; the saved key may stop working soon (run scripts/vibes-login)")
+        return
+    try:
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(str(target), os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0), 0o600)
+        try:
+            os.fchmod(fd, 0o600)
+            os.write(fd, token.encode("utf-8"))
+        finally:
+            os.close(fd)
+    except OSError as err:
+        log.warn(f"Spotify handed out a new login key, but it couldn't be saved ({_why(err)})")
+        return
+    log.info("Spotify handed out a new login key; saved it for the workflow (not printed)")
+
+
+class Result:
+    def __init__(self):
+        self.status = "error"
+        self.message = ""
+        self.kind = ""
+        self.changed = False
+        self.rotated = False
+        self.data: dict | None = None
+        self.fresh = False
+        self.total = 0
+
+
+def read_vibes(spotify: Spotify, playlist_id: str, log: Log, result: Result) -> dict:
+    """Read the playlist from Spotify and build the page's data (without updated_at yet)."""
+    meta, entries, total = read_playlist(spotify, playlist_id)
+    tracks, skipped = build_tracks(entries)
+    if not tracks and (entries or total):
+        raise Problem("error", f"Spotify listed {len(entries) or total} entries but none of them can be shown "
+                      "(local files or unavailable songs)", "bad_response")
+    if skipped:
+        log.info(f"skipped {skipped} entr{'y' if skipped == 1 else 'ies'} that can't be shown "
+                 "(local files, unavailable songs)")
+    result.total = len(tracks)
+    if len(tracks) > MAX_TRACKS:
+        log.notice(f"the playlist has {len(tracks)} songs; the page shows the first {MAX_TRACKS}")
+    return {
+        "playlist": build_playlist(meta, playlist_id),
+        "source": "spotify-web-api",
+        "updated_at": None,
+        "tracks": tracks[:MAX_TRACKS],
+    }
+
+
+def stamp(data: dict, previous: dict | None) -> bool:
+    """Fill in data["updated_at"]; return True if the list differs from the live one."""
+    now = utc_now()
+    if previous is None:
+        added = [track["added_at"] for track in data["tracks"] if track["added_at"]]
+        data["updated_at"] = min(max(added), now) if added else now
+        return True
+    before, after = comparable(previous), comparable(data)
+    songs_changed = before["tracks"] != after["tracks"]
+    data["updated_at"] = now if songs_changed else (iso_z(previous.get("updated_at")) or now)
+    return songs_changed or before["snapshot_id"] != after["snapshot_id"]
+
+
+def run_sync(cfg: Config, log: Log) -> Result:
+    result = Result()
+    log.info(f"playlist {cfg.playlist_id} ({cfg.playlist_from})")
+    previous = fetch_live_list(cfg.fallback_url, log)
+
+    missing = [name for name, value in cfg.credentials.items() if not value]
+    if missing:
+        result.status = "skipped"
+        result.message = f"no Spotify keys yet ({', '.join(missing)} not set)"
+    else:
+        spotify = Spotify(
+            cfg.credentials["SPOTIFY_CLIENT_ID"], cfg.credentials["SPOTIFY_CLIENT_SECRET"],
+            cfg.credentials["SPOTIFY_REFRESH_TOKEN"], log, accounts=cfg.accounts, api=cfg.api,
+            on_new_refresh_token=lambda token: save_new_refresh_token(token, cfg.token_file, log),
+        )
+        try:
+            data = read_vibes(spotify, cfg.playlist_id, log, result)
+            changed = stamp(data, previous)
+        except Problem as problem:
+            result.status, result.message, result.kind = problem.status, problem.message, problem.kind
+        except Exception as err:
+            result.status, result.kind = "error", "unexpected"
+            result.message = f"unexpected problem ({type(err).__name__}: {one_line(err, 120)})"
+            sys.stderr.write(log.redact(traceback.format_exc()))
+            sys.stderr.flush()
+        else:
+            result.status, result.changed = "ok", changed
+            result.data, result.fresh = data, True
+            count = len(data["tracks"])
+            result.message = f"{count} song{'s' if count != 1 else ''}, {'changed' if changed else 'unchanged'}"
+        result.rotated = spotify.rotated
+
+    if result.status != "ok":
+        result.data = previous
+    return result
+
+
+# Output
+
+def write_json(path: Path, data: dict) -> None:
+    """Write the list atomically: UTF-8, 2-space indent, trailing newline, keys in contract order."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
+    fd, tmp = tempfile.mkstemp(prefix=".vibes-", suffix=".json", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(text)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def describe_song(track: dict) -> str:
+    """“Title” by Artist, Artist (for messages)."""
+    artists = ", ".join(a["name"] for a in track.get("artists") or []
+                        if isinstance(a, dict) and isinstance(a.get("name"), str) and a["name"])
+    return f"“{track.get('name') or ''}”" + (f" by {artists}" if artists else "")
+
+
+def _display_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return str(path)
+
+
+def report(result: Result, cfg: Config, log: Log, wrote: bool) -> None:
+    data = result.data
+    count = len(data["tracks"]) if data else 0
+    where = _display_path(cfg.out)
+    if result.fresh and data:
+        for number, track in enumerate(data["tracks"], 1):
+            added = (track["added_at"] or "date unknown")[:10]
+            log.info(f"  {number:>2}. {describe_song(track)} · added {added}")
+    if result.status in ("reauth", "error"):
+        log.problem(result.status, result.message)
+    elif result.status == "skipped":
+        log.notice(result.message)
+    if not result.fresh:
+        kept = (f"kept the live list ({count} song{'s' if count != 1 else ''})" if data
+                else "no live list to fall back on, so there is nothing to write (the page shows its empty state)")
+        log.info(kept)
+
+    if cfg.dry_run:
+        lines = ["Saber Vibes: dry run, nothing written",
+                 f"  status   {result.status}" + (f" · {result.message}" if result.status != "ok" else "")]
+        if data and data["tracks"]:
+            more = f" (Spotify lists {result.total})" if result.fresh and result.total > count else ""
+            lines.append(f"  songs    {count}{more}")
+            lines.append(f"  first    {describe_song(data['tracks'][0])}")
+            lines.append(f"  last     {describe_song(data['tracks'][-1])}")
+        else:
+            lines.append(f"  songs    {count}")
+        if result.fresh:
+            lines.append("  changed  " + ("yes, different from the live list" if result.changed
+                                          else "no, same as the live list"))
+            lines.append(f"  updated  {data['updated_at']}")
+        else:
+            lines.append("  changed  no (Spotify wasn't read)")
+        print(log.redact("\n".join(lines)), flush=True)
+    else:
+        did = f"wrote {where}" if wrote else f"left {where} alone"
+        print(log.redact(f"vibes-sync: {result.status} · {count} song{'s' if count != 1 else ''} · "
+                         f"{'changed' if result.changed else 'unchanged'} · {did}"), flush=True)
+
+
+def write_github_outputs(path: str, values: dict, log: Log) -> None:
+    with open(path, "a", encoding="utf-8") as handle:
+        for key, value in values.items():
+            handle.write(f"{key}={log.redact(one_line(value))}\n")
+
+
+def write_step_summary(path: str, result: Result, count: int, log: Log) -> None:
+    if result.status == "ok":
+        line = f"**Saber Vibes:** ok · {count} song{'s' if count != 1 else ''} · " \
+               f"{'changed' if result.changed else 'unchanged'}"
+    else:
+        line = f"**Saber Vibes:** {result.status} · {result.message}"
+        line += f" · the page keeps the live list ({count} songs)" if result.data else " · nothing to show yet"
+    if result.rotated:
+        line += " · Spotify handed out a new login key"
+    with open(path, "a", encoding="utf-8") as handle:
+        handle.write(log.redact(one_line(line, 600)) + "\n")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="vibes-sync",
+        description="Copy the Saber Vibes Spotify playlist into data/vibes.json for the /vibes/ page.",
+        epilog="Keys come from SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET and SPOTIFY_REFRESH_TOKEN "
+               "(scripts/vibes-login makes them). Without keys, the live list from saberhq.com is copied.",
+    )
+    parser.add_argument("--out", metavar="FILE", help="where to write the list (default: data/vibes.json)")
+    parser.add_argument("--dry-run", action="store_true", help="read Spotify and print a summary; write nothing")
+    args = parser.parse_args(argv)
+
+    env = os.environ
+    log = Log(github=env.get("GITHUB_ACTIONS") == "true")
+    for name in CREDENTIALS:
+        log.protect(env.get(name, "").strip(), mask=False)
+    try:
+        cfg = Config(args, env, log)
+    except UsageError as err:
+        print(f"vibes-sync: {err}", file=sys.stderr)
+        return 2
+
+    result = run_sync(cfg, log)
+
+    wrote = False
+    if result.data is not None and not cfg.dry_run:
+        try:
+            write_json(cfg.out, result.data)
+        except OSError as err:
+            print(log.redact(f"vibes-sync: couldn't write {cfg.out} ({_why(err)})"), file=sys.stderr)
+            return 1
+        wrote = True
+    report(result, cfg, log, wrote)
+
+    count = len(result.data["tracks"]) if result.data else 0
+    if env.get("GITHUB_OUTPUT"):
+        write_github_outputs(env["GITHUB_OUTPUT"], {
+            "status": result.status,
+            "changed": "true" if result.changed else "false",
+            "count": count,
+            "rotated": "true" if result.rotated else "false",
+            "wrote": "true" if wrote else "false",
+            "message": result.message,
+        }, log)
+        line = json.dumps(result.data, ensure_ascii=True, separators=(",", ":")) if wrote else ""
+        with open(env["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+            handle.write(f"data={log.redact(line)}\n")
+    if env.get("GITHUB_STEP_SUMMARY"):
+        try:
+            write_step_summary(env["GITHUB_STEP_SUMMARY"], result, count, log)
+        except OSError:
+            pass
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print("vibes-sync: stopped", file=sys.stderr)
+        sys.exit(130)

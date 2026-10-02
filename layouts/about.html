@@ -1,0 +1,154 @@
+{{- /* About page — content/about/index.md picks this up with `layout: about` (Hugo 0.146+
+     matches a page's layout name to layouts/<layout>.html, ahead of the Book theme's
+     generic single.html; landing.html and vibes.html work the same way).
+     Same skeleton as layouts/blog/single.html; styles in the "About page" block of
+     assets/custom.css.
+
+     A sibling of the home page and the Sidechain hero: a mono kicker, a Geist Pixel line
+     ("Hi, I'm Saber.") whose full stop is vermillion, the tagline-sized lede and two hairline
+     buttons, with Saber's photo as a circle at the right edge (above the text under 901px).
+     Below, the home page's own section blocks: "The long version" (the letter, in two
+     newspaper columns, then the topic tags), then "Elsewhere". If the markdown ever gains a
+     <!--more--> line, each "## heading" after it becomes one more block in between.
+     Every word on the page comes from the front matter or the markdown body. */ -}}
+
+{{- /* The address behind "Say hi" and "Email": the first mailto entry of menu.after in
+     config.toml ("Contact me"). It is only ever an href — never printed on the page. */ -}}
+{{- $mailto := "" }}
+{{- range site.Menus.after }}
+  {{- if and (not $mailto) (hasPrefix .URL "mailto:") }}{{ $mailto = .URL }}{{ end }}
+{{- end }}
+{{- /* The Scholar profile from the header menu, for the "publications" aside */ -}}
+{{- $scholar := "" }}
+{{- range site.Menus.home }}
+  {{- if and (not $scholar) (strings.Contains .URL "scholar.google") }}{{ $scholar = .URL }}{{ end }}
+{{- end }}
+
+{{- /* The text comes in two parts, split at the `<!--more-->` line in content/about/index.md:
+     the letter above it ("The long version"), then the sections below it, one per
+     "## heading". Without that line the whole text is the letter. */ -}}
+{{- $letter := .Content }}
+{{- $more := "" }}
+{{- if strings.Contains .RawContent "<!--more-->" }}
+  {{- $letter = .Summary }}
+  {{- $more = .ContentWithoutSummary | strings.TrimSpace }}
+{{- end }}
+
+{{- /* The render-link hook (layouts/_markup/render-link.html) opens remote links in a new
+     tab only on the home page; do the same here, and say so to screen readers. It matches the
+     hook's own output — href, optional title, nothing else — so a link that already carries a
+     target is left alone. */ -}}
+{{- $newTab := `(?s)<a href="(https?://[^"]+)"((?: title="[^"]*")?)>(.*?)</a>` }}
+{{- $newTabTo := `<a href="$1"$2 target="_blank" rel="noopener">$3<span class="sq-sr-only"> (opens in a new tab)</span></a>` }}
+<!DOCTYPE html>
+<html lang="{{ default .Site.Language.Lang .Site.LanguageCode }}" dir="{{ default "ltr" .Site.Language.LanguageDirection }}">
+<head>
+  {{ partial "docs/html-head" . }}
+  {{ partial "docs/inject/head" . }}
+</head>
+<body class="sq-shell book-kind-page sq-me-page">
+
+  {{ partial "saberhq/site-header" (dict "page" . "crumb" "about") }}
+
+  <main class="sq-me">
+
+    <section class="sq-hero sq-wrap sq-me-hero" aria-labelledby="sq-me-title">
+      <div class="sq-me-intro">
+        {{- with .Params.kicker }}
+        <div class="sq-kicker">{{ . }}</div>
+        {{- end }}
+        {{- /* A full stop at the end of the heading is drawn in vermillion, like the
+             Sidechain and Saber Vibes wordmarks. It stays real text: this one ends a sentence. */}}
+        {{- $h := .Params.heading | default .Title }}
+        <h1 class="sq-me-mark" id="sq-me-title">{{ if strings.HasSuffix $h "." }}{{ strings.TrimSuffix "." $h }}<span class="sq-me-dot">.</span>{{ else }}{{ $h }}{{ end }}</h1>
+        {{- with .Params.lede }}
+        <p class="sq-tagline">{{ . }}</p>
+        {{- end }}
+        <div class="sq-hero-actions">
+          {{- with .Params.resume }}
+          <a class="sq-btn sq-btn--secondary" href="{{ . }}" target="_blank" rel="noopener">Résumé <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a>
+          {{- end }}
+          {{- with $mailto }}
+          <a class="sq-btn sq-btn--secondary" href="{{ . }}">Say hi<span class="sq-sr-only"> (email)</span></a>
+          {{- end }}
+        </div>
+      </div>
+
+      {{- /* The photo, from the page bundle (front matter `photo`, alt text in `photoAlt`):
+           cropped to a square anchored at the top (a taller photo keeps the head), at 1x and
+           2x the circle's desktop size, as WebP with a JPEG fallback. After the heading in the
+           source, so screen readers hear the name first; under 901px the stylesheet lifts it
+           above the text. Keep `sizes` in step with .sq-me-photo img in custom.css. */}}
+      {{- with .Resources.Get (.Params.photo | default "profile.jpg") }}
+        {{- if lt (math.Min .Width .Height) 448 }}{{ warnf "about: %s is %dx%d - use a square photo at least 448px wide so the circle stays sharp" .Name .Width .Height }}{{ end }}
+        {{- $sizes := "(max-width: 900px) 136px, 224px" }}
+        {{- $j1 := .Fill "224x224 Top q82" }}
+        {{- $j2 := .Fill "448x448 Top q82" }}
+        {{- $w1 := .Fill "224x224 Top webp q80" }}
+        {{- $w2 := .Fill "448x448 Top webp q80" }}
+      <figure class="sq-me-photo">
+        <picture>
+          <source type="image/webp" srcset="{{ $w1.RelPermalink }} 224w, {{ $w2.RelPermalink }} 448w" sizes="{{ $sizes }}">
+          <img src="{{ $j1.RelPermalink }}" srcset="{{ $j1.RelPermalink }} 224w, {{ $j2.RelPermalink }} 448w" sizes="{{ $sizes }}"
+               width="224" height="224" alt="{{ $.Params.photoAlt | default (printf "Photo of %s" site.Params.author) }}"
+               fetchpriority="high" decoding="async">
+        </picture>
+      </figure>
+      {{- end }}
+    </section>
+
+    <section class="sq-section sq-wrap" aria-labelledby="sq-me-long">
+      <div class="sq-section-head">
+        <h2 class="sq-section-label" id="sq-me-long">{{ .Params.longLabel | default "The long version" }}</h2>
+        <span class="sq-section-fill"></span>
+        {{- with $scholar }}
+        <a class="sq-section-aside" href="{{ . }}" target="_blank" rel="noopener">publications <span aria-hidden="true">↗</span><span class="sq-sr-only"> on Google Scholar (opens in a new tab)</span></a>
+        {{- end }}
+      </div>
+      <div class="sq-prose sq-me-prose sq-me-cols">
+        {{ $letter | replaceRE $newTab $newTabTo | safeHTML }}
+      </div>
+      {{- if or .Params.topics .Params.topicAccent }}
+      <div class="sq-topics">
+        {{- range .Params.topics }}<span class="sq-tag">{{ . }}</span>{{ end }}
+        {{- with .Params.topicAccent }}<span class="sq-tag sq-tag--accent">{{ . }}</span>{{ end }}
+      </div>
+      {{- end }}
+    </section>
+
+    {{- /* Below the <!--more--> line: each "## heading" opens a section of its own — the
+         stylesheet draws the rendered h2 as the site's section head (1.5px ink rule + mono
+         label) — so a new "## Photos" in the markdown is a new block, no template change.
+         Set at the tagline's size: the personal part reads as a note, not small print. */}}
+    {{- with $more }}
+    <div class="sq-section sq-wrap sq-prose sq-me-more">
+      {{ . | replaceRE $newTab $newTabTo | safeHTML }}
+    </div>
+    {{- end }}
+
+    {{- /* The off-site entries of the header menu (menu.home in config.toml — the socials; in-site
+         links like Sidechain are skipped), then the mailto, labelled "Email": the address
+         itself is never spelled out. */}}
+    <section class="sq-section sq-wrap" aria-labelledby="sq-me-elsewhere">
+      <div class="sq-section-head">
+        <h2 class="sq-section-label" id="sq-me-elsewhere">Elsewhere</h2>
+        <span class="sq-section-fill"></span>
+      </div>
+      <ul class="sq-me-links" role="list">
+        {{- range site.Menus.home }}
+          {{- if hasPrefix .URL "http" }}
+        <li><a class="sq-me-link" href="{{ .URL }}" target="_blank" rel="noopener">{{ .Name }} <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a></li>
+          {{- end }}
+        {{- end }}
+        {{- with $mailto }}
+        <li><a class="sq-me-link" href="{{ . }}">Email</a></li>
+        {{- end }}
+      </ul>
+    </section>
+
+  </main>
+
+  {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "ABOUT" "href" .RelPermalink)) }}
+  {{ partial "docs/inject/body" . }}
+</body>
+</html>

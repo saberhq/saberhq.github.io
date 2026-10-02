@@ -4,19 +4,102 @@ on:
   push:
     branches: ["main"]
   workflow_dispatch:
+  schedule:
+    - cron: "23 6 * * *"
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
+  queue: max
 
 jobs:
-  build:
+  vibes:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      deploy: ${{ steps.gate.outputs.deploy }}
+      data: ${{ steps.sync.outputs.data }}
+      status: ${{ steps.sync.outputs.status }}
+      message: ${{ steps.sync.outputs.message }}
+      rotated: ${{ steps.sync.outputs.rotated }}
+      token_saved: ${{ steps.save_token.outputs.saved }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Sync Saber Vibes
+        id: sync
+        timeout-minutes: 10
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+          VIBES_NEW_REFRESH_TOKEN_FILE: ${{ runner.temp }}/vibes-new-refresh-token
+        run: python3 scripts/vibes-sync
+
+      - name: Store Spotify's new login key
+        id: save_token
+        if: steps.sync.outputs.rotated == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.SPOTIFY_SECRETS_PAT }}
+          TOKEN_FILE: ${{ runner.temp }}/vibes-new-refresh-token
+        run: |
+          set -euo pipefail
+          trap 'rm -f "$TOKEN_FILE"' EXIT
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "There is no SPOTIFY_SECRETS_PAT secret, so the new key can't be stored from here."
+            echo "saved=false" >> "$GITHUB_OUTPUT"
+          elif [ ! -s "$TOKEN_FILE" ]; then
+            echo "::warning title=Saber Vibes::Spotify handed out a new login key, but the file holding it is missing."
+            echo "saved=false" >> "$GITHUB_OUTPUT"
+          elif gh secret set SPOTIFY_REFRESH_TOKEN --app actions --repo "$GITHUB_REPOSITORY" < "$TOKEN_FILE"; then
+            echo "Stored the new login key in the SPOTIFY_REFRESH_TOKEN secret."
+            echo "saved=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning title=Saber Vibes::Couldn't store the new login key. Has SPOTIFY_SECRETS_PAT expired?"
+            echo "saved=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Decide whether to deploy
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+          CHANGED: ${{ steps.sync.outputs.changed }}
+          WROTE: ${{ steps.sync.outputs.wrote }}
+        run: |
+          set -euo pipefail
+          deploy=true
+          if [ "$EVENT" = "schedule" ]; then
+            if [ "$CHANGED" = "true" ]; then
+              echo "The playlist changed, so the site is rebuilt."
+            elif [ "$(date -u +%u)" = "1" ] && [ "$WROTE" = "true" ]; then
+              echo "Monday: the weekly rebuild that refreshes the weeks counts."
+            else
+              deploy=false
+              echo "Nothing changed on Spotify, so there is nothing to deploy today."
+            fi
+          fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
+      - name: Remove the new-key file
+        if: always()
+        env:
+          TOKEN_FILE: ${{ runner.temp }}/vibes-new-refresh-token
+        run: rm -f "$TOKEN_FILE"
+
+  build:
+    needs: vibes
+    if: ${{ !cancelled() && (needs.vibes.outputs.deploy == 'true' || (github.event_name != 'schedule' && needs.vibes.result != 'success')) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,17 +113,39 @@ jobs:
           hugo-version: "0.148.2"
           extended: true
 
+      - name: Add the Saber Vibes playlist
+        env:
+          VIBES_DATA: ${{ needs.vibes.outputs.data }}
+        run: |
+          set -euo pipefail
+          if [ -n "${VIBES_DATA:-}" ]; then
+            mkdir -p data
+            printf '%s\n' "$VIBES_DATA" > data/vibes.json
+            echo "Wrote data/vibes.json from the Saber Vibes sync."
+          else
+            python3 scripts/vibes-sync || true
+            if [ -s data/vibes.json ]; then
+              echo "Copied the live Saber Vibes list into data/vibes.json."
+            else
+              echo "No playlist this time; the /vibes/ page shows its empty state."
+            fi
+          fi
+
       - name: Build
         run: hugo --minify --cleanDestinationDir --config config.toml
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./public
+          path: ./build
 
   deploy:
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -48,3 +153,136 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  vibes-alert:
+    needs: vibes
+    if: ${{ !cancelled() && needs.vibes.outputs.status != '' && needs.vibes.outputs.status != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open, update or close the Saber Vibes issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VIBES_STATUS: ${{ needs.vibes.outputs.status }}
+          VIBES_MESSAGE: ${{ needs.vibes.outputs.message }}
+          VIBES_ROTATED: ${{ needs.vibes.outputs.rotated }}
+          TOKEN_SAVED: ${{ needs.vibes.outputs.token_saved }}
+          AUTHORIZED_AT: ${{ vars.SPOTIFY_AUTHORIZED_AT }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          label="saber-vibes"
+          title="Saber Vibes: the Spotify sync needs you"
+
+          when() {
+            python3 - "$@" <<'PY'
+          import datetime as d, sys
+          mode, raw = sys.argv[1], sys.argv[2].strip()
+          try:
+              t = d.datetime.strptime(raw[:19], "%Y-%m-%dT%H:%M:%S") if "T" in raw else d.datetime.strptime(raw[:10], "%Y-%m-%d")
+          except ValueError:
+              sys.exit(0)
+          if mode == "hours":
+              print(int((d.datetime.now(d.timezone.utc).replace(tzinfo=None) - t).total_seconds() // 3600))
+          else:
+              e = t + d.timedelta(days=182)
+              print(f"{e.day} {e:%b %Y}")
+          PY
+          }
+
+          reason=""
+          case "${VIBES_STATUS:-}" in
+            reauth|error) reason="$VIBES_STATUS" ;;
+          esac
+          if [ -z "$reason" ] && [ "${VIBES_ROTATED:-}" = "true" ] && [ "${TOKEN_SAVED:-}" != "true" ]; then
+            reason="rotated"
+          fi
+          login_days=""
+          if [ -n "${AUTHORIZED_AT:-}" ]; then
+            login_hours=$(when hours "$AUTHORIZED_AT")
+            if [ -n "$login_hours" ]; then
+              login_days=$((login_hours / 24))
+            else
+              echo "::warning title=Saber Vibes::The SPOTIFY_AUTHORIZED_AT variable should be a date like 2026-10-01."
+            fi
+          fi
+          if [ -z "$reason" ] && [ -n "$login_days" ] && [ "$login_days" -ge 150 ]; then
+            reason="expiring"
+          fi
+
+          open_issues=$(gh issue list --label "$label" --state open --limit 20 --json number --jq '.[].number')
+
+          if [ -z "$reason" ]; then
+            if [ "${VIBES_STATUS:-}" = "ok" ]; then
+              for number in $open_issues; do
+                key_issue_opened=$(gh issue view "$number" --json body,createdAt \
+                  --jq 'select(.body | contains("<!-- saber-vibes:new-key -->")) | .createdAt[0:10]')
+                if [ -n "$key_issue_opened" ] && { [ -z "${AUTHORIZED_AT:-}" ] || [[ "$AUTHORIZED_AT" < "$key_issue_opened" ]]; }; then
+                  echo "Issue #$number stays open until the next scripts/vibes-login."
+                  continue
+                fi
+                gh issue close "$number" --comment "The Spotify sync works again ($RUN_URL), so this can close. Nothing to do."
+                echo "Closed issue #$number."
+              done
+            fi
+            echo "Nothing needs Saber right now."
+            exit 0
+          fi
+
+          body=$(mktemp)
+          {
+            case "$reason" in
+              reauth)
+                echo "The daily Saber Vibes sync can't use the saved Spotify login any more, so the page keeps showing the last playlist it had."
+                ;;
+              error)
+                echo "The daily Saber Vibes sync couldn't read the playlist from Spotify, so the page keeps showing the last playlist it had."
+                echo
+                echo "This often fixes itself by the next day. If this issue is still open after two or three days, follow the steps below."
+                ;;
+              rotated)
+                echo "<!-- saber-vibes:new-key -->"
+                echo "Spotify handed out a new login key during today's sync, and this workflow couldn't store it (there is no SPOTIFY_SECRETS_PAT secret, or it has expired). The saved login may stop working soon, so log in again now. This issue stays open until you do."
+                ;;
+              expiring)
+                printf 'Spotify logins last six months. The current one is from %s (%s days ago), so it stops working around %s. Log in again any time before then.\n' \
+                  "$AUTHORIZED_AT" "$login_days" "$(when expires "$AUTHORIZED_AT")"
+                ;;
+            esac
+            echo
+            if { [ "$reason" = "reauth" ] || [ "$reason" = "error" ]; } && [ -n "${VIBES_MESSAGE:-}" ]; then
+              printf 'What the sync said: `%s`\n\n' "$(printf '%s' "$VIBES_MESSAGE" | tr '`' "'")"
+            fi
+            cat <<'EOF'
+          **What to do:** run `scripts/vibes-login`.
+
+          EOF
+            case "$reason" in
+              rotated|expiring) closes="once you have logged in again" ;;
+              *) closes="after the next good sync" ;;
+            esac
+            printf 'This issue closes itself %s. Details: %s\n' "$closes" "$RUN_URL"
+          } > "$body"
+
+          set -- $open_issues
+          first="${1:-}"
+          if [ -z "$first" ]; then
+            has_label=$(gh label list --limit 200 --json name --jq 'map(select(.name == "saber-vibes")) | length')
+            if [ "$has_label" = "0" ]; then
+              gh label create "$label" --color 006CA9 --description "The daily Spotify sync for the Saber Vibes page"
+            fi
+            gh issue create --title "$title" --label "$label" --body-file "$body"
+            exit 0
+          fi
+          last=$(gh issue view "$first" --json createdAt,comments \
+            --jq '[.createdAt] + [.comments[] | select(.author.login == "github-actions" or .author.login == "github-actions[bot]") | .createdAt] | max')
+          since=$(when hours "$last")
+          if [ -n "$since" ] && [ "$since" -lt 168 ]; then
+            echo "Issue #$first is already open and was updated $since hours ago; the next reminder waits until a week has passed."
+            exit 0
+          fi
+          { printf 'Still needs you (%s UTC).\n\n' "$(date -u '+%Y-%m-%d')"; cat "$body"; } > "$body.comment"
+          gh issue comment "$first" --body-file "$body.comment"

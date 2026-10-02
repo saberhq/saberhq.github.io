@@ -9,7 +9,7 @@
 {{ if $home }}
   <div class="footer-socials">
     {{ range $home }}
-      <a href="{{ .URL }}" {{ if not .Page }}target="_blank" rel="noopener noreferrer"{{ end }}>
+      <a href="{{ .URL }}" {{ if hasPrefix .URL "http" }}target="_blank" rel="noopener noreferrer"{{ end }}>
         {{ .Name }}
       </a>
     {{ end }}
