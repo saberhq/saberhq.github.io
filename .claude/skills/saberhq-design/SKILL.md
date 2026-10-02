@@ -12,4 +12,6 @@ If creating visual artifacts (slides, mocks, throwaway prototypes, etc), copy as
 
 For print/PDF outputs: embed static-weight TrueType instances of Geist/Geist Mono, not the variable fonts (Chromium PDF export mangles variable fonts).
 
+This folder is public on GitHub: never add private material to it (screenshots, uploads, keys, personal notes).
+
 If the user invokes this skill without any other guidance, ask them what they want to build or design, ask some questions, and act as an expert designer who outputs HTML artifacts _or_ production code, depending on the need.
