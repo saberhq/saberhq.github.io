@@ -1,0 +1,289 @@
+/* ======================================================================
+   Saber Vibes (/vibes/) — loaded only by layouts/vibes.html, after the tokens and custom.css.
+   "Sleeve wall": the playlist's covers hang as one even wall on the right, Saber's short
+   signed note and a click-to-cue Spotify player on the left. One screen on desktop (the
+   sleeves are sized from the viewport), a scrolling single column under 901px.
+   Colour: --accent-3 ("blue hour", tokens/colors.css) takes vermillion's job on this page —
+   small marks only. Ink and paper carry the structure; the album art carries the colour.
+   ====================================================================== */
+
+/* ---- Page voice: accent-3 does vermillion's job on this page ---- */
+.vb-page {
+  --link: var(--accent-3);
+  --color-link: var(--accent-3);
+  --color-visited-link: var(--accent-3);
+  --focus-ring: var(--accent-3);
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+}
+.vb-page ::selection { background: var(--accent-3-wash); }
+.vb-page > main { flex: 1 0 auto; }
+.vb-page .sq-wrap { max-width: var(--vb-max); padding-left: var(--gut); padding-right: var(--gut); }
+.vb-page .sq-crumb { color: var(--accent-3); }
+.vb-page .sq-sitefooter-in,
+.vb-page .sq-sitefooter a, .vb-page .sq-sitefooter a:visited { color: var(--ink-3); }
+.vb-page .sq-sitefooter a:hover { color: var(--ink); }
+/* Book rings every :focus, mouse clicks included; keep the ring for keyboard focus only */
+.vb-page :focus:not(:focus-visible) { outline: none; }
+
+/* ---- Geometry (desktop): one screen; the wall is sized from the viewport ----
+   Same width as the site's 1100px shell up to a ~1375px-wide window, then a little wider on
+   big monitors so the sleeves can grow. Header, stage and footer always share their edges. */
+.vb-page {
+  --vb-max: clamp(var(--page-max), 80vw, 1440px);
+  --gut: var(--space-6);
+  --left: clamp(280px, 24vw, 380px);   /* the note is Saber's own ~300-character paragraph */
+  --cgap: clamp(40px, 3.6vw, 72px);
+  --gx: clamp(14px, 1.2vw, 24px);
+  --gy: clamp(18px, 3vh, 32px);
+  --pady: clamp(16px, 7vh - 22px, 96px);
+  --chrome: 106px;            /* header strip 57 + footer strip 49 — update if a strip changes */
+  --head: 50px;               /* wall head: rule + 11px + logo row + 16px */
+  --t-size: clamp(13px, 0.86vw, 15px);    /* song title */
+  --a-size: clamp(12px, 0.8vw, 13.5px);   /* artists */
+  /* caption budget, the tallest a caption gets: 10px pad + title (2 lines × 1.3) + 2px + artists
+     (2 lines × 1.35) + 4px + weeks (16px). Derived from the sizes above so it can't drift: a flat
+     92px undercounted it (98px at 1280–1440, 107px at 1920), and short windows overflowed. */
+  --cap: calc(32px + 2.6 * var(--t-size) + 2.7 * var(--a-size));
+  --art-r: 8px;               /* Spotify: 8px corners on large screens, 4px on small */
+}
+.vb-stage {
+  --cols: var(--n-cols, 5);
+  --rows: var(--n-rows, 2);
+  --s-w: calc((min(100vw, var(--vb-max)) - 2 * var(--gut) - var(--left) - var(--cgap) - (var(--cols) - 1) * var(--gx)) / var(--cols));
+  --s-h: calc((100vh - var(--chrome) - 2 * var(--pady) - var(--head) - var(--rows) * var(--cap) - (var(--rows) - 1) * var(--gy)) / var(--rows));
+  --s: clamp(96px, min(var(--s-w), var(--s-h)), 260px);   /* capped: one or two songs never balloon */
+  --wall-w: calc(var(--cols) * var(--s) + (var(--cols) - 1) * var(--gx));
+  max-width: var(--vb-max); margin: 0 auto;
+  padding: var(--pady) var(--gut);
+  min-height: calc(100vh - var(--chrome));
+  display: grid;
+  grid-template-columns: minmax(var(--left), 1fr) minmax(0, var(--wall-w));
+  column-gap: var(--cgap);
+  align-content: center;
+}
+@supports (height: 100dvh) {
+  .vb-stage {
+    --s-h: calc((100dvh - var(--chrome) - 2 * var(--pady) - var(--head) - var(--rows) * var(--cap) - (var(--rows) - 1) * var(--gy)) / var(--rows));
+    min-height: calc(100dvh - var(--chrome));
+  }
+}
+
+/* ---------- Story column ---------- */
+/* padding-top = wall-head rule (1.5px) + its 11px pad + 1.5px optical: kicker sits on the head's line */
+.vb-story { display: flex; flex-direction: column; min-width: 0; max-width: 400px; padding-top: 14px; }
+.vb-story .sq-kicker { margin: 0; line-height: 1.6; }
+.vb-wordmark {
+  margin: 12px 0 0;
+  font-family: var(--font-pixel); font-weight: 400; letter-spacing: 0; line-height: 0.98;
+  font-size: clamp(44px, 3.6vw, 64px); color: var(--ink);
+}
+.vb-wordmark-line { display: block; }
+.vb-wordmark-dot { color: var(--accent-3); }
+.vb-lede {
+  margin: 16px 0 0; font-size: clamp(16.5px, 1.2vw, 20px); line-height: 1.35; font-weight: 500;
+  letter-spacing: -0.012em; color: var(--ink); text-wrap: balance;
+}
+.vb-body {
+  margin: 10px 0 0; font-size: clamp(14px, 0.98vw, 16px); line-height: 1.6;
+  color: var(--ink-2); text-wrap: pretty;
+}
+.vb-sign { margin: 6px 0 0; font-size: clamp(14px, 0.98vw, 16px); line-height: 1.6; color: var(--ink-2); }
+.vb-actions { margin-top: 20px; display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.vb-meta {
+  margin: 12px 0 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.6;
+  letter-spacing: var(--meta-track); color: var(--ink-3);
+}
+
+/* ---------- Player (JS + wide screens only) ----------
+   Idle: a hairline frame exactly the embed's height, so nothing moves when Spotify's own
+   player replaces it on the first click (there is no Spotify iframe before that click). */
+.vb-player { display: none; margin-top: auto; padding-top: 24px; }
+.vb-deck {
+  height: 152px; display: flex; align-items: center; gap: 16px; padding: 15px;
+  border: var(--rule-w) solid var(--rule); border-radius: 12px;
+}
+.vb-deck.is-live { padding: 0; border: 0; display: block; }
+.vb-deck iframe { display: block; width: 100%; height: 100%; border: 0; border-radius: 12px; }
+.vb-deck-copy { min-width: 0; }
+.vb-deck p { margin: 0; }
+.vb-deck-label {
+  font-family: var(--font-mono); font-size: var(--label-size); font-weight: 500; line-height: 1.6;
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--accent-3);
+}
+.vb-deck-text { margin-top: 2px !important; font-size: var(--small-size); line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+.vb-player-foot {
+  display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3);
+  margin: 8px 0 0; font-family: var(--font-mono); font-size: 10.5px; line-height: 1.5;
+  letter-spacing: var(--meta-track); color: var(--ink-3);
+}
+a.vb-fine, a.vb-fine:visited { color: var(--ink-3); text-decoration: none; white-space: nowrap; }
+a.vb-fine:hover { color: var(--ink); }
+.vb-close {
+  white-space: nowrap; font: inherit; letter-spacing: inherit; color: var(--ink-2); background: none; border: 0; padding: 0; cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+.vb-close:hover { color: var(--ink); }
+.vb-close[hidden] { display: none; }
+.vb-stage--one-row .vb-player { margin-top: 0; }
+@media (max-height: 820px) {
+  .vb-player { padding-top: 18px; }
+  .vb-deck { height: 80px; padding: 11px; gap: 14px; }   /* Spotify's compact 80px player */
+}
+/* Short desktop windows (1280x720 and 1366x768 laptops; a 1366x768 browser shows ~657px): the
+   story column gives back ~50px so the page still fits one screen. The wordmark steps down to
+   the display size (as on phones), the note's lines and the gaps tighten; nothing is hidden.
+   Windows taller than 800px are untouched. Under 640px (big zoom, small screens) the stage's
+   top and bottom padding tightens further. */
+@media (min-width: 901px) and (max-height: 800px) {
+  .vb-page { --pady: clamp(12px, 7vh - 34px, 28px); }
+  .vb-wordmark { margin-top: 8px; font-size: var(--display-size); }
+  .vb-lede { margin-top: 12px; }
+  .vb-body { line-height: 1.5; }
+  .vb-actions { margin-top: 14px; }
+  .vb-meta { margin-top: 8px; }
+  .vb-player { padding-top: 12px; }
+}
+@media (min-width: 901px) and (max-height: 640px) {
+  .vb-page { --pady: 12px; }
+}
+
+/* ---------- Wall ---------- */
+.vb-wallwrap { min-width: 0; }
+.vb-wall-head { border-top-color: var(--accent-3); padding-top: 11px; margin-bottom: 16px; align-items: center; }
+.vb-wall-head .sq-section-label { margin: 0; font-size: inherit; font-weight: inherit; line-height: 1.6; color: var(--accent-3); }
+.vb-order { font-weight: 400; color: var(--ink-3); letter-spacing: var(--meta-track); white-space: nowrap; }
+.vb-order .sq-glyph { font-size: 1.2em; }
+/* Spotify attribution: the official full-logo files, unmodified (layouts/_partials/vibes/
+   spotify-logo.html) — black on paper, white on dark, never recoloured, never in a sentence;
+   76px wide (min 70); the head's padding keeps half the icon height (≈10px) clear around it.
+   The light/dark swap selectors carry .vb-spotify so they outrank `.vb-spotify img`. */
+a.vb-spotify, a.vb-spotify:visited { display: block; flex: none; line-height: 0; margin-left: var(--space-5); }
+.vb-spotify img { display: block; width: 76px; height: auto; }
+.vb-spotify .vb-spotify-dark { display: none; }
+[data-theme="dark"] .vb-spotify .vb-spotify-light { display: none; }
+[data-theme="dark"] .vb-spotify .vb-spotify-dark { display: block; }
+a.vb-spotify:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; border-radius: 2px; }
+
+.vb-wall {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: var(--gy) var(--gx); align-items: start;
+}
+.vb-item { position: relative; min-width: 0; margin: 0; }
+
+/* Cover art is shown whole: square, uncropped, nothing on top, never tinted or animated.
+   The 1px outline sits outside the art so pale covers keep an edge on paper. */
+.vb-sleeve {
+  display: block; width: 100%; aspect-ratio: 1; padding: 0; border: 0; background: none;
+  border-radius: var(--art-r); cursor: pointer;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.vb-sleeve img {
+  display: block; width: 100%; height: 100%; max-width: none; border-radius: inherit;
+  outline: var(--rule-w) solid var(--rule); outline-offset: 0;
+  background: var(--surface-sunken);
+}
+/* a song Spotify sends without album art: a plain sunken square that still links. It keeps its
+   hairline when a mouse click focuses it (the page drops only the mouse focus *ring*). */
+.vb-sleeve:empty { background: var(--surface-sunken); outline: var(--rule-w) solid var(--rule); }
+.vb-page .vb-sleeve:empty:focus:not(:focus-visible) { outline: var(--rule-w) solid var(--rule); }
+.vb-sleeve--cue { display: none; }
+
+.vb-cap { position: relative; padding-top: 10px; }
+/* Spotify's metadata is shown exactly as delivered: one string, one style, no text-transform.
+   Desktop clamps at two lines (full text in title="" and in the accessible name). */
+.vb-title {
+  margin: 0; font-size: var(--t-size); line-height: 1.3; font-weight: 500;
+  letter-spacing: -0.006em; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+a.vb-title-link, a.vb-title-link:visited { color: var(--ink); text-decoration: none; }
+a.vb-title-link:hover { color: var(--accent-3); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+/* the title link's hit area and focus ring span the whole caption, so the ring can't be clipped
+   (on desktop the artists and weeks lines sit above the hit area — see .vb-weeks below) */
+a.vb-title-link::after { content: ""; position: absolute; inset: 4px -6px -4px; border-radius: var(--radius); }
+a.vb-title-link:focus-visible { outline: none; }
+a.vb-title-link:focus-visible::after { outline: 2px solid var(--focus-ring); outline-offset: 0; }
+.vb-artists {
+  margin: 2px 0 0; font-size: var(--a-size); line-height: 1.35; color: var(--ink-3);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.vb-weeks {
+  margin: 4px 0 0;
+  font-family: var(--font-mono); font-size: 11px; line-height: 16px; letter-spacing: var(--meta-track);
+  color: var(--ink-2); white-space: nowrap;   /* "21 weeks · cued" never wraps: cueing changes no size */
+}
+/* Where captions are clamped (desktop), the artists and weeks lines sit above the title's
+   caption-wide hit area, so their own tooltips can show: the full artist list when it is cut
+   short (Spotify: full metadata must stay viewable) and the date the song went up. */
+@media (min-width: 901px) and (hover: hover) {
+  .vb-artists, .vb-weeks { position: relative; z-index: 1; }
+}
+.vb-weeks.is-new .vb-weeks-n {
+  display: inline-block; padding: 0 6px; border-radius: var(--radius-sm);
+  color: var(--accent-3); background: var(--accent-3-wash);
+  box-shadow: inset 0 0 0 var(--rule-w) var(--accent-3); line-height: 15px;
+}
+
+/* hover / focus: the sleeve (the card) lifts; the art itself never changes */
+.vb-item:hover .vb-sleeve, .vb-item:focus-within .vb-sleeve {
+  transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+[data-theme="dark"] .vb-item:hover .vb-sleeve, [data-theme="dark"] .vb-item:focus-within .vb-sleeve { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); }
+.vb-sleeve:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+
+/* the song in the player: accent title and "· cued"; nothing changes size */
+.vb-item[aria-current="true"] a.vb-title-link { color: var(--accent-3); }
+.vb-item[aria-current="true"] .vb-weeks::after { content: " · cued"; color: var(--accent-3); }
+
+/* the open slot: "room for one more" — this is not a top ten */
+.vb-open { min-width: 0; margin: 0; }
+.vb-open-sleeve {
+  display: grid; place-items: center; aspect-ratio: 1; padding: 12px; text-align: center;
+  border: var(--rule-w) dashed var(--ink-4); border-radius: var(--art-r);
+  font-family: var(--font-mono); font-size: 10.5px; line-height: 1.5; letter-spacing: var(--meta-track);
+  color: var(--ink-3);
+}
+
+.vb-empty { margin: 0; padding: 24px 0; font-size: var(--body-size); color: var(--ink-2); }
+
+.vb-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* wide screens with JS: each cover becomes a button that cues the song in the player */
+@media (min-width: 901px) {
+  .js .vb-player { display: block; }
+  .js .vb-sleeve--link { display: none; }
+  .js .vb-sleeve--cue { display: block; }
+}
+
+/* ---------- Tablet and phone: story on top, wall below; the page scrolls ---------- */
+@media (max-width: 900px) {
+  .vb-page { --gut: var(--space-4); --art-r: 4px; }
+  .vb-stage {
+    min-height: 0; grid-template-columns: minmax(0, 1fr); row-gap: var(--space-7);
+    align-content: start; padding-top: var(--space-7); padding-bottom: var(--space-7);
+  }
+  .vb-story { max-width: 560px; padding-top: 0; }
+  /* touch screens have no hover tooltip: show Spotify's full metadata, never clamp it */
+  .vb-title, .vb-artists { display: block; -webkit-line-clamp: none; overflow: visible; }
+}
+/* Wider touch screens (iPads in landscape) have no hover tooltip either, so the full metadata
+   shows there too — Spotify asks that it always be readable — even if a very long credit costs
+   the page a little scroll. */
+@media (min-width: 901px) and (hover: none) {
+  .vb-title, .vb-artists { display: block; -webkit-line-clamp: none; overflow: visible; }
+}
+@media (max-width: 600px) {
+  .vb-stage { --cols: 2; --gx: 14px; --gy: 22px; padding-top: var(--space-6); row-gap: var(--space-6); }
+  .vb-wordmark { font-size: 44px; }
+  .vb-title { font-size: 14px; }
+  .vb-artists { font-size: 12.5px; }
+  .vb-actions .sq-btn { flex: 1; }
+  a.vb-spotify, a.vb-spotify:visited { margin-left: var(--space-3); }
+  .vb-spotify img { width: 72px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vb-item:hover .vb-sleeve, .vb-item:focus-within .vb-sleeve { transform: none; }
+}

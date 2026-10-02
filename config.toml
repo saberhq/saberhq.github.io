@@ -29,13 +29,21 @@ disableKinds = ["taxonomy", "term"]
 # Top navigation
 [menu]
   # Links shown on landing page header (Book's landing layout uses menu.home).
-  # accent = true draws the entry in carmine (--accent-2) — Sidechain only.
+  # accent = true draws the entry in carmine (--accent-2) — Sidechain only;
+  # accent = "vibes" draws it in blue hour (--accent-3) — Saber Vibes only.
   [[menu.home]]
     name = "Sidechain"
     url = "/sidechain/"
     weight = 5
     [menu.home.params]
       accent = true
+
+  [[menu.home]]
+    name = "Saber Vibes"
+    url = "/vibes/"
+    weight = 6
+    [menu.home.params]
+      accent = "vibes"
 
   [[menu.home]]
   name = "GitHub"

@@ -1,0 +1,278 @@
+{{- /* Saber Vibes — /vibes/. content/vibes/index.md picks this up with `layout: vibes` (Hugo 0.146+
+     matches a page's layout name to layouts/<layout>.html), like about.html and landing.html.
+     Same skeleton as layouts/blog/single.html; styles in assets/vibes.css.
+
+     One screen on desktop: Saber's short signed note on the left (the words live in the
+     page's front matter), the playlist's covers as one even "wall" on the right, in playlist
+     order — never ranked, never sorted by anything that could read as "favorites". Up to ten
+     songs, plus an open slot ("room for one more") while there are fewer. Under each song, how
+     many weeks it has been on the wall. On wide screens with JS, a cover cues the song in
+     Spotify's own player under the note; the player is only created on that first click.
+
+     Data: site.Data.vibes — data/vibes.json, written fresh by the Spotify sync in CI right
+     before `hugo` runs and never committed (Spotify's terms: keep it current, don't store
+     it). Shape: { playlist {id, name, url, images, snapshot_id}, source, updated_at,
+     tracks [ {id, name, url, duration_ms, added_at (ISO-8601 or null),
+               artists [{name, url}], album {name, url, images [{url, width, height}]}} ] }.
+     No file or no tracks -> the empty state; missing data never fails the build. */ -}}
+
+{{- /* ---- The playlist link: front matter `playlist` is the one source of truth (the CI sync
+     reads the playlist id from that same line); the data's own URL is only a fallback. ---- */ -}}
+{{- $v := site.Data.vibes }}
+{{- $url := .Params.playlist }}
+{{- if not $url }}{{ with $v }}{{ with .playlist }}{{ $url = .url }}{{ end }}{{ end }}{{ end }}
+{{- if not $url }}{{ warnf "vibes: no playlist URL - set `playlist:` in content/%s" .File.Path }}{{ end }}
+
+{{- /* ---- The songs: the first ten, in playlist order. Entries without an id or a name (local
+     files, removed tracks) can't be linked to Spotify, so they're skipped. Each date is read
+     once; a date that isn't ISO-8601 shows no weeks (and warns in the build log) instead of
+     breaking the build. */ -}}
+{{- $songs := slice }}
+{{- with $v }}{{ with .tracks }}
+  {{- range . }}
+    {{- if and (lt (len $songs) 10) (reflect.IsMap .) .id .name }}
+      {{- $t := false }}
+      {{- with .added_at }}
+        {{- $raw := . }}
+        {{- with try (time.AsTime $raw) }}
+          {{- with .Err }}{{ warnf "vibes: can't read added_at %q (%s) - no weeks shown for that song" $raw . }}{{ else }}{{ $t = .Value }}{{ end }}
+        {{- end }}
+      {{- end }}
+      {{- $songs = $songs | append (dict "track" . "added" $t) }}
+    {{- end }}
+  {{- end }}
+{{- end }}{{ end }}
+{{- $n := len $songs }}
+{{- $updated := false }}
+{{- with $v }}{{ with .updated_at }}
+  {{- $raw := . }}
+  {{- with try (time.AsTime $raw) }}
+    {{- with .Err }}{{ warnf "vibes: can't read updated_at %q (%s)" $raw . }}{{ else }}{{ $updated = .Value }}{{ end }}
+  {{- end }}
+{{- end }}{{ end }}
+
+{{- /* "oldest -> newest" only when it's true: every song has a date and they never go backwards.
+     If Saber rearranges the playlist on purpose, or dates are missing, the note quietly goes and
+     his order stands. The body's weeks sentence needs at least one date. */ -}}
+{{- $anyDate := false }}
+{{- $chrono := gt $n 1 }}
+{{- $prev := 0 }}
+{{- range $songs }}
+  {{- with .added }}{{ $anyDate = true }}{{ if lt .Unix $prev }}{{ $chrono = false }}{{ end }}{{ $prev = .Unix }}
+  {{- else }}{{ $chrono = false }}{{ end }}
+{{- end }}
+
+{{- /* Wall shape: the songs plus one open slot (at most ten cells); five across at most, two rows
+     from six cells up. The stylesheet sizes the sleeves from these and the viewport. */ -}}
+{{- $slots := cond (lt $n 10) (add $n 1) 10 }}
+{{- $cols := cond (le $slots 5) $slots (div (add $slots 1) 2) }}
+{{- $rows := cond (le $slots 5) 1 2 }}
+<!DOCTYPE html>
+<html lang="{{ default .Site.Language.Lang .Site.LanguageCode }}" dir="{{ default "ltr" .Site.Language.LanguageDirection }}">
+<head>
+  {{ partial "docs/html-head" . }}
+  {{ partial "docs/inject/head" . }}
+  {{- $css := resources.Get "vibes.css" | resources.Minify | resources.Fingerprint "sha384" }}
+  <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}" crossorigin="anonymous">
+  <script>document.documentElement.classList.add('js');</script>
+  {{- if $n }}
+  <link rel="preconnect" href="https://i.scdn.co">
+  {{- end }}
+</head>
+<body class="sq-shell vb-page">
+
+  {{ partial "saberhq/site-header" (dict "page" . "crumb" "vibes" "nonav" true) }}
+
+  <main>
+    <div class="vb-stage{{ if eq $rows 1 }} vb-stage--one-row{{ end }}" style="--n-cols: {{ $cols }}; --n-rows: {{ $rows }}">
+
+      <section class="vb-story" aria-labelledby="vb-title">
+        {{- with .Params.kicker }}
+        <p class="sq-kicker">{{ . }}</p>
+        {{- end }}
+        {{- /* The page name as a sleeve title block, one word per line; the full stop is decoration */}}
+        {{- $words := split (.Title | default "Saber Vibes") " " }}
+        {{- $last := sub (len $words) 1 }}
+        <h1 class="vb-wordmark" id="vb-title">{{ range $i, $w := $words }}{{ if $i }} {{ end }}<span class="vb-wordmark-line">{{ $w }}{{ if eq $i $last }}<span class="vb-wordmark-dot" aria-hidden="true">.</span>{{ end }}</span>{{ end }}</h1>
+        {{- with .Params.lede }}
+        <p class="vb-lede">{{ . }}</p>
+        {{- end }}
+        {{- $body := .Params.body | default "" }}
+        {{- if $anyDate }}{{ with .Params.weeksLine }}{{ $body = trim (printf "%s %s" $body .) " " }}{{ end }}{{ end }}
+        {{- with $body }}
+        <p class="vb-body">{{ . }}</p>
+        {{- end }}
+        {{- with .Params.signoff }}
+        <p class="vb-sign">{{ . }}</p>
+        {{- end }}
+        <div class="vb-actions">
+          <a class="sq-btn" href="{{ $url }}" target="_blank" rel="noopener">Listen on Spotify <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a>
+        </div>
+        {{- if $n }}
+          {{- $ms := 0.0 }}
+          {{- range $songs }}{{ $ms = add $ms (.track.duration_ms | default 0) }}{{ end }}
+        <p class="vb-meta">{{ $n }} song{{ if ne $n 1 }}s{{ end }} <span aria-hidden="true">·</span> {{ int (math.Round (div $ms 60000.0)) }} min
+          {{- with $updated }} <span aria-hidden="true">·</span> updated <time datetime="{{ .Format "2006-01-02" }}">{{ .Format "2 Jan 2006" }}</time>{{ end }}</p>
+        {{- /* The player: shown by the stylesheet only with JS on screens 901px and wider. Idle, it
+             is a frame the size of Spotify's player; the script at the bottom swaps in Spotify's
+             own embed on the first cover click (no Spotify iframe, script or cookie before). */}}
+        <div class="vb-player" data-player>
+          <div class="vb-deck" data-deck>
+            <div class="vb-deck-copy">
+              <p class="vb-deck-label">Player</p>
+              <p class="vb-deck-text">Click a cover to listen here. Titles open Spotify.</p>
+            </div>
+          </div>
+          <p class="vb-player-foot"><a class="vb-fine" href="https://www.spotify.com/legal/cookies-policy/" target="_blank" rel="noopener">Spotify’s player sets cookies <span aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a><button class="vb-close" type="button" data-player-close hidden>close<span class="vb-sr"> the player</span> <span aria-hidden="true">×</span></button></p>
+        </div>
+        <p class="vb-sr" aria-live="polite" data-player-status></p>
+        {{- end }}
+      </section>
+
+      <section class="vb-wallwrap" aria-labelledby="vb-wall-label">
+        <div class="sq-section-head vb-wall-head">
+          <h2 class="sq-section-label" id="vb-wall-label">On the wall</h2>
+          {{- if $chrono }}
+          <span class="vb-order"><span aria-hidden="true">·</span> oldest <span class="sq-glyph" aria-hidden="true">→</span><span class="vb-sr"> to </span> newest</span>
+          {{- end }}
+          <span class="sq-section-fill"></span>
+          {{ partial "vibes/spotify-logo" (dict "href" $url) }}
+        </div>
+        {{- if $n }}
+        <ul class="vb-wall" role="list">
+          {{- range $songs }}
+            {{- $tr := .track }}
+            {{- $names := slice }}
+            {{- range $tr.artists }}{{ with .name }}{{ $names = $names | append . }}{{ end }}{{ end }}
+            {{- $by := delimit $names ", " }}
+            {{- $label := $tr.name }}{{ with $by }}{{ $label = printf "%s by %s" $tr.name . }}{{ end }}
+            {{- $href := $tr.url | default (printf "https://open.spotify.com/track/%v" $tr.id) }}
+            {{- /* Spotify's embeds are typed: the sync keeps podcast episodes (an /episode/ URL), and
+                 those only play from embed/episode/ — embed/track/ answers "Page not found" */}}
+            {{- $kind := cond (strings.Contains $href "/episode/") "episode" "track" }}
+            {{- /* Cover: the 300px rendition, 640px in srcset, hotlinked from Spotify (never re-hosted) */}}
+            {{- $ims := slice }}{{ with $tr.album }}{{ with .images }}{{ $ims = . }}{{ end }}{{ end }}
+            {{- $src := "" }}{{ $big := "" }}
+            {{- range $ims }}
+              {{- $iw := int (.width | default 0) }}
+              {{- if and (eq $iw 300) (not $src) }}{{ $src = .url }}{{ end }}
+              {{- if and (eq $iw 640) (not $big) }}{{ $big = .url }}{{ end }}
+            {{- end }}
+            {{- with $ims }}{{ if not $src }}{{ $src = (index . 0).url }}{{ end }}{{ end }}
+          <li class="vb-item" data-track="{{ $tr.id }}" data-kind="{{ $kind }}" data-label="{{ $label }}">
+            <a class="vb-sleeve vb-sleeve--link" href="{{ $href }}" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">{{ with $src }}<img src="{{ . }}"{{ if and $big (ne $big .) }} srcset="{{ . }} 300w, {{ $big }} 640w" sizes="(max-width: 600px) 46vw, 14vw"{{ end }} width="300" height="300" alt="" decoding="async" referrerpolicy="no-referrer">{{ end }}</a>
+            <div class="vb-cap">
+              <p class="vb-title" dir="auto" title="{{ $tr.name }}"><a class="vb-title-link" href="{{ $href }}" target="_blank" rel="noopener">{{ $tr.name }}<span class="vb-sr"> — opens on Spotify</span></a></p>
+              {{- with $by }}
+              <p class="vb-artists" dir="auto" title="{{ . }}">{{ . }}</p>
+              {{- end }}
+              {{- /* Weeks on the wall = floor((now - added_at) / 7 days), never below 0; under a week
+                   reads "new". Counted at build time, then recounted in the browser (script below). */}}
+              {{- with .added }}
+                {{- $w := int (math.Floor (div (now.Sub .).Hours 168)) }}
+                {{- if lt $w 0 }}{{ $w = 0 }}{{ end }}
+                {{- $since := .Format "2 Jan 2006" }}
+              <p class="vb-weeks{{ if eq $w 0 }} is-new{{ end }}" data-added="{{ $tr.added_at }}" title="On the wall since {{ $since }}"><span class="vb-weeks-n">{{ if eq $w 0 }}new{{ else }}{{ $w }} week{{ if ne $w 1 }}s{{ end }}{{ end }}</span><span class="vb-sr"> on the wall, since {{ $since }}</span></p>
+              {{- end }}
+            </div>
+          </li>
+          {{- end }}
+          {{- if lt $n 10 }}
+          <li class="vb-open" aria-hidden="true"><div class="vb-open-sleeve">room for<br>{{ index (slice "zero" "one" "two" "three" "four" "five" "six" "seven" "eight" "nine") (sub 10 $n) }} more</div></li>
+          {{- end }}
+        </ul>
+        {{- else }}
+        <p class="vb-empty">The wall is empty for a moment — the playlist itself is <a href="{{ $url }}" target="_blank" rel="noopener">on Spotify <span aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a></p>
+        {{- end }}
+      </section>
+
+    </div>
+  </main>
+
+  {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "VIBES" "href" .RelPermalink)) }}
+  {{ partial "docs/inject/body" . }}
+
+  {{- /* The current data, also published at /vibes/vibes.json: the CI sync falls back to this
+       deployed copy (last known good) when Spotify can't be reached. Nothing without data. */}}
+  {{- with $v }}{{ (resources.FromString "vibes/vibes.json" (jsonify .)).Publish }}{{ end }}
+
+  {{/* Vibes: (1) keep the week counts true between rebuilds, from each song's date and the
+       visitor's clock; (2) wide screens: a cover cues the song in Spotify's own player. The
+       iframe is created on the first click only; "close" (or narrowing the window below 901px)
+       removes it, which stops the audio. Covers are buttons, not links, so GoatCounter's
+       outbound counter doesn't count cues — and there is deliberately no "play" event:
+       Spotify's Developer Policy forbids listenership metrics. */}}
+  <script>
+  (function () {
+    var WEEK = 7 * 864e5, now = Date.now();
+    document.querySelectorAll('.vb-weeks[data-added]').forEach(function (el) {
+      var t = Date.parse(el.getAttribute('data-added'));
+      if (isNaN(t)) return;
+      var w = Math.max(0, Math.floor((now - t) / WEEK));
+      el.classList.toggle('is-new', w === 0);
+      el.querySelector('.vb-weeks-n').textContent = w === 0 ? 'new' : w + (w === 1 ? ' week' : ' weeks');
+    });
+
+    var slot = document.querySelector('[data-player]');
+    if (!slot || slot.hidden || !window.matchMedia) return;
+    var wide = matchMedia('(min-width: 901px)');
+    var deck = slot.querySelector('[data-deck]');
+    var idle = deck.innerHTML;
+    var closer = slot.querySelector('[data-player-close]');
+    var status = document.querySelector('[data-player-status]');
+    var frame = null, current = null;
+
+    // wide screens + JS: each cover becomes a button that cues the song in the player
+    document.querySelectorAll('.vb-item[data-track]').forEach(function (item) {
+      var link = item.querySelector('.vb-sleeve--link');
+      if (!link) return;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'vb-sleeve vb-sleeve--cue';
+      btn.setAttribute('aria-label', 'Cue ' + item.getAttribute('data-label') + ' in the player');
+      var img = link.querySelector('img');   // a song without album art has none
+      if (img) btn.appendChild(img.cloneNode(true));
+      link.insertAdjacentElement('afterend', btn);
+      btn.addEventListener('click', function () { cue(item); });
+    });
+
+    function cue(item) {
+      if (!frame) {   // Spotify's iframe exists only after the first click
+        frame = document.createElement('iframe');
+        frame.setAttribute('allow', 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture');
+        deck.classList.add('is-live');
+        deck.replaceChildren(frame);
+        closer.hidden = false;
+      }
+      frame.title = 'Spotify player: ' + item.getAttribute('data-label');
+      var kind = item.getAttribute('data-kind') === 'episode' ? 'episode' : 'track';   // a podcast episode has its own embed
+      frame.src = 'https://open.spotify.com/embed/' + kind + '/' + encodeURIComponent(item.getAttribute('data-track')) + '?utm_source=generator';
+      if (current) current.removeAttribute('aria-current');
+      item.setAttribute('aria-current', 'true');
+      current = item;
+      if (status) status.textContent = item.getAttribute('data-label') + ' is in the player.';
+    }
+
+    function stop(announce) {
+      if (!frame) return null;
+      frame = null;
+      deck.classList.remove('is-live');
+      deck.innerHTML = idle;            // removing the iframe stops the music
+      closer.hidden = true;
+      var last = current;
+      if (current) current.removeAttribute('aria-current');
+      current = null;
+      if (announce && status) status.textContent = 'Player closed.';
+      return last;
+    }
+    closer.addEventListener('click', function () {
+      var last = stop(true);
+      var b = last && last.querySelector('.vb-sleeve--cue');
+      if (b) b.focus();
+    });
+    // never leave a hidden player running: below the player's breakpoint it is removed
+    if (wide.addEventListener) wide.addEventListener('change', function () { if (!wide.matches) stop(false); });
+  })();
+  </script>
+</body>
+</html>

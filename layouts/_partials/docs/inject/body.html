@@ -15,6 +15,25 @@ document.addEventListener('click', function (e) {
 });
 </script>
 
+{{/* The header's folded "Elsewhere" menu (tablets and phones) is a plain <details>, so it opens
+     and closes on its own entry without any script. This only adds what people expect of a
+     menu: a click anywhere else, or Escape, closes it. */}}
+<script>
+(function () {
+  function shut(focus) {
+    document.querySelectorAll('details.sq-nav-group[open]').forEach(function (d) {
+      d.removeAttribute('open');
+      if (focus) { var s = d.querySelector('summary'); if (s) s.focus(); }
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var inside = e.target.closest && e.target.closest('details.sq-nav-group');
+    if (!inside) shut(false);
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shut(true); });
+})();
+</script>
+
 {{/* GoatCounter — pageviews, reported to saberhq.goatcounter.com. One property covers both
      saberhq.com and saberhq.com/sidechain (same origin under GitHub Pages), so Sidechain's
      traffic reads as /sidechain/* paths there. Cookieless, so no consent banner is owed.

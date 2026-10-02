@@ -3,18 +3,21 @@ title: Home
 bookHeadingAnchor: false
 layout: landing
 tagline: Friendly notes on what I'm building, reading, and figuring out.
-resume: /resume/
+# The about text moved to /about/ and the body here is empty, so the meta/link-preview
+# description is spelled out (it used to fall back to the body's first paragraph).
+description: "My name is Saber and I’m a research scientist with years of experience in genomics, data science, and machine learning."
+about: /about/
 sidechain: /sidechain/
-topics:
-  - Perturb-seq
-  - representation learning
-  - long-read RNA-seq
-topicAccent: Virtual Cell Challenge
+# The short about beside the news ("About & recent news"): Saber's own words. Markdown, so
+# links work. The long version is on /about/ (content/about/index.md).
+bio: "Hi! My name is Saber. I am a research scientist in the AI × Bio space and genuinely appreciate the fact that I’ve been fortunate to spend a big portion of my life dedicated to health science research. I created this place to share my work initially, but these days it’s gradually turning into a place where I can express myself from different perspectives. You will find my [music taste](/vibes/), photography adventures, and occasionally [long write-ups](/blog/) about things that matter the most to me. Stay around, say hi, and let’s connect about academic research, music, snowboarding, and beyond! ;)"
 news:
+  - date: Oct 2026
+    text: "Started [Saber Vibes](/vibes/), a short playlist of the songs that sum up my life right now, and added an [About](/about/) page."
   - date: Aug 2026
     text: "Building Sidechain, my solo entry to Arc Institute's Virtual Cell Challenge 2026. The writeup: [What Sidechain is](https://saberhq.com/sidechain/posts/what-sidechain-is/)."
   - date: Aug 2026
-    text: "Redesigned typeface and color scheme for site ([v1.0.0](https://github.com/saberhq/saberhq.github.io/releases/tag/v1.0.0))."
+    text: "Redesigned the site's typeface and color scheme ([v1.0.0](https://github.com/saberhq/saberhq.github.io/releases/tag/v1.0.0))."
   - date: Jul 2026
     text: "Wrapped up a year at Genentech (gRED), having co-led the analysis of two genome-wide Perturb-seq screens."
   - date: Nov 2025
@@ -32,7 +35,7 @@ news:
   - date: Jun 2024
     text: "The LRGASP research is published in [Nature Methods](https://www.nature.com/articles/s41592-024-02298-3)."
   - date: May 2024
-    text: "ntEmbd is available on [BioRxiv](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11092672/)."
+    text: "ntEmbd is available on [bioRxiv](https://doi.org/10.1101/2024.04.30.591806)."
   - date: Jun 2023
     text: "Presented ntEmbd at the [ISMB/ECCB](https://www.iscb.org/ismbeccb2023) conference in Lyon, France."
   - date: May 2023
@@ -40,11 +43,3 @@ news:
   - date: Mar 2023
     text: "Meta‑NanoSim is published in [GigaScience](https://doi.org/10.1093/gigascience/giad013)."
 ---
-
-My name is Saber and I’m a research scientist with years of experience in genomics, data science, and machine learning. During my year at Genentech (gRED), I co-led the analysis of two genome-wide, multi-million-cell single-cell CRISPR Perturb-seq screens. Because every design choice in a Perturb-seq pipeline — QC thresholds, confounder correction, statistical modeling, dimensionality reduction — changes the biology you end up inferring, I also built tooling to make those consequences visible: a CLI that renders interactive dashboards comparing outcomes across parameter sweeps, plus a sweep orchestrator for Nextflow pipelines on HPC.
-
-More recently, I have been building [`Sidechain`](https://github.com/saberhq/sidechain), my solo entry in Arc’s Virtual Cell Challenge 2026. My first paper (Nucleic Acids Research, 2016) modeled how RNA-binding proteins and microRNAs jointly govern transcript fate, and Sidechain is my bet that this post-transcriptional layer — written in sequence, and therefore stable across cell contexts — is a prior most perturbation-response models leave on the table.
-
-I earned my Ph.D. in Bioinformatics at the University of British Columbia (UBC), where I was advised by [Prof. Dr. Inanc Birol](https://www.bcgsc.ca/people/inanc-birol), working at the [Bioinformatics Technology Lab](https://www.birollab.ca/). During my Ph.D., I broadly worked on developing computational tools and software solutions for next-generation long-read sequencing technologies. My doctoral dissertation (see [here](https://open.library.ubc.ca/soa/cIRcle/collections/ubctheses/24/items/1.0444844)) was focused on utilizing machine learning in transcriptome analysis, and my time at the BC Cancer Genome Sciences Centre produced [`ntEmbd`](https://github.com/BirolLab/ntEmbd), a deep learning embedding model for nucleotide sequences, and [`NanoSim`](https://github.com/BirolLab/NanoSim), a long-read simulation suite the field uses for benchmarking (62,000+ downloads). Before starting at UBC, I received my M.Sc. in Bioinformatics from [METU](https://ii.metu.edu.tr/), where I was advised by Dr. Hilal Kazan and Dr. Yesim Aydin Son. My B.Sc. was in Information Technology Engineering.
-
-This personal website is my notebook in public, where I share my journey in personal life and professional career. Say hi and stay in touch :)

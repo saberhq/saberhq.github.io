@@ -1,6 +1,7 @@
 {{/* Saber HQ site header strip.
      Context: dict "page" .  plus optional "crumb" (mono breadcrumb after the mark),
-     "back" (dict "href" "label" — replaces the nav with a single back link), and
+     "back" (dict "href" "label" — replaces the nav with a single back link),
+     "nonav" (no links at all — a one-screen page like /vibes/, as on the Sidechain site), and
      "hideMark" (home: the hero carries the wordmark instead). */}}
 {{ $p := .page }}
 <header class="sq-siteheader">
@@ -10,18 +11,38 @@
     <span class="sq-fill"></span>
     {{ with .back }}
       <a class="sq-back" href="{{ .href }}">{{ .label }}</a>
-    {{ else }}
-      {{/* Off-site socials open in a new tab; in-site links (Sidechain) don't. A menu entry
-           with `accent = true` is drawn in carmine — reserved for Sidechain. */}}
-      <nav class="sq-nav">
+    {{ else }}{{ if not .nonav }}
+      {{/* The menu (config.toml, menu.home). Saber's own pages come first; a named thing wears
+           its naming color: `accent = true` is carmine (Sidechain), `accent = "vibes"` is blue
+           hour (Saber Vibes). The off-site links (GitHub, LinkedIn, …) open in a new tab and say
+           so to screen readers. They are written twice and the stylesheet shows one copy: in a
+           row on wide screens, folded into one "Elsewhere" entry on tablets and phones. That
+           entry is a plain <details>, so it opens without JavaScript. */}}
+      {{ $social := slice }}
+      {{ range $p.Site.Menus.home }}{{ if hasPrefix .URL "http" }}{{ $social = $social | append . }}{{ end }}{{ end }}
+      <nav class="sq-nav" aria-label="Links">
         {{ range $p.Site.Menus.home }}
-          {{ $external := hasPrefix .URL "http" }}
-          <a href="{{ .URL }}"
-             {{ with .Params.accent }}class="sq-nav-accent"{{ end }}
-             {{ if $external }}target="_blank" rel="noopener"{{ end }}>{{ .Name }}</a>
+          {{ if not (hasPrefix .URL "http") }}
+          {{ $cls := "" }}
+          {{ with .Params.accent }}{{ $cls = cond (eq (string .) "vibes") "sq-nav-accent-3" "sq-nav-accent" }}{{ end }}
+          <a href="{{ .URL }}"{{ with $cls }} class="{{ . }}"{{ end }}>{{ .Name }}</a>
+          {{ end }}
+        {{ end }}
+        {{ with $social }}
+        <span class="sq-nav-social">
+          {{ range . }}<a href="{{ .URL }}" target="_blank" rel="noopener">{{ .Name }}<span class="sq-sr-only"> (opens in a new tab)</span></a>
+          {{ end }}
+        </span>
+        <details class="sq-nav-group">
+          <summary>Elsewhere</summary>
+          <div class="sq-nav-group-links">
+            {{ range . }}<a href="{{ .URL }}" target="_blank" rel="noopener">{{ .Name }}<span class="sq-sr-only"> (opens in a new tab)</span></a>
+            {{ end }}
+          </div>
+        </details>
         {{ end }}
       </nav>
-    {{ end }}
+    {{ end }}{{ end }}
     <button class="sq-theme-toggle" type="button" data-theme-toggle aria-label="Toggle color theme"></button>
   </div>
 </header>

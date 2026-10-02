@@ -1,0 +1,13 @@
+{{- /* Spotify attribution for /vibes/ (layouts/vibes.html): the official full logo (icon +
+     wordmark), linked to the playlist. Context: dict "href" (the playlist URL).
+     Spotify's rules, which is why it looks the way it does: the files in assets/vibes/ are
+     Spotify's own 2024 downloads and must stay byte-for-byte unmodified — black on light
+     paper, white in dark mode (two <img>s, swapped by [data-theme="dark"] in assets/vibes.css),
+     never recolored, at least 70px wide (76 here, 72 on phones), with clear space around it,
+     never inside a sentence or a button, never on the album art. */ -}}
+{{- $black := resources.Get "vibes/Full_Logo_Black_RGB.svg" | resources.Fingerprint }}
+{{- $white := resources.Get "vibes/Full_Logo_White_RGB.svg" | resources.Fingerprint }}
+<a class="vb-spotify" href="{{ .href }}" target="_blank" rel="noopener" aria-label="Spotify — the playlist on Spotify (opens in a new tab)">
+  <img class="vb-spotify-light" src="{{ $black.RelPermalink }}" width="76" height="21" alt="">
+  <img class="vb-spotify-dark" src="{{ $white.RelPermalink }}" width="76" height="21" alt="">
+</a>
