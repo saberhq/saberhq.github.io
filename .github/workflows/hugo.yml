@@ -132,7 +132,10 @@ jobs:
           fi
 
       - name: Build
-        run: hugo --minify --cleanDestinationDir --config config.toml
+        run: |
+          export HUGO_PARAMS_VERSION="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
+          echo "Building ${HUGO_PARAMS_VERSION:-an untagged commit}."
+          hugo --minify --cleanDestinationDir --config config.toml
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
