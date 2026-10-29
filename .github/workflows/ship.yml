@@ -1,0 +1,191 @@
+name: Ship
+
+on:
+  pull_request:
+    types: [labeled, synchronize]
+    branches: ["main"]
+  schedule:
+    - cron: "41 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ship
+  cancel-in-progress: false
+
+jobs:
+  ship:
+    if: >-
+      github.event_name != 'pull_request' ||
+      (contains(github.event.pull_request.labels.*.name, 'ship') &&
+       github.event.pull_request.head.ref == 'dev' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Merge, tag, release, deploy, confirm
+        run: |
+          set -euo pipefail
+          comment() { gh pr comment "$pr" --body "$1" >/dev/null; }
+          stop() {
+            comment "Not shipped: $1 · [run]($RUN_URL)"
+            gh pr edit "$pr" --remove-label ship >/dev/null || true
+            echo "::error::$1"
+            exit 1
+          }
+          report() {
+            comment "Shipping $version: $1 · [run]($RUN_URL)"
+            echo "::error::$1"
+            exit 1
+          }
+
+          pr="${PR_NUMBER:-}"
+          if [ -z "$pr" ]; then
+            pr=$(gh pr list --base main --head dev --label ship --state open --json number --jq '.[0].number // empty')
+            if [ -z "$pr" ]; then echo "No ship PR is open."; exit 0; fi
+          fi
+          gh pr view "$pr" --json title,body,headRefOid,state > "$RUNNER_TEMP/pr.json"
+          if [ "$(jq -r .state "$RUNNER_TEMP/pr.json")" != "OPEN" ]; then echo "PR #$pr isn't open."; exit 0; fi
+          title=$(jq -r .title "$RUNNER_TEMP/pr.json")
+          head=$(jq -r .headRefOid "$RUNNER_TEMP/pr.json")
+          approved=$(jq -r .body "$RUNNER_TEMP/pr.json" | sed -nE 's/.*<!-- approved: ([0-9a-f]{40}) -->.*/\1/p' | head -n1)
+          version=$(printf '%s' "$title" | sed -nE 's/^(v[0-9]+\.[0-9]+\.[0-9]+) — .+/\1/p')
+
+          [ -n "$version" ] || stop 'the title should start with the version, like "v1.7.0 — …".'
+          [ -n "$approved" ] || stop "the description doesn't record the approved commit."
+          [ "$head" = "$approved" ] || stop "\`dev\` moved past the approved commit (${approved:0:7} → ${head:0:7}). Say ship again to include the new commits."
+          if git rev-parse -q --verify "refs/tags/$version" >/dev/null; then stop "$version already exists."; fi
+          latest=$(git describe --tags --abbrev=0 --match 'v*' origin/main)
+          IFS=. read -r major minor patch <<<"${latest#v}"
+          case "$version" in
+            "v$major.$minor.$((patch + 1))"|"v$major.$((minor + 1)).0"|"v$((major + 1)).0.0") ;;
+            *) stop "$version doesn't follow the live $latest." ;;
+          esac
+
+          result=""
+          for _ in $(seq 1 40); do
+            runs=$(gh api "repos/$GH_REPO/commits/$head/check-runs?check_name=check-site" \
+              --jq '[.check_runs[] | "\(.status)/\(.conclusion)"] | join(" ")')
+            case " $runs " in *" completed/success "*) result=ok; break ;; esac
+            if [ -n "$runs" ] && ! printf '%s\n' $runs | grep -qv '^completed/'; then result=failed; break; fi
+            sleep 15
+          done
+          case "$result" in
+            ok) echo "The checks passed on ${head:0:7}." ;;
+            failed) stop "the checks failed on ${head:0:7}." ;;
+            *) comment "Waiting: the checks on ${head:0:7} haven't finished. The daily run tries again."
+               echo "::warning::The checks haven't finished."
+               exit 0 ;;
+          esac
+
+          gh pr merge "$pr" --merge --match-head-commit "$head" || stop "GitHub refused the merge."
+          merge=$(gh pr view "$pr" --json mergeCommit --jq .mergeCommit.oid)
+          echo "Merged as ${merge:0:7}."
+
+          jq -r .body "$RUNNER_TEMP/pr.json" | sed '/<!-- approved: /d' > "$RUNNER_TEMP/notes.md"
+          gh release create "$version" --target "$merge" --title "$title" --notes-file "$RUNNER_TEMP/notes.md" --latest \
+            || report "merged, but the release couldn't be made."
+          release_url=$(gh release view "$version" --json url --jq .url)
+
+          since=$(date -u -d '-60 seconds' +%Y-%m-%dT%H:%M:%SZ)
+          gh workflow run hugo.yml --ref main
+          run=""
+          for _ in $(seq 1 24); do
+            run=$(gh run list --workflow hugo.yml --event workflow_dispatch --limit 5 --json databaseId,createdAt \
+              --jq "map(select(.createdAt >= \"$since\")) | .[0].databaseId // empty")
+            [ -n "$run" ] && break
+            sleep 5
+          done
+          [ -n "$run" ] || report "merged and released, but the deploy didn't start."
+          gh run watch "$run" --exit-status --interval 20 >/dev/null || report "merged and released, but the deploy failed."
+
+          live=""
+          for _ in $(seq 1 30); do
+            if curl -fsSL "https://saberhq.com/?shipped=$version" | grep -qE "saberhq-version\"? content=\"?${version//./\\.}\"?>"; then
+              live=yes
+              break
+            fi
+            sleep 10
+          done
+
+          git fetch -q origin dev
+          if git push -q origin "$merge:refs/heads/dev"; then
+            echo "dev now matches main."
+          else
+            echo "::warning::dev has commits that aren't in this release, so it wasn't moved."
+          fi
+
+          [ -n "$live" ] || report "merged, released and deployed, but saberhq.com doesn't show $version yet. It may just be slow."
+          comment "Live: **$version** is on https://saberhq.com/ · [release note]($release_url)"
+          echo "$version is live."
+
+  unshipped:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Flag finished work that has waited a week
+        run: |
+          set -euo pipefail
+          label=unshipped
+          count=$(git rev-list --count --no-merges origin/main..origin/dev)
+          open=$(gh issue list --label "$label" --state open --json number --jq '.[0].number // empty' 2>/dev/null || true)
+          if [ "$count" = 0 ]; then
+            [ -z "$open" ] || gh issue close "$open" --comment "Everything on \`dev\` is live now."
+            echo "Nothing waiting on dev."
+            exit 0
+          fi
+          oldest=$(git log --no-merges --format=%ct origin/main..origin/dev | tail -n1)
+          age=$(( ($(date +%s) - oldest) / 86400 ))
+          shipping=$(gh pr list --base main --head dev --label ship --state open --json number --jq length)
+          if [ "$age" -lt 7 ] || [ "$shipping" != 0 ]; then
+            echo "$count commit(s) on dev, the oldest $age day(s) old. Nothing to flag."
+            exit 0
+          fi
+          {
+            echo "$count commit(s) on \`dev\` aren't live yet; the oldest is $age days old. They go live when Saber says \"ship\" in a Claude session."
+            echo
+            git log --no-merges --date=short --format='- %ad · %s' origin/main..origin/dev
+            echo
+            echo "This issue closes itself once they're live."
+          } > "$RUNNER_TEMP/body.md"
+          if [ -z "$open" ]; then
+            gh label list --limit 200 --json name --jq '.[].name' | grep -qx "$label" \
+              || gh label create "$label" --color D93F0B --description "Finished work on dev that isn't live"
+            gh issue create --title "Finished work on dev isn't live yet" --label "$label" --body-file "$RUNNER_TEMP/body.md"
+          else
+            updated=$(gh issue view "$open" --json updatedAt --jq .updatedAt)
+            if [ $(( $(date +%s) - $(date -d "$updated" +%s) )) -ge 604800 ]; then
+              gh issue comment "$open" --body-file "$RUNNER_TEMP/body.md"
+            fi
+          fi

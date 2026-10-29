@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""Build the site into a temporary folder and check it.
+
+Checks: the build has no errors or warnings, every internal link and image resolves,
+every post has a title, a description and a date that isn't in the future, and no
+parked section is in the sitemap. Exits 1 when something fails.
+"""
+
+import argparse
+import datetime as dt
+import re
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
+
+ROOT = Path(__file__).resolve().parent.parent
+SITE = "https://saberhq.com"
+ELSEWHERE = ("/sidechain/",)
+PARKED = ("/podcast/", "/newsletter/", "/docs/")
+ATTR = re.compile(r"""\b(?:href|src)=(?:"([^"]*)"|'([^']*)'|([^\s>"']+))""")
+
+
+def build(out: Path, problems: list) -> bool:
+    r = subprocess.run(["hugo", "--gc", "--minify", "--cleanDestinationDir", "-d", str(out)],
+                       cwd=ROOT, capture_output=True, text=True)
+    for line in (r.stdout + r.stderr).splitlines():
+        if re.match(r"^(ERROR|WARN)", line):
+            problems.append(f"build: {line.strip()}")
+    if r.returncode != 0:
+        problems.append(f"build failed (exit {r.returncode})")
+        return False
+    return True
+
+
+def resolves(out: Path, path: str) -> bool:
+    target = out / unquote(path).lstrip("/")
+    return target.is_file() or (target / "index.html").is_file()
+
+
+def check_links(out: Path, problems: list):
+    for page in sorted(out.rglob("*.html")):
+        for m in ATTR.finditer(page.read_text(errors="replace")):
+            url = next(g for g in m.groups() if g is not None)
+            if url.startswith(SITE):
+                url = url[len(SITE):] or "/"
+            if not url.startswith("/") or url.startswith("//"):
+                continue
+            path = urlsplit(url).path
+            if path.startswith(ELSEWHERE) or resolves(out, path):
+                continue
+            problems.append(f"broken link on /{page.relative_to(out).as_posix()}: {url}")
+
+
+def front(text: str) -> dict:
+    m = re.match(r"^---\n(.*?)\n---", text, re.S)
+    fields = {}
+    for line in (m.group(1).splitlines() if m else []):
+        k = re.match(r"^([a-z_]+):\s*(.*)$", line)
+        if k:
+            fields[k.group(1)] = k.group(2).strip().strip('"')
+    return fields
+
+
+def check_posts(problems: list):
+    today = dt.datetime.now(dt.timezone.utc).date().isoformat()
+    for post in sorted((ROOT / "content/docs/blog").glob("*/*.md")):
+        f, name = front(post.read_text()), post.relative_to(ROOT).as_posix()
+        for key in ("title", "description", "date"):
+            if not f.get(key):
+                problems.append(f"{name}: no {key}")
+        if f.get("date", "")[:10] > today:
+            problems.append(f"{name}: dated {f['date'][:10]}, after today ({today} UTC), so Hugo hides it")
+
+
+def check_sitemap(out: Path, problems: list):
+    sitemap = out / "sitemap.xml"
+    if not sitemap.exists():
+        problems.append("no sitemap.xml")
+        return
+    for loc in re.findall(r"<loc>([^<]+)</loc>", sitemap.read_text()):
+        path = loc.replace(SITE, "") or "/"
+        if path.startswith(PARKED):
+            problems.append(f"sitemap lists a parked page: {loc}")
+        elif not resolves(out, path):
+            problems.append(f"sitemap lists a page that isn't built: {loc}")
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    p.add_argument("--keep", metavar="DIR", help="build into DIR and keep it")
+    a = p.parse_args()
+    problems = []
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(a.keep).resolve() if a.keep else Path(tmp)
+        if build(out, problems):
+            check_links(out, problems)
+            check_sitemap(out, problems)
+        check_posts(problems)
+    if problems:
+        print(f"check-site: {len(problems)} problem(s)")
+        print("\n".join(f"- {x}" for x in problems))
+        return 1
+    print("check-site: all good")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

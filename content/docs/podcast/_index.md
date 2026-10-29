@@ -4,6 +4,13 @@ weight: 20
 bookFlatSection: true
 url: "/podcast/"
 bookHidden: true
+build:
+  render: never
+  list: never
+cascade:
+  build:
+    render: never
+    list: never
 ---
 
 Short intro about the podcast and what to expect. Links below cover the common actions.
