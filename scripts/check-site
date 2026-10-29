@@ -2,7 +2,7 @@
 """Build the site into a temporary folder and check it.
 
 Checks: the build has no errors or warnings, every internal link and image resolves,
-every post has a title, a description and a date that isn't in the future, and no
+every post has a title, a description, a known area and a date that isn't in the future, and no
 parked section is in the sitemap. Exits 1 when something fails.
 """
 
@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = "https://saberhq.com"
 ELSEWHERE = ("/sidechain/",)
 PARKED = ("/podcast/", "/newsletter/", "/docs/")
+AREAS = re.findall(r"^([a-z_]+):", (ROOT / "data/areas.yaml").read_text(), re.M)
 ATTR = re.compile(r"""\b(?:href|src)=(?:"([^"]*)"|'([^']*)'|([^\s>"']+))""")
 
 
@@ -67,9 +68,11 @@ def check_posts(problems: list):
     today = dt.datetime.now(dt.timezone.utc).date().isoformat()
     for post in sorted((ROOT / "content/docs/blog").glob("*/*.md")):
         f, name = front(post.read_text()), post.relative_to(ROOT).as_posix()
-        for key in ("title", "description", "date"):
+        for key in ("title", "description", "date", "area"):
             if not f.get(key):
                 problems.append(f"{name}: no {key}")
+        if f.get("area") and f["area"] not in AREAS:
+            problems.append(f"{name}: area {f['area']!r} isn't in data/areas.yaml ({', '.join(AREAS)})")
         if f.get("date", "")[:10] > today:
             problems.append(f"{name}: dated {f['date'][:10]}, after today ({today} UTC), so Hugo hides it")
 

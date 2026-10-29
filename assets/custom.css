@@ -221,6 +221,10 @@ a.sq-card:hover {
   color: var(--ink-3); border: var(--rule-w) solid var(--rule); white-space: nowrap;
 }
 .sq-tag--accent { color: var(--accent); border-color: var(--accent); background: var(--accent-wash); }
+/* A card's topline: the date, then its area chip (as on Sidechain's cards) */
+.sq-card-top { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.sq-area { padding: 0 6px; font-size: 9.5px; line-height: 1.6; }
+.sq-area--carmine { color: var(--accent-2); }
 
 /* Topic chips under a block of text (the About page) */
 .sq-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }

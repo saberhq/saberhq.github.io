@@ -89,3 +89,6 @@ disableKinds = ["taxonomy", "term"]
   name = "GitHub"
   url = "https://github.com/saberhq/saberhq.github.io"
   weight = 20
+
+[caches.getresource]
+  maxAge = "1h"

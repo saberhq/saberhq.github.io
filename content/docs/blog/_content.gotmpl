@@ -1,0 +1,45 @@
+{{- /* Sidechain's posts, one card each, read from its feed at every build. The pages are listed, never
+       rendered: each card links out to the post on the Sidechain site. A deploy stops if the feed can't be
+       read, so the cards never vanish from the live site; a local preview only warns. */ -}}
+{{- $feed := "https://saberhq.com/sidechain/posts/index.xml" -}}
+{{- $items := slice -}}
+{{- $problem := "" -}}
+{{- with try (resources.GetRemote $feed) -}}
+  {{- with .Err -}}
+    {{- $problem = printf "%s" . -}}
+  {{- else with .Value -}}
+    {{- with (transform.Unmarshal .).channel.item -}}
+      {{- $items = cond (reflect.IsMap .) (slice .) . -}}
+    {{- end -}}
+  {{- else -}}
+    {{- $problem = "not found" -}}
+  {{- end -}}
+{{- end -}}
+{{- if $problem -}}
+  {{- if hugo.IsProduction -}}
+    {{- errorf "Sidechain's post list (%s) couldn't be read: %s" $feed $problem -}}
+  {{- else -}}
+    {{- warnf "Sidechain's post list (%s) couldn't be read, so its cards are missing: %s" $feed $problem -}}
+  {{- end -}}
+{{- end -}}
+{{- range $items -}}
+  {{- $link := .link -}}
+  {{- $desc := "" -}}
+  {{- with try (resources.GetRemote $link) -}}
+    {{- with .Value -}}
+      {{- with findRESubmatch `<meta property="?og:description"? content="([^"]*)"` .Content 1 -}}
+        {{- $desc = index (index . 0) 1 | htmlUnescape -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if not $desc -}}
+    {{- $desc = .description | plainify | htmlUnescape | truncate 150 -}}
+  {{- end -}}
+  {{- $.AddPage (dict
+    "path" (path.Base (strings.TrimSuffix "/" $link))
+    "title" .title
+    "dates" (dict "date" (time.AsTime .pubDate))
+    "params" (dict "description" $desc "external" $link "area" "sidechain")
+    "build" (dict "render" "never" "list" "local")
+  ) -}}
+{{- end -}}

@@ -1,11 +1,10 @@
-{{/* Blog post card — hairline border, mono meta topline, lifts on hover. Context: a page.
-     `external:` in front matter means the post lives on another site (its page here is a
-     never-rendered stub): the card links out in a new tab, like the news links do.
-     Posts carry `tags:` as dormant front matter only — chips were tried and pulled
-     (2026-08-31, too few posts to be worth showing); revisit when topics multiply. */}}
+{{/* Blog post card — hairline border, mono topline (the date, then the area chip), lifts on hover.
+     Context: a page. `area:` is a key of data/areas.yaml. `external:` means the post lives on another
+     site (Sidechain's come from content/docs/blog/_content.gotmpl): the card links out in a new tab. */}}
 {{ $ext := .Params.external }}
+{{ $area := index site.Data.areas (.Params.area | default "") }}
 <a class="sq-card" href="{{ $ext | default .RelPermalink }}"{{ if $ext }} target="_blank" rel="noopener"{{ end }}>
-  <div class="sq-card-meta">{{ .Date.Format "2006-01-02" }} · BLOG</div>
+  <div class="sq-card-meta sq-card-top"><span>{{ .Date.Format "2006-01-02" }}</span>{{ with $area }}<span class="sq-tag sq-area{{ with .accent }} sq-area--{{ . }}{{ end }}">{{ upper .label }}</span>{{ end }}</div>
   <div class="sq-card-title">{{ .Title }}</div>
   <p class="sq-card-desc">{{ .Params.description | default (.Summary | plainify | truncate 150) }}</p>
   <p class="sq-card-read">Read more →{{ if $ext }}<span class="sq-sr-only"> (opens in a new tab)</span>{{ end }}</p>

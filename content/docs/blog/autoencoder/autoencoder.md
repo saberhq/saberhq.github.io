@@ -5,6 +5,7 @@ draft: false
 url: "/blog/autoencoder/"
 image: /images/art/sky_01.jpg
 description: "Explore why autoencoders shine; this post pairs plain-language basics with demos, figures, and a walkthrough video."
+area: ml
 tags: [machine learning]
 ---
 

@@ -75,10 +75,21 @@ jobs:
           WROTE: ${{ steps.sync.outputs.wrote }}
         run: |
           set -euo pipefail
+          new_sidechain_post() {
+            local feed blog url
+            feed=$(curl -fsSL "https://saberhq.com/sidechain/posts/index.xml") || return 1
+            blog=$(curl -fsSL "https://saberhq.com/blog/?fresh=$(date +%s)") || return 1
+            for url in $(grep -oE '<guid>[^<]+</guid>' <<<"$feed" | sed -E 's#</?guid>##g'); do
+              grep -qF "$url" <<<"$blog" || { echo "$url isn't on the blog yet."; return 0; }
+            done
+            return 1
+          }
           deploy=true
           if [ "$EVENT" = "schedule" ]; then
             if [ "$CHANGED" = "true" ]; then
               echo "The playlist changed, so the site is rebuilt."
+            elif new_sidechain_post; then
+              echo "A new Sidechain post gets its card, so the site is rebuilt."
             elif [ "$(date -u +%u)" = "1" ] && [ "$WROTE" = "true" ]; then
               echo "Monday: the weekly rebuild that refreshes the weeks counts."
             else
