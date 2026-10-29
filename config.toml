@@ -3,6 +3,7 @@ languageCode = "en-us"
 title = "Saber HQ"
 theme = "book"
 enableRobotsTXT = true
+copyright = "© 2025–2026 Saber Hafezqorani · CC BY 4.0"
 publishDir = "build"
 # Tags are card chips and future organization, not pages (yet): keep Hugo from
 # generating unstyled /tags/... listings until we design them.
