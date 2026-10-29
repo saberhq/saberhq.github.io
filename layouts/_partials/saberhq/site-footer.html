@@ -4,6 +4,6 @@
 <footer class="sq-sitefooter">
   <div class="sq-wrap sq-sitefooter-in">
     <span><a href="{{ $p.Site.Home.RelPermalink }}">SABERHQ.COM</a>{{ with .crumb }} <span class="sq-dash">—</span> <a href="{{ .href }}">{{ .label }}</a>{{ end }}</span>
-    <span>© {{ now.Format "2006" }} SABER HAFEZQORANI · <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">CC BY 4.0</a>{{ with site.Params.version }} · <a href="https://github.com/saberhq/saberhq.github.io/releases/tag/{{ . }}">{{ . }}</a>{{ end }}</span>
+    <span>© {{ now.Format "2006" }} SABER HAFEZQORANI · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="license noopener">CC BY 4.0<span class="sq-sr-only"> (opens in a new tab)</span></a>{{ with site.Params.version }} · <a href="https://github.com/saberhq/saberhq.github.io/releases/tag/{{ . }}" target="_blank" rel="noopener">{{ . }}<span class="sq-sr-only"> release note (opens in a new tab)</span></a>{{ end }}</span>
   </div>
 </footer>

@@ -1,11 +1,13 @@
 {{/* Blog post card — hairline border, mono topline (the date, then the area chip), lifts on hover.
      Context: a page. `area:` is a key of data/areas.yaml. `external:` means the post lives on another
-     site (Sidechain's come from content/docs/blog/_content.gotmpl): the card links out in a new tab. */}}
+     site (Sidechain's come from content/docs/blog/_content.gotmpl): the card links there, in a new tab
+     only when it leaves saberhq.com. */}}
 {{ $ext := .Params.external }}
+{{ $off := and $ext (partial "saberhq/offsite" $ext) }}
 {{ $area := index site.Data.areas (.Params.area | default "") }}
-<a class="sq-card" href="{{ $ext | default .RelPermalink }}"{{ if $ext }} target="_blank" rel="noopener"{{ end }}>
+<a class="sq-card" href="{{ $ext | default .RelPermalink }}"{{ if $off }} target="_blank" rel="noopener"{{ end }}>
   <div class="sq-card-meta sq-card-top"><span>{{ .Date.Format "2006-01-02" }}</span>{{ with $area }}<span class="sq-tag sq-area{{ with .accent }} sq-area--{{ . }}{{ end }}">{{ upper .label }}</span>{{ end }}</div>
   <div class="sq-card-title">{{ .Title }}</div>
   <p class="sq-card-desc">{{ .Params.description | default (.Summary | plainify | truncate 150) }}</p>
-  <p class="sq-card-read">Read more →{{ if $ext }}<span class="sq-sr-only"> (opens in a new tab)</span>{{ end }}</p>
+  <p class="sq-card-read">Read more →{{ if $off }}<span class="sq-sr-only"> (opens in a new tab)</span>{{ end }}</p>
 </a>

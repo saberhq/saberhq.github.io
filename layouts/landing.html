@@ -52,12 +52,8 @@
          work — then the way through to the long version on /about/; the news on the right,
          newest first, in one column. Stacked under 901px: the note, then the news.
          The landing has no markdown body (the long text lives on /about/), so .Content is
-         not rendered here. The render-link hook opens remote links in a new tab on this
-         page; the replaceRE adds hidden text that tells screen readers so. In the note, a
-         non-breaking space ties the last word to the one before it, so a closing ":)" never
+         not rendered here. In the note, a non-breaking space ties the last word to the one before it, so a closing ":)" never
          sits alone on a line (it skips a note that ends inside a link). */}}
-    {{ $newTab := `(?s)(<a [^>]*target="_blank"[^>]*>)(.*?)</a>` }}
-    {{ $newTabTo := `$1$2<span class="sq-sr-only"> (opens in a new tab)</span></a>` }}
     {{ if or .Params.bio .Params.news }}
     <section class="sq-section sq-wrap">
       <div class="sq-section-head">
@@ -67,7 +63,7 @@
       <div class="sq-bio-grid">
         {{ with .Params.bio }}
         <div class="sq-bio">
-          <p class="sq-bio-text">{{ $.RenderString (dict "display" "inline") . | replaceRE $newTab $newTabTo | replaceRE ` ([^\s<>]+)$` "&nbsp;$1" | safeHTML }}</p>
+          <p class="sq-bio-text">{{ $.RenderString (dict "display" "inline") . | replaceRE ` ([^\s<>]+)$` "&nbsp;$1" | safeHTML }}</p>
           {{ with $.Params.about }}<a class="sq-bio-more" href="{{ . }}">More about me <span class="sq-glyph" aria-hidden="true">→</span></a>{{ end }}
         </div>
         {{ end }}
@@ -76,7 +72,7 @@
           {{ range . }}
           <li class="sq-news-row">
             <span class="sq-news-date">{{ .date }}</span>
-            <span class="sq-news-item">{{ $.RenderString (dict "display" "inline") .text | replaceRE $newTab $newTabTo | safeHTML }}</span>
+            <span class="sq-news-item">{{ $.RenderString (dict "display" "inline") .text | safeHTML }}</span>
           </li>
           {{ end }}
         </ul>
