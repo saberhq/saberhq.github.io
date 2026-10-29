@@ -221,6 +221,10 @@ a.sq-card:hover {
   color: var(--ink-3); border: var(--rule-w) solid var(--rule); white-space: nowrap;
 }
 .sq-tag--accent { color: var(--accent); border-color: var(--accent); background: var(--accent-wash); }
+/* A card's topline: the date, then its area chip (as on Sidechain's cards) */
+.sq-card-top { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.sq-area { padding: 0 6px; font-size: 9.5px; line-height: 1.6; }
+.sq-area--carmine { color: var(--accent-2); }
 
 /* Topic chips under a block of text (the About page) */
 .sq-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
@@ -288,8 +292,8 @@ a.sq-bio-more:hover { color: var(--link-hover); }
   font-size: var(--h1-size); font-weight: 600;
   letter-spacing: var(--h1-track); line-height: var(--h1-leading); text-wrap: pretty;
 }
-.sq-article-desc { margin: 12px 0 0; font-size: 16px; color: var(--ink-2); }
-.sq-byline { display: flex; align-items: baseline; gap: var(--space-2); margin: 22px 0 30px; font-family: var(--font-mono); font-size: 11px; }
+.sq-article-desc { margin: 12px 0 0; font-size: 18px; color: var(--ink-2); }
+.sq-byline { display: flex; align-items: baseline; gap: var(--space-2); margin: 22px 0 30px; font-family: var(--font-mono); font-size: 12px; }
 .sq-byline-author { color: var(--ink-3); }
 .sq-byline-rule { flex: 1; border-top: var(--rule-w) solid var(--rule); }
 .sq-cover { margin: 0 0 34px; }
@@ -304,7 +308,7 @@ a.sq-bio-more:hover { color: var(--link-hover); }
 .sq-prose li { margin: 4px 0; }
 .sq-prose img { max-width: 100%; height: auto; border: var(--rule-w) solid var(--rule); border-radius: var(--radius); }
 .sq-prose figure { margin: 26px 0; }
-.sq-prose figcaption { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); margin-top: var(--space-2); line-height: 1.5; }
+.sq-prose figcaption { font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); margin-top: var(--space-2); line-height: 1.5; }
 /* Posts caption figures as an emphasized paragraph right after the image
    (`![...](img)` then `*Figure N. ...*`) — style that convention as the kit's mono caption */
 .sq-prose p:has(> img) + p:has(> em:only-child) {
@@ -320,7 +324,7 @@ a.sq-bio-more:hover { color: var(--link-hover); }
   background: var(--surface-sunken); border: var(--rule-w) solid var(--rule);
   border-radius: var(--radius); padding: 14px 16px; overflow-x: auto; margin: 0 0 18px;
 }
-.sq-prose pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.55; }
+.sq-prose pre code { background: none; padding: 0; font-size: 14px; line-height: 1.55; }
 .sq-prose blockquote { margin: 0 0 18px; padding: 2px 0 2px 16px; border-left: 2px solid var(--rule-strong); color: var(--ink-2); }
 .sq-prose blockquote p:last-child { margin-bottom: 0; }
 .sq-prose hr { border: 0; border-top: var(--rule-w) solid var(--rule); margin: var(--space-6) 0; }

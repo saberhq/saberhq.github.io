@@ -3,6 +3,7 @@ languageCode = "en-us"
 title = "Saber HQ"
 theme = "book"
 enableRobotsTXT = true
+copyright = "© 2025–2026 Saber Hafezqorani · CC BY 4.0"
 publishDir = "build"
 # Tags are card chips and future organization, not pages (yet): keep Hugo from
 # generating unstyled /tags/... listings until we design them.
@@ -26,6 +27,8 @@ disableKinds = ["taxonomy", "term"]
   BookSection = "docs"
   BookDateFormat = "2006-01-02"
   BookRepo = "https://github.com/saberhq/saberhq.github.io"
+  # saberhq.com pages that open in a new tab (links to other sites always do)
+  newTab = ["/resume/"]
 
 # Top navigation
 [menu]
@@ -88,3 +91,6 @@ disableKinds = ["taxonomy", "term"]
   name = "GitHub"
   url = "https://github.com/saberhq/saberhq.github.io"
   weight = 20
+
+[caches.getresource]
+  maxAge = "1h"

@@ -5,6 +5,7 @@ draft: false
 url: "/blog/ntEmbd/"
 image: /images/art/green.jpg
 description: "ntEmbd turns nucleotide sequences into vector embeddings; explore training setup, benchmarks, and GitHub repo links."
+area: research
 tags: [machine learning, genomics]
 ---
 
