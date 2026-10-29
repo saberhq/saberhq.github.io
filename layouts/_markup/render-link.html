@@ -14,5 +14,5 @@
     {{- end -}}
   {{- end -}}
 {{- end -}}
-{{- $offsite := partial "saberhq/offsite" .Destination -}}
-<a href="{{ $destination | safeURL }}"{{ with .Title }} title="{{ . }}"{{ end }}{{ if $offsite }} target="_blank" rel="noopener"{{ end }}>{{ .Text | safeHTML }}{{ if $offsite }}<span class="sq-sr-only"> (opens in a new tab)</span>{{ end }}</a>
+{{- $newTab := partial "saberhq/new-tab" .Destination -}}
+<a href="{{ $destination | safeURL }}"{{ with .Title }} title="{{ . }}"{{ end }}{{ if $newTab }} target="_blank" rel="noopener"{{ end }}>{{ .Text | safeHTML }}{{ if $newTab }}<span class="sq-sr-only"> (opens in a new tab)</span>{{ end }}</a>

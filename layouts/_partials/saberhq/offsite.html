@@ -1,5 +1,0 @@
-{{- /* True when a URL leaves saberhq.com. Those open in a new tab; saberhq.com's own pages, Sidechain's
-     included, open in the same tab. (saberhq.com is named too, for the local preview.) */ -}}
-{{- $host := strings.TrimPrefix "www." (urls.Parse .).Host -}}
-{{- $home := slice "saberhq.com" (strings.TrimPrefix "www." (urls.Parse site.BaseURL).Host) -}}
-{{- return (and (ne $host "") (not (in $home $host))) -}}

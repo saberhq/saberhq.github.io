@@ -27,6 +27,8 @@ disableKinds = ["taxonomy", "term"]
   BookSection = "docs"
   BookDateFormat = "2006-01-02"
   BookRepo = "https://github.com/saberhq/saberhq.github.io"
+  # saberhq.com pages that open in a new tab (links to other sites always do)
+  newTab = ["/resume/"]
 
 # Top navigation
 [menu]

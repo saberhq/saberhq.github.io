@@ -1,9 +1,9 @@
 {{/* Blog post card — hairline border, mono topline (the date, then the area chip), lifts on hover.
      Context: a page. `area:` is a key of data/areas.yaml. `external:` means the post lives on another
      site (Sidechain's come from content/docs/blog/_content.gotmpl): the card links there, in a new tab
-     only when it leaves saberhq.com. */}}
+     only when saberhq/new-tab says so. */}}
 {{ $ext := .Params.external }}
-{{ $off := and $ext (partial "saberhq/offsite" $ext) }}
+{{ $off := and $ext (partial "saberhq/new-tab" $ext) }}
 {{ $area := index site.Data.areas (.Params.area | default "") }}
 <a class="sq-card" href="{{ $ext | default .RelPermalink }}"{{ if $off }} target="_blank" rel="noopener"{{ end }}>
   <div class="sq-card-meta sq-card-top"><span>{{ .Date.Format "2006-01-02" }}</span>{{ with $area }}<span class="sq-tag sq-area{{ with .accent }} sq-area--{{ . }}{{ end }}">{{ upper .label }}</span>{{ end }}</div>
