@@ -118,14 +118,15 @@ jobs:
 
           live=""
           for _ in $(seq 1 30); do
-            if curl -fsSL "https://saberhq.com/?shipped=$version" | grep -qE "saberhq-version\"? content=\"?${version//./\\.}\"?>"; then
+            page=$(curl -fsSL "https://saberhq.com/?shipped=$version" || true)
+            if grep -qE "saberhq-version\"? content=\"?${version//./\\.}\"?>" <<<"$page"; then
               live=yes
               break
             fi
             sleep 10
           done
 
-          git fetch -q origin dev
+          git fetch -q origin main dev
           if git push -q origin "$merge:refs/heads/dev"; then
             echo "dev now matches main."
           else
