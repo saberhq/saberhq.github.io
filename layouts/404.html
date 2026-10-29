@@ -71,7 +71,8 @@
           lives as a page now, and prints to PDF from your browser.
         </p>
         <ul>
-          <li><a href="/resume/">Résumé</a></li>
+          {{- $newTab := partial "saberhq/new-tab" "/resume/" }}
+          <li><a href="/resume/"{{ if $newTab }} target="_blank" rel="noopener"{{ end }}>Résumé{{ if $newTab }}<span class="sq-sr-only"> (opens in a new tab)</span>{{ end }}</a></li>
           <li><a href="{{ .Site.Home.RelPermalink }}">Home</a></li>
           <li><a href="/about/">About</a></li>
           <li><a href="/blog/">Blog</a></li>
