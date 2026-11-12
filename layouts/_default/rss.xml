@@ -1,9 +1,4 @@
-{{- /* Site RSS. Two changes from Hugo's embedded template: an item's link honors
-     `external:` front matter, so a stub post that lives on another site (e.g. the
-     Sidechain writeup) syndicates with its real URL instead of an empty link; and the
-     home feed carries the blog's posts only. Hugo's default (every regular page) also
-     syndicated undated pages — /about/, /vibes/, the hidden podcast and newsletter stubs —
-     as if they were posts from the year 1. */ -}}
+{{- /* Site RSS: blog posts only; an item's link honors `external:` front matter. */ -}}
 {{- printf "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>" | safeHTML }}
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>

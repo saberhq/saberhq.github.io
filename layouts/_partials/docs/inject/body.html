@@ -34,24 +34,13 @@ document.addEventListener('click', function (e) {
 })();
 </script>
 
-{{/* GoatCounter — pageviews, reported to saberhq.goatcounter.com. One property covers both
-     saberhq.com and saberhq.com/sidechain (same origin under GitHub Pages), so Sidechain's
-     traffic reads as /sidechain/* paths there. Cookieless, so no consent banner is owed.
-     Production only: the guard keeps `hugo server` out of the numbers, and count.js skips
-     localhost of its own accord. The same three lines live in the sidechain repo's
-     site/layouts/_partials/scripts.html — keep them in step. */}}
+{{/* GoatCounter pageviews; production only. */}}
 {{ if hugo.IsProduction }}
 <script data-goatcounter="https://saberhq.goatcounter.com/count"
         async src="https://gc.zgo.at/count.js"></script>
 {{ end }}
 
-{{/* Outbound clicks. count.js records pageviews only, so a click that leaves the site
-     records nothing at all. Every external link on this site opens in a new tab, so the
-     page is never unloaded and the request has time to finish — there is no navigation
-     race here to work around with sendBeacon.
-     Grouped by host: out/github.com counts every GitHub link as one line, with the full
-     URL kept in the event title. Same-host links are skipped, which is what keeps
-     /sidechain/ from counting as outbound. */}}
+{{/* Outbound clicks, grouped by host; same-host links are skipped. */}}
 {{ if hugo.IsProduction }}
 <script>
 document.addEventListener('click', function (e) {

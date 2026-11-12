@@ -1,7 +1,4 @@
-{{/* Shadows the Book theme's docs/html-head partial for one reason: Book emits its own
-     <meta name="theme-color"> pair (#ffffff/#343a40) and the FIRST matching meta in tree
-     order wins, which made the brand values in docs/inject/head.html inert. This copy
-     drops those two metas; keep it in sync with the theme partial otherwise. */}}
+{{/* Shadows the Book theme's docs/html-head partial, minus its two theme-color metas. */}}
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="{{ default .Summary .Description }}">

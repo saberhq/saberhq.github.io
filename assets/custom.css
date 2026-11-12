@@ -1,10 +1,4 @@
-/* ================================================================
-   Saber HQ site styles — built on the design tokens in assets/tokens/.
-   Tokens are the only source of color/type/spacing values; anything
-   visual here must reference a --token. Rules: one vermillion accent,
-   Geist voice + Geist Mono instrument panel, hairline structure,
-   dark mode via [data-theme="dark"] on <html>.
-   ================================================================ */
+/* Saber HQ site styles, built on the tokens in assets/tokens/ */
 
 /* ---------- Book theme variable remap (docs chrome inherits brand) ---------- */
 :root {
@@ -131,13 +125,7 @@ a.sq-btn, a.sq-btn:visited { color: var(--btn-solid-text); }
 .sq-btn--secondary:hover, a.sq-btn--secondary:hover, .sq-btn--secondary:active { opacity: 1; border-color: var(--ink-4); color: var(--ink); }
 .sq-btn--sm { font-size: 12.5px; padding: 6px 12px; }
 
-/* ---------- The live button (Sidechain): the one moving thing on a still page ----------
-   The same hairline button as its neighbors, plus a single carmine light running the border
-   — the companion accent as a line, never a fill, and the same color that marks Sidechain up
-   in the header strip. The label is a split-flap board (think
-   Solari departure boards): mono cells one character wide, so the word never jitters
-   while the flap script (bottom of layouts/landing.html) spins the letters.
-   Reduced-motion gets the still version: no light, and the script never starts. */
+/* ---------- The live button (Sidechain) ---------- */
 @property --sq-trace { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 .sq-btn--live { position: relative; isolation: isolate; }
 .sq-btn--live::before {
@@ -229,10 +217,7 @@ a.sq-card:hover {
 /* Topic chips under a block of text (the About page) */
 .sq-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 
-/* ---------- About & recent news (landing) ----------
-   Saber's short note beside the news, as the landing had them before the About page took
-   the long text: two equal columns with the About page's 64px gutter, their first lines on
-   one baseline. Under 901px they stack, the note first. Either one alone spans the width. */
+/* ---------- About & recent news (landing) ---------- */
 .sq-bio-grid {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: baseline;
   gap: var(--space-6) var(--space-8); margin-top: 20px;
@@ -345,12 +330,7 @@ a.sq-bio-more:hover { color: var(--link-hover); }
 .sq-listing-content > p { color: var(--ink-2); font-size: 16px; max-width: 60ch; }
 .sq-listing .sq-card-grid { margin-top: var(--space-5); }
 
-/* ---------- About page (layouts/about.html) ----------
-   A sibling of the home and Sidechain heroes: a mono kicker, a Geist Pixel line whose full stop
-   is vermillion, the tagline, two hairline buttons, and Saber's photo as a circle at the right
-   edge. Below it, the home page's own section blocks (1.5px ink rule + mono label). After the
-   generic .sq-prose rules on purpose: same specificity, later wins. Vermillion is the page's
-   one accent (About speaks in the house voice). Under 901px: one column, photo first. */
+/* ---------- About page (layouts/about.html) ---------- */
 /* Book rings every :focus, mouse clicks included; keep the ring for the keyboard (as on /vibes/) */
 .sq-me-page :focus:not(:focus-visible) { outline: none; }
 .sq-me-hero {

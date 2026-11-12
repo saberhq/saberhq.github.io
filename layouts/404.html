@@ -1,16 +1,4 @@
-{{/* Shadows themes/book/layouts/404.html.
-
-     Why we override it: the theme's 404 is a giant numeral and a link home, which is a
-     dead end for anyone arriving on a stale link. The one that actually gets hit is
-     /SaberHafezqorani_Resume.pdf — tracked until commit 8ecb9da, when static/resume/index.html
-     replaced it. GitHub Pages cannot redirect a .pdf to an HTML page (Content-Type follows the
-     extension, so a file named .pdf is served as application/pdf whatever is inside it), and
-     resurrecting the PDF would mean maintaining a second copy of the résumé. Sending 404s
-     somewhere useful costs nothing and catches every other stale link too.
-
-     Colours come from assets/tokens/colors.css, so this follows the light/dark theme like
-     everything else. docs/inject/body carries the GoatCounter tag, which is what records
-     WHICH dead URL a visitor asked for. */}}
+{{/* Shadows themes/book/layouts/404.html. */}}
 <!DOCTYPE html>
 <html lang="{{ .Site.Language.Lang }}">
 
