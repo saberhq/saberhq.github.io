@@ -2,15 +2,7 @@
 set -euo pipefail
 
 # Import a Notion-exported Markdown file into a Hugo Blog page bundle
-#
-# Usage:
-#   scripts/notion-import path/to/Page.md [--publish] [--date YYYY-MM-DD] [--slug custom-slug]
-#
-# Behavior:
-# - Creates content/docs/blog/<slug>/index.md
-# - Copies any exported media folder (images) alongside index.md
-# - Rewrites Notion image links to be relative within the page bundle
-# - Optionally converts standalone YouTube links to the {{< youtube >}} shortcode
+# Usage: scripts/notion-import path/to/Page.md [--publish] [--date YYYY-MM-DD] [--slug custom-slug]
 
 usage() {
   cat <<'EOF' >&2

@@ -1,11 +1,4 @@
-/* ======================================================================
-   Saber Vibes (/vibes/) — loaded only by layouts/vibes.html, after the tokens and custom.css.
-   "Sleeve wall": the playlist's covers hang as one even wall on the right, Saber's short
-   signed note and a click-to-cue Spotify player on the left. One screen on desktop (the
-   sleeves are sized from the viewport), a scrolling single column under 901px.
-   Colour: --accent-3 ("blue hour", tokens/colors.css) takes vermillion's job on this page —
-   small marks only. Ink and paper carry the structure; the album art carries the colour.
-   ====================================================================== */
+/* Saber Vibes (/vibes/): loaded only by layouts/vibes.html, after the tokens and custom.css */
 
 /* ---- Page voice: accent-3 does vermillion's job on this page ---- */
 .vb-page {
@@ -130,11 +123,7 @@ a.vb-fine:hover { color: var(--ink); }
   .vb-player { padding-top: 18px; }
   .vb-deck { height: 80px; padding: 11px; gap: 14px; }   /* Spotify's compact 80px player */
 }
-/* Short desktop windows (1280x720 and 1366x768 laptops; a 1366x768 browser shows ~657px): the
-   story column gives back ~50px so the page still fits one screen. The wordmark steps down to
-   the display size (as on phones), the note's lines and the gaps tighten; nothing is hidden.
-   Windows taller than 800px are untouched. Under 640px (big zoom, small screens) the stage's
-   top and bottom padding tightens further. */
+/* Short desktop windows: tighten so the page still fits one screen */
 @media (min-width: 901px) and (max-height: 800px) {
   .vb-page { --pady: clamp(12px, 7vh - 34px, 28px); }
   .vb-wordmark { margin-top: 8px; font-size: var(--display-size); }
@@ -154,10 +143,7 @@ a.vb-fine:hover { color: var(--ink); }
 .vb-wall-head .sq-section-label { margin: 0; font-size: inherit; font-weight: inherit; line-height: 1.6; color: var(--accent-3); }
 .vb-order { font-weight: 400; color: var(--ink-3); letter-spacing: var(--meta-track); white-space: nowrap; }
 .vb-order .sq-glyph { font-size: 1.2em; }
-/* Spotify attribution: the official full-logo files, unmodified (layouts/_partials/vibes/
-   spotify-logo.html) — black on paper, white on dark, never recoloured, never in a sentence;
-   76px wide (min 70); the head's padding keeps half the icon height (≈10px) clear around it.
-   The light/dark swap selectors carry .vb-spotify so they outrank `.vb-spotify img`. */
+/* Spotify attribution: the official logo files, unmodified */
 a.vb-spotify, a.vb-spotify:visited { display: block; flex: none; line-height: 0; margin-left: var(--space-5); }
 .vb-spotify img { display: block; width: 76px; height: auto; }
 .vb-spotify .vb-spotify-dark { display: none; }

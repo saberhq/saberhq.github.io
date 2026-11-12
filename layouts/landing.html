@@ -14,10 +14,7 @@
       <h1 class="sq-display sq-display--mark">saberhq.com</h1>
       {{ with .Params.tagline }}<p class="sq-tagline">{{ $.RenderString (dict "display" "inline") . }}</p>{{ end }}
       <div class="sq-hero-actions">
-        {{/* Sidechain is the one live thing on an otherwise still page: a carmine light
-             runs its hairline border, and the label is a split-flap board — every so often
-             (and on hover) the letters spin in a chain reaction, then settle back to solid.
-             The flap script sits at the bottom of this template. */}}
+        {{/* The Sidechain button; its flap script sits at the bottom of this template. */}}
         {{ with .Params.sidechain }}
         <a class="sq-btn sq-btn--secondary sq-btn--live" href="{{ . }}" aria-label="Sidechain">
           <span class="sq-flip" aria-hidden="true">{{ range split "Sidechain" "" }}<span>{{ . }}</span>{{ end }}</span><span class="sq-glyph" aria-hidden="true">→</span>
@@ -47,13 +44,7 @@
     </section>
     {{ end }}
 
-    {{/* About & recent news, side by side as the landing had them before the About page:
-         Saber's short note on the left — `bio` in content/_index.md, markdown, so its links
-         work — then the way through to the long version on /about/; the news on the right,
-         newest first, in one column. Stacked under 901px: the note, then the news.
-         The landing has no markdown body (the long text lives on /about/), so .Content is
-         not rendered here. In the note, a non-breaking space ties the last word to the one before it, so a closing ":)" never
-         sits alone on a line (it skips a note that ends inside a link). */}}
+    {{/* About & recent news, side by side; stacked under 901px. */}}
     {{ if or .Params.bio .Params.news }}
     <section class="sq-section sq-wrap">
       <div class="sq-section-head">
@@ -86,10 +77,7 @@
   {{ partial "saberhq/site-footer" (dict "page" .) }}
   {{ partial "docs/inject/body" . }}
 
-  {{/* Split-flap Sidechain label. Occasionally — and on hover or keyboard focus — each
-       letter flips through a few random characters, starting one after another down the
-       word (the chain reaction), then settles back to "Sidechain" and rests. Skipped
-       entirely for visitors who prefer reduced motion; without JS the word just stands. */}}
+  {{/* Split-flap Sidechain label; skipped for reduced motion. */}}
   <script>
   (function () {
     var el = document.querySelector('.sq-btn--live');

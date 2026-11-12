@@ -1,8 +1,5 @@
-{{/* Saber HQ site header strip.
-     Context: dict "page" .  plus optional "crumb" (mono breadcrumb after the mark),
-     "back" (dict "href" "label" — replaces the nav with a single back link),
-     "nonav" (no links at all — a one-screen page like /vibes/, as on the Sidechain site), and
-     "hideMark" (home: the hero carries the wordmark instead). */}}
+{{/* Site header strip. Context: dict "page" . plus optional "crumb", "back" (dict "href" "label"),
+     "nonav" and "hideMark". */}}
 {{ $p := .page }}
 <header class="sq-siteheader">
   <div class="sq-wrap sq-siteheader-in">
@@ -12,12 +9,7 @@
     {{ with .back }}
       <a class="sq-back" href="{{ .href }}">{{ .label }}</a>
     {{ else }}{{ if not .nonav }}
-      {{/* The menu (config.toml, menu.home). Saber's own pages come first; a named thing wears
-           its naming color: `accent = true` is carmine (Sidechain), `accent = "vibes"` is blue
-           hour (Saber Vibes). The off-site links (GitHub, LinkedIn, …) open in a new tab and say
-           so to screen readers. They are written twice and the stylesheet shows one copy: in a
-           row on wide screens, folded into one "Elsewhere" entry on tablets and phones. That
-           entry is a plain <details>, so it opens without JavaScript. */}}
+      {{/* The menu (config.toml, menu.home); off-site links are written twice, the stylesheet shows one. */}}
       {{ $social := slice }}
       {{ range $p.Site.Menus.home }}{{ if hasPrefix .URL "http" }}{{ $social = $social | append . }}{{ end }}{{ end }}
       <nav class="sq-nav" aria-label="Links">

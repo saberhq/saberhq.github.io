@@ -1,7 +1,4 @@
-{{- /* Tab titles (shadows the Book theme partial).
-       Home: bare mark. Other pages: "saberhq.com - x" where x is the page's
-       `short` front-matter param when set (e.g. short: ntEmbd), else the title
-       (lowercased for section/list pages, kept as-is for regular pages). */ -}}
+{{- /* Tab titles (shadows the Book theme partial). */ -}}
 {{- if .IsHome -}}
 saberhq.com
 {{- else if .Params.short -}}

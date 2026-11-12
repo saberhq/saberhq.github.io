@@ -1,20 +1,4 @@
-{{- /* Saber Vibes — /vibes/. content/vibes/index.md picks this up with `layout: vibes` (Hugo 0.146+
-     matches a page's layout name to layouts/<layout>.html), like about.html and landing.html.
-     Same skeleton as layouts/blog/single.html; styles in assets/vibes.css.
-
-     One screen on desktop: Saber's short signed note on the left (the words live in the
-     page's front matter), the playlist's covers as one even "wall" on the right, in playlist
-     order — never ranked, never sorted by anything that could read as "favorites". Up to ten
-     songs, plus an open slot ("room for one more") while there are fewer. Under each song, how
-     many weeks it has been on the wall. On wide screens with JS, a cover cues the song in
-     Spotify's own player under the note; the player is only created on that first click.
-
-     Data: site.Data.vibes — data/vibes.json, written fresh by the Spotify sync in CI right
-     before `hugo` runs and never committed (Spotify's terms: keep it current, don't store
-     it). Shape: { playlist {id, name, url, images, snapshot_id}, source, updated_at,
-     tracks [ {id, name, url, duration_ms, added_at (ISO-8601 or null),
-               artists [{name, url}], album {name, url, images [{url, width, height}]}} ] }.
-     No file or no tracks -> the empty state; missing data never fails the build. */ -}}
+{{- /* Saber Vibes (/vibes/): content/vibes/index.md picks this up with `layout: vibes`. Data: site.Data.vibes. */ -}}
 
 {{- /* ---- The playlist link: front matter `playlist` is the one source of truth (the CI sync
      reads the playlist id from that same line); the data's own URL is only a fallback. ---- */ -}}
@@ -23,10 +7,7 @@
 {{- if not $url }}{{ with $v }}{{ with .playlist }}{{ $url = .url }}{{ end }}{{ end }}{{ end }}
 {{- if not $url }}{{ warnf "vibes: no playlist URL - set `playlist:` in content/%s" .File.Path }}{{ end }}
 
-{{- /* ---- The songs: the first ten, in playlist order. Entries without an id or a name (local
-     files, removed tracks) can't be linked to Spotify, so they're skipped. Each date is read
-     once; a date that isn't ISO-8601 shows no weeks (and warns in the build log) instead of
-     breaking the build. */ -}}
+{{- /* The songs: the first ten, in playlist order; entries without an id or a name are skipped. */ -}}
 {{- $songs := slice }}
 {{- with $v }}{{ with .tracks }}
   {{- range . }}
@@ -196,12 +177,7 @@
        deployed copy (last known good) when Spotify can't be reached. Nothing without data. */}}
   {{- with $v }}{{ (resources.FromString "vibes/vibes.json" (jsonify .)).Publish }}{{ end }}
 
-  {{/* Vibes: (1) keep the week counts true between rebuilds, from each song's date and the
-       visitor's clock; (2) wide screens: a cover cues the song in Spotify's own player. The
-       iframe is created on the first click only; "close" (or narrowing the window below 901px)
-       removes it, which stops the audio. Covers are buttons, not links, so GoatCounter's
-       outbound counter doesn't count cues — and there is deliberately no "play" event:
-       Spotify's Developer Policy forbids listenership metrics. */}}
+  {{/* Vibes: keep the week counts true between rebuilds; on wide screens a cover cues the song. */}}
   <script>
   (function () {
     var WEEK = 7 * 864e5, now = Date.now();

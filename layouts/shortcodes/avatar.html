@@ -1,7 +1,4 @@
-{{/*
-  avatar shortcode
-  Usage: {{< avatar src="/images/portrait.jpg" alt="Portrait" size="160" >}}
-*/}}
+{{/* avatar shortcode. Usage: {{< avatar src="/images/portrait.jpg" alt="Portrait" size="160" >}} */}}
 {{ $src := .Get "src" }}
 {{ $alt := .Get "alt" | default "" }}
 {{ $size := .Get "size" | default "160" }}

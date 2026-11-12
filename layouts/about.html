@@ -1,16 +1,4 @@
-{{- /* About page — content/about/index.md picks this up with `layout: about` (Hugo 0.146+
-     matches a page's layout name to layouts/<layout>.html, ahead of the Book theme's
-     generic single.html; landing.html and vibes.html work the same way).
-     Same skeleton as layouts/blog/single.html; styles in the "About page" block of
-     assets/custom.css.
-
-     A sibling of the home page and the Sidechain hero: a mono kicker, a Geist Pixel line
-     ("Hi, I'm Saber.") whose full stop is vermillion, the tagline-sized lede and two hairline
-     buttons, with Saber's photo as a circle at the right edge (above the text under 901px).
-     Below, the home page's own section blocks: "The long version" (the letter, in two
-     newspaper columns, then the topic tags), then "Elsewhere". If the markdown ever gains a
-     <!--more--> line, each "## heading" after it becomes one more block in between.
-     Every word on the page comes from the front matter or the markdown body. */ -}}
+{{- /* About page: content/about/index.md picks this up with `layout: about`. */ -}}
 
 {{- /* The address behind "Say hi" and "Email": the first mailto entry of menu.after in
      config.toml ("Contact me"). It is only ever an href — never printed on the page. */ -}}
@@ -69,11 +57,7 @@
         </div>
       </div>
 
-      {{- /* The photo, from the page bundle (front matter `photo`, alt text in `photoAlt`):
-           cropped to a square anchored at the top (a taller photo keeps the head), at 1x and
-           2x the circle's desktop size, as WebP with a JPEG fallback. After the heading in the
-           source, so screen readers hear the name first; under 901px the stylesheet lifts it
-           above the text. Keep `sizes` in step with .sq-me-photo img in custom.css. */}}
+      {{- /* The photo, from the page bundle. Keep `sizes` in step with .sq-me-photo img in custom.css. */}}
       {{- with .Resources.Get (.Params.photo | default "profile.jpg") }}
         {{- if lt (math.Min .Width .Height) 448 }}{{ warnf "about: %s is %dx%d - use a square photo at least 448px wide so the circle stays sharp" .Name .Width .Height }}{{ end }}
         {{- $sizes := "(max-width: 900px) 136px, 224px" }}
@@ -111,10 +95,7 @@
       {{- end }}
     </section>
 
-    {{- /* Below the <!--more--> line: each "## heading" opens a section of its own — the
-         stylesheet draws the rendered h2 as the site's section head (1.5px ink rule + mono
-         label) — so a new "## Photos" in the markdown is a new block, no template change.
-         Set at the tagline's size: the personal part reads as a note, not small print. */}}
+    {{- /* Below the <!--more--> line: each "## heading" opens a section of its own. */}}
     {{- with $more }}
     <div class="sq-section sq-wrap sq-prose sq-me-more">
       {{ . | safeHTML }}
