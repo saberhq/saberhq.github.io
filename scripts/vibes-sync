@@ -309,7 +309,7 @@ class Spotify:
                 if status == 429:
                     if api_error(body)["reason"] == "QUOTA_EXCEEDED":
                         raise Problem("error", "Spotify says this app has used up its request quota for now "
-                                      "(QUOTA_EXCEEDED); the next daily run will try again", "quota")
+                                      "(QUOTA_EXCEEDED); the next run will try again", "quota")
                     if rate_retries >= RATE_LIMIT_RETRIES:
                         raise Problem("error", f"Spotify kept saying \"too many requests\" for {what} "
                                       f"(HTTP 429, {rate_retries + 1} tries)", "rate_limited")

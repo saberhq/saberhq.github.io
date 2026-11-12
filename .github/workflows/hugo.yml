@@ -5,7 +5,7 @@ on:
     branches: ["main"]
   workflow_dispatch:
   schedule:
-    - cron: "23 6 * * *"
+    - cron: "23 * * * *"
 
 permissions:
   contents: read
@@ -90,11 +90,11 @@ jobs:
               echo "The playlist changed, so the site is rebuilt."
             elif new_sidechain_post; then
               echo "A new Sidechain post gets its card, so the site is rebuilt."
-            elif [ "$(date -u +%u)" = "1" ] && [ "$WROTE" = "true" ]; then
+            elif [[ "$(date -u +%u%H)" =~ ^10[67]$ ]] && [ "$WROTE" = "true" ]; then
               echo "Monday: the weekly rebuild that refreshes the weeks counts."
             else
               deploy=false
-              echo "Nothing changed on Spotify, so there is nothing to deploy today."
+              echo "Nothing changed, so there is nothing to deploy this hour."
             fi
           fi
           echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
@@ -250,16 +250,16 @@ jobs:
           {
             case "$reason" in
               reauth)
-                echo "The daily Saber Vibes sync can't use the saved Spotify login any more, so the page keeps showing the last playlist it had."
+                echo "The Saber Vibes sync can't use the saved Spotify login any more, so the page keeps showing the last playlist it had."
                 ;;
               error)
-                echo "The daily Saber Vibes sync couldn't read the playlist from Spotify, so the page keeps showing the last playlist it had."
+                echo "The Saber Vibes sync couldn't read the playlist from Spotify, so the page keeps showing the last playlist it had."
                 echo
                 echo "This often fixes itself by the next day. If this issue is still open after two or three days, follow the steps below."
                 ;;
               rotated)
                 echo "<!-- saber-vibes:new-key -->"
-                echo "Spotify handed out a new login key during today's sync, and this workflow couldn't store it (there is no SPOTIFY_SECRETS_PAT secret, or it has expired). The saved login may stop working soon, so log in again now. This issue stays open until you do."
+                echo "Spotify handed out a new login key during a sync, and this workflow couldn't store it (there is no SPOTIFY_SECRETS_PAT secret, or it has expired). The saved login may stop working soon, so log in again now. This issue stays open until you do."
                 ;;
               expiring)
                 printf 'Spotify logins last six months. The current one is from %s (%s days ago), so it stops working around %s. Log in again any time before then.\n' \
@@ -286,7 +286,7 @@ jobs:
           if [ -z "$first" ]; then
             has_label=$(gh label list --limit 200 --json name --jq 'map(select(.name == "saber-vibes")) | length')
             if [ "$has_label" = "0" ]; then
-              gh label create "$label" --color 006CA9 --description "The daily Spotify sync for the Saber Vibes page"
+              gh label create "$label" --color 006CA9 --description "The Spotify sync for the Saber Vibes page"
             fi
             gh issue create --title "$title" --label "$label" --body-file "$body"
             exit 0
