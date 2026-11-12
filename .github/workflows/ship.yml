@@ -79,23 +79,41 @@ jobs:
             *) stop "$version doesn't follow the live $latest." ;;
           esac
 
-          result=""
-          for _ in $(seq 1 40); do
-            runs=$(gh api "repos/$GH_REPO/commits/$head/check-runs?check_name=check-site" \
-              --jq '[.check_runs[] | "\(.status)/\(.conclusion)"] | join(" ")')
-            case " $runs " in *" completed/success "*) result=ok; break ;; esac
-            if [ -n "$runs" ] && ! printf '%s\n' $runs | grep -qv '^completed/'; then result=failed; break; fi
-            sleep 15
-          done
-          case "$result" in
-            ok) echo "The checks passed on ${head:0:7}." ;;
-            failed) stop "the checks failed on ${head:0:7}." ;;
-            *) comment "Waiting: the checks on ${head:0:7} haven't finished. The daily run tries again."
-               echo "::warning::The checks haven't finished."
-               exit 0 ;;
-          esac
+          checks() {
+            gh api "repos/$GH_REPO/commits/$head/check-runs?check_name=check-site&filter=all" --jq '
+              .check_runs | sort_by(.started_at) |
+              if length == 0 then "none"
+              elif any(.[]; .status != "completed") then "pending"
+              elif last.conclusion == "success" then "ok"
+              else "failed" end'
+          }
+          settle() {
+            local state=none
+            for _ in $(seq 1 40); do
+              state=$(checks)
+              case "$state" in ok|failed) break ;; esac
+              sleep 15
+            done
+            echo "$state"
+          }
 
-          gh pr merge "$pr" --merge --match-head-commit "$head" || stop "GitHub refused the merge."
+          merged=""
+          for try in 1 2 3 4 5 6; do
+            case "$(settle)" in
+              ok) echo "Every check-site run on ${head:0:7} has finished, and the latest passed." ;;
+              failed) stop "the checks failed on ${head:0:7}." ;;
+              *) comment "Waiting: the checks on ${head:0:7} haven't finished. The daily run tries again."
+                 echo "::warning::The checks haven't finished."
+                 exit 0 ;;
+            esac
+            if gh pr merge "$pr" --merge --match-head-commit "$head"; then
+              merged=yes
+              break
+            fi
+            echo "GitHub refused the merge (try $try of 6); a check run may have just started. Trying again."
+            sleep 20
+          done
+          [ -n "$merged" ] || stop "GitHub refused the merge six times in a row."
           merge=$(gh pr view "$pr" --json mergeCommit --jq .mergeCommit.oid)
           echo "Merged as ${merge:0:7}."
 
