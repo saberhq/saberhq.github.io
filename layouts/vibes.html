@@ -3,6 +3,12 @@
 {{- /* ---- The playlist link: front matter `playlist` is the one source of truth (the CI sync
      reads the playlist id from that same line); the data's own URL is only a fallback. ---- */ -}}
 {{- $v := site.Data.vibes }}
+{{- $more := site.Data.vibes_more | default dict }}
+{{- $stats := $more.songs | default dict }}
+{{- $top := $more.top | default dict }}
+{{- $hasTop := false }}
+{{- range $top }}{{ if or .tracks .artists }}{{ $hasTop = true }}{{ end }}{{ end }}
+{{- $arts := site.GetPage "/albumarts" }}
 {{- $url := .Params.playlist }}
 {{- if not $url }}{{ with $v }}{{ with .playlist }}{{ $url = .url }}{{ end }}{{ end }}{{ end }}
 {{- if not $url }}{{ warnf "vibes: no playlist URL - set `playlist:` in content/%s" .File.Path }}{{ end }}
@@ -60,7 +66,7 @@
   <link rel="preconnect" href="https://i.scdn.co">
   {{- end }}
 </head>
-<body class="sq-shell vb-page">
+<body class="sq-shell vb-page{{ if $hasTop }} vb-page--top{{ end }}">
 
   {{ partial "saberhq/site-header" (dict "page" . "crumb" "vibes" "nonav" true) }}
 
@@ -88,6 +94,9 @@
         {{- end }}
         <div class="vb-actions">
           <a class="sq-btn" href="{{ $url }}" target="_blank" rel="noopener">Listen on Spotify <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a>
+          {{- with $arts }}
+          <a class="vb-more" href="{{ .RelPermalink }}">{{ .Title }} <span class="sq-glyph" aria-hidden="true">→</span></a>
+          {{- end }}
         </div>
         {{- if $n }}
           {{- $ms := 0.0 }}
@@ -147,13 +156,22 @@
               {{- with $by }}
               <p class="vb-artists" dir="auto" title="{{ . }}">{{ . }}</p>
               {{- end }}
-              {{- /* Weeks on the wall = floor((now - added_at) / 7 days), never below 0; under a week
-                   reads "new". Counted at build time, then recounted in the browser (script below). */}}
-              {{- with .added }}
-                {{- $w := int (math.Floor (div (now.Sub .).Hours 168)) }}
-                {{- if lt $w 0 }}{{ $w = 0 }}{{ end }}
+              {{- /* How long the song has been with Saber, and how often it came onto the wall and left. */}}
+              {{- $st := index $stats $tr.id | default dict }}
+              {{- $from := .added }}{{ $raw := $tr.added_at }}
+              {{- with $st.since }}{{ with try (time.AsTime .) }}{{ if not .Err }}{{ $from = .Value }}{{ $raw = $st.since }}{{ end }}{{ end }}{{ end }}
+              {{- with $from }}
+                {{- $days := int (math.Floor (div (now.Sub .).Hours 24)) }}
+                {{- if lt $days 0 }}{{ $days = 0 }}{{ end }}
+                {{- $text := "new" }}
+                {{- if ge $days 730 }}{{ $text = printf "%d years" (int (math.Floor (div $days 365.25))) }}
+                {{- else if ge $days 63 }}{{ $text = printf "%d months" (int (math.Floor (div $days 30.44))) }}
+                {{- else if ge $days 14 }}{{ $text = printf "%d weeks" (div $days 7) }}
+                {{- else if ge $days 7 }}{{ $text = "1 week" }}{{ end }}
                 {{- $since := .Format "2 Jan 2006" }}
-              <p class="vb-weeks{{ if eq $w 0 }} is-new{{ end }}" data-added="{{ $tr.added_at }}" title="On the wall since {{ $since }}"><span class="vb-weeks-n">{{ if eq $w 0 }}new{{ else }}{{ $w }} week{{ if ne $w 1 }}s{{ end }}{{ end }}</span><span class="vb-sr"> on the wall, since {{ $since }}</span></p>
+                {{- $ins := int ($st.ins | default 1) }}{{ $outs := int ($st.outs | default 0) }}
+              <p class="vb-weeks{{ if lt $days 7 }} is-new{{ end }}" data-since="{{ $raw }}" title="A vibe since {{ $since }}"><span class="vb-weeks-n">{{ $text }}</span><span class="vb-sr"> a vibe, since {{ $since }}</span>
+                {{- if $st }}<span class="vb-io" title="Came onto the wall {{ $ins }} time{{ if ne $ins 1 }}s{{ end }}, left {{ $outs }} time{{ if ne $outs 1 }}s{{ end }}"><span class="vb-in{{ if not $ins }} is-zero{{ end }}"><span aria-hidden="true">↑</span>{{ $ins }}<span class="vb-sr"> time{{ if ne $ins 1 }}s{{ end }} onto the wall,</span></span><span class="vb-out{{ if not $outs }} is-zero{{ end }}"><span aria-hidden="true">↓</span>{{ $outs }}<span class="vb-sr"> time{{ if ne $outs 1 }}s{{ end }} off it</span></span></span>{{ end }}</p>
               {{- end }}
             </div>
           </li>
@@ -168,6 +186,42 @@
       </section>
 
     </div>
+
+    {{- if $hasTop }}
+    <section class="vb-top" aria-labelledby="vb-top-label">
+      <details class="vb-top-fold" id="most-played">
+        <summary class="vb-top-sum"><span class="vb-top-label" id="vb-top-label">Most played</span><span class="vb-top-hint">songs and artists <span aria-hidden="true">·</span> 4 weeks, 6 months, a year</span><span class="vb-top-mark" aria-hidden="true"></span></summary>
+        <div class="vb-top-tabs" role="group" aria-label="Period" data-top-tabs hidden>
+          {{- range $i, $r := slice (dict "key" "short" "label" "4 weeks") (dict "key" "medium" "label" "6 months") (dict "key" "long" "label" "1 year") }}
+          {{- if index $top $r.key }}<button class="vb-chip" type="button" data-range="{{ $r.key }}" aria-pressed="false">{{ $r.label }}</button>{{ end }}
+          {{- end }}
+        </div>
+        {{- range slice (dict "key" "short" "label" "Last 4 weeks") (dict "key" "medium" "label" "Last 6 months") (dict "key" "long" "label" "Last year") }}
+        {{- $period := . }}
+        {{- with index $top .key }}
+        <div class="vb-top-panel" data-range="{{ $period.key }}">
+          <h3 class="vb-top-period">{{ $period.label }}</h3>
+          <div class="vb-top-cols">
+            {{- range slice (dict "name" "Songs" "items" .tracks) (dict "name" "Artists" "items" .artists) }}
+            {{- $col := . }}
+            {{- with .items }}
+            <div class="vb-top-col">
+              <h4 class="vb-top-kind">{{ $col.name }}</h4>
+              <ol class="vb-top-list">
+                {{- range . }}
+                <li><a class="vb-top-row" href="{{ .url }}" target="_blank" rel="noopener">{{ with .image }}<img src="{{ . }}" width="40" height="40" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">{{ else }}<span class="vb-top-blank"></span>{{ end }}<span class="vb-top-text"><span class="vb-top-name" dir="auto">{{ .name }}</span>{{ with .by }}<span class="vb-top-by" dir="auto">{{ . }}</span>{{ end }}</span><span class="sq-sr-only"> (opens on Spotify in a new tab)</span></a></li>
+                {{- end }}
+              </ol>
+            </div>
+            {{- end }}
+            {{- end }}
+          </div>
+        </div>
+        {{- end }}
+        {{- end }}
+      </details>
+    </section>
+    {{- end }}
   </main>
 
   {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "VIBES" "href" .RelPermalink)) }}
@@ -176,18 +230,35 @@
   {{- /* The current data, also published at /vibes/vibes.json: the CI sync falls back to this
        deployed copy (last known good) when Spotify can't be reached. Nothing without data. */}}
   {{- with $v }}{{ (resources.FromString "vibes/vibes.json" (jsonify .)).Publish }}{{ end }}
+  {{- with site.Data.vibes_more }}{{ (resources.FromString "vibes/more.json" (jsonify .)).Publish }}{{ end }}
 
-  {{/* Vibes: keep the week counts true between rebuilds; on wide screens a cover cues the song. */}}
+  {{/* Vibes: keep the durations true between rebuilds; most-played tabs; on wide screens a cover cues the song. */}}
   <script>
   (function () {
-    var WEEK = 7 * 864e5, now = Date.now();
-    document.querySelectorAll('.vb-weeks[data-added]').forEach(function (el) {
-      var t = Date.parse(el.getAttribute('data-added'));
+    var now = Date.now();
+    document.querySelectorAll('.vb-weeks[data-since]').forEach(function (el) {
+      var t = Date.parse(el.getAttribute('data-since'));
       if (isNaN(t)) return;
-      var w = Math.max(0, Math.floor((now - t) / WEEK));
-      el.classList.toggle('is-new', w === 0);
-      el.querySelector('.vb-weeks-n').textContent = w === 0 ? 'new' : w + (w === 1 ? ' week' : ' weeks');
+      var d = Math.max(0, Math.floor((now - t) / 864e5));
+      el.classList.toggle('is-new', d < 7);
+      el.querySelector('.vb-weeks-n').textContent = d >= 730 ? Math.floor(d / 365.25) + ' years'
+        : d >= 63 ? Math.floor(d / 30.44) + ' months' : d >= 14 ? Math.floor(d / 7) + ' weeks' : d >= 7 ? '1 week' : 'new';
     });
+
+    // most played: one period at a time
+    var tabs = document.querySelector('[data-top-tabs]');
+    if (tabs) {
+      var panels = document.querySelectorAll('.vb-top-panel');
+      var pick = function (range) {
+        tabs.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-range') === range ? 'true' : 'false'); });
+        panels.forEach(function (el) { el.hidden = el.getAttribute('data-range') !== range; });
+      };
+      tabs.hidden = false;
+      tabs.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) pick(b.getAttribute('data-range')); });
+      var first = tabs.querySelector('button');
+      if (first) pick(first.getAttribute('data-range'));
+      if (location.hash === '#most-played') tabs.parentNode.open = true;
+    }
 
     var slot = document.querySelector('[data-player]');
     if (!slot || slot.hidden || !window.matchMedia) return;

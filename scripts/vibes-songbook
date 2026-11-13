@@ -1,0 +1,463 @@
+#!/usr/bin/env python3
+"""Saber Vibes songbook: liked songs, most-played lists and each song's history, for /vibes/ and its album-art page."""
+
+from __future__ import annotations
+
+import argparse
+import importlib.machinery
+import importlib.util
+import io
+import json
+import os
+import struct
+import subprocess
+import sys
+import tempfile
+import traceback
+from pathlib import Path
+
+sys.dont_write_bytecode = True
+
+
+def _load_sync():
+    """Use vibes-sync's Spotify code (same folder)."""
+    path = Path(__file__).resolve().with_name("vibes-sync")
+    loader = importlib.machinery.SourceFileLoader("vibes_sync", str(path))
+    spec = importlib.util.spec_from_loader("vibes_sync", loader)
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+sync = _load_sync()
+
+MORE_FILE = "vibes_more.json"
+ARTS_FILE = "albumarts.json"
+LIVE = {MORE_FILE: "https://saberhq.com/vibes/more.json", ARTS_FILE: "https://saberhq.com/vibes/albumarts.json"}
+RANGES = {"short": "short_term", "medium": "medium_term", "long": "long_term"}
+TOP_SHOWN = 10
+RANK_EVERY_H = 24
+RANK_PAGES = 120
+LIKED_PAGES = 100
+COLOURS_PER_RUN = 60
+REENTRY_S = 60
+
+
+# Reading Spotify
+
+def read_pages(spotify, url: str, what: str, max_pages: int) -> list:
+    """Every item of a paged Spotify list."""
+    items: list = []
+    for _ in range(max_pages):
+        page = spotify.get(url, what)
+        got = page.get("items")
+        if not isinstance(got, list):
+            raise sync.Problem("error", f"Spotify's answer for {what} has no list", "bad_response")
+        items.extend(got)
+        url = page.get("next")
+        if not url:
+            break
+        if not isinstance(url, str) or not url.startswith(spotify.api + "/"):
+            raise sync.Problem("error", f"Spotify's link to the next page of {what} points somewhere unexpected",
+                               "bad_response")
+    return items
+
+
+def read_liked(spotify) -> list:
+    entries = read_pages(spotify, f"{spotify.api}/me/tracks?limit=50", "your Liked Songs", LIKED_PAGES)
+    songs = [sync.normalise_entry(entry) for entry in entries]
+    return [song for song in songs if song]
+
+
+def read_top(spotify, kind: str, time_range: str, max_pages: int = 1) -> list:
+    return read_pages(spotify, f"{spotify.api}/me/top/{kind}?time_range={time_range}&limit=50",
+                      "your most-played lists", max_pages)
+
+
+def pick_image(images: list, at_least: int) -> str | None:
+    """The smallest image that is at least this wide, else the largest."""
+    sized = sorted((image for image in images if image.get("url")), key=lambda image: image.get("width") or 0)
+    for image in sized:
+        if (image.get("width") or 0) >= at_least:
+            return image["url"]
+    return sized[-1]["url"] if sized else None
+
+
+def top_for_page(spotify) -> dict:
+    top = {}
+    for key, time_range in RANGES.items():
+        tracks = []
+        for item in read_top(spotify, "tracks", time_range)[:TOP_SHOWN]:
+            song = sync.normalise_entry({"track": item})
+            if song:
+                tracks.append({"id": song["id"], "name": song["name"], "url": song["url"],
+                               "by": ", ".join(artist["name"] for artist in song["artists"]),
+                               "image": pick_image(song["album"]["images"], 64)})
+        artists = []
+        for item in read_top(spotify, "artists", time_range)[:TOP_SHOWN]:
+            if isinstance(item, dict) and item.get("name") and item.get("id"):
+                artists.append({"id": item["id"], "name": item["name"],
+                                "url": sync._spotify_url(item) or f"https://open.spotify.com/artist/{item['id']}",
+                                "image": pick_image(sync._images(item.get("images")), 64)})
+        top[key] = {"tracks": tracks, "artists": artists}
+    return top
+
+
+# Colour of a cover
+
+def _pixels(data: bytes) -> list:
+    """A cover as a few RGB pixels, with Pillow or macOS sips; [] when neither can read it."""
+    try:
+        from PIL import Image
+        image = Image.open(io.BytesIO(data)).convert("RGB").resize((16, 16))
+        return list(image.getdata())
+    except ImportError:
+        pass
+    except Exception:
+        return []
+    if sys.platform != "darwin":
+        return []
+    with tempfile.TemporaryDirectory() as folder:
+        source, target = Path(folder, "cover.jpg"), Path(folder, "cover.bmp")
+        source.write_bytes(data)
+        try:
+            subprocess.run(["sips", "-s", "format", "bmp", "-z", "16", "16", str(source), "--out", str(target)],
+                           capture_output=True, timeout=30, check=True)
+            raw = target.read_bytes()
+        except (OSError, subprocess.SubprocessError):
+            return []
+    try:
+        offset, = struct.unpack_from("<I", raw, 10)
+        width, height = struct.unpack_from("<ii", raw, 18)
+        bits, = struct.unpack_from("<H", raw, 28)
+        step = bits // 8
+        if step not in (3, 4):
+            return []
+        row = (width * step + 3) & ~3
+        return [(raw[at + 2], raw[at + 1], raw[at])
+                for y in range(abs(height)) for x in range(width)
+                for at in (offset + y * row + x * step,)]
+    except (struct.error, IndexError):
+        return []
+
+
+def colour_of(url: str) -> str | None:
+    """A cover's main colour as #rrggbb: its pixels averaged, vivid ones counting most."""
+    try:
+        status, _, body = sync.http_request("GET", url, follow_redirects=True)
+    except sync.NetworkError:
+        return None
+    pixels = _pixels(body) if status == 200 else []
+    if not pixels:
+        return None
+    total = [0.0, 0.0, 0.0]
+    weight = 0.0
+    for red, green, blue in pixels:
+        high, low = max(red, green, blue), min(red, green, blue)
+        w = 0.05 + ((high - low) / high if high else 0.0) * (high / 255)
+        weight += w
+        total = [total[0] + red * w, total[1] + green * w, total[2] + blue * w]
+    return "#" + "".join(f"{round(part / weight):02x}" for part in total)
+
+
+# The songbook
+
+def empty_book() -> dict:
+    return {"version": 1, "updated_at": None, "ranked_at": None, "songs": {}}
+
+
+def load_book(path: Path | None) -> dict:
+    if path is None or not path.exists():
+        return empty_book()
+    book = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(book, dict) or not isinstance(book.get("songs"), dict):
+        raise sync.UsageError(f"{path} isn't a songbook")
+    return book
+
+
+def same_song(song: dict) -> tuple:
+    """Recordings of one song share a title and a first artist."""
+    artists = song.get("artists") or [{}]
+    return (song.get("name") or "").strip().casefold(), (artists[0].get("name") or "").strip().casefold()
+
+
+def upsert(book: dict, song: dict) -> dict:
+    """Refresh what Spotify says about a song; keep what the songbook knows."""
+    entry = book["songs"].setdefault(song["id"], {})
+    entry.update({"name": song["name"], "url": song["url"], "duration_ms": song["duration_ms"],
+                  "artists": song["artists"], "album": song["album"]})
+    return entry
+
+
+def seconds_between(earlier: str, later: str) -> float:
+    parse = sync.dt.datetime.strptime
+    return (parse(later, "%Y-%m-%dT%H:%M:%SZ") - parse(earlier, "%Y-%m-%dT%H:%M:%SZ")).total_seconds()
+
+
+def note_liked(book: dict, liked: list, now: str) -> None:
+    liked_ids = set()
+    for song in liked:
+        liked_ids.add(song["id"])
+        entry = upsert(book, song)
+        at = song["added_at"] or entry.get("liked_at") or now
+        entry["liked_at"] = at
+        entry["first_liked_at"] = min(at, entry.get("first_liked_at") or at)
+        entry.pop("unliked_at", None)
+    for song_id, entry in book["songs"].items():
+        if entry.get("liked_at") and song_id not in liked_ids:
+            entry["liked_at"], entry["unliked_at"] = None, now
+
+
+def note_wall(book: dict, wall: list, now: str) -> None:
+    on_wall = set()
+    for song in wall:
+        on_wall.add(song["id"])
+        entry = upsert(book, song)
+        stays = entry.setdefault("stays", [])
+        added = song["added_at"] or now
+        current = stays[-1] if stays and not stays[-1].get("out") else None
+        if current is None:
+            last_out = stays[-1]["out"] if stays else None
+            stays.append({"in": added if not last_out or added > last_out else now})
+        elif seconds_between(current["in"], added) > REENTRY_S:
+            current["out"] = added
+            stays.append({"in": added})
+    for song_id, entry in book["songs"].items():
+        stays = entry.get("stays") or []
+        if stays and not stays[-1].get("out") and song_id not in on_wall:
+            stays[-1]["out"] = now
+
+
+def note_ranks(book: dict, ranked: list, now: str) -> None:
+    """Each song's place in the one-year most-played list; another recording of it counts too."""
+    by_id, by_song = {}, {}
+    for place, item in enumerate(ranked, 1):
+        song = sync.normalise_entry({"track": item})
+        if song:
+            by_id.setdefault(song["id"], place)
+            by_song.setdefault(same_song(song), place)
+    for song_id, entry in book["songs"].items():
+        entry["rank"] = by_id.get(song_id) or by_song.get(same_song(entry))
+    book["ranked_at"] = now
+
+
+def note_colours(book: dict, limit: int | None, log) -> None:
+    todo = [entry for entry in book["songs"].values()
+            if not entry.get("colour") and entry.get("liked_at") and entry["album"]["images"]]
+    known = {pick_image(entry["album"]["images"], 64): entry["colour"]
+             for entry in book["songs"].values() if entry.get("colour") and entry["album"]["images"]}
+    fetched = 0
+    for entry in todo:
+        url = pick_image(entry["album"]["images"], 64)
+        if url not in known:
+            if limit is not None and fetched >= limit:
+                continue
+            fetched += 1
+            known[url] = colour_of(url)
+            if known[url] is None:
+                log.info("couldn't read a cover's colour (Pillow isn't installed, or the image didn't load)")
+                break
+        if known.get(url):
+            entry["colour"] = known[url]
+
+
+def settle(book: dict) -> None:
+    """Work out each song's first date and its in and out counts."""
+    first_like: dict = {}
+    for entry in book["songs"].values():
+        at = entry.get("first_liked_at")
+        if at:
+            key = same_song(entry)
+            first_like[key] = min(at, first_like.get(key) or at)
+    for entry in book["songs"].values():
+        stays = entry.get("stays") or []
+        dates = [first_like.get(same_song(entry)), stays[0]["in"] if stays else None]
+        dates = [date for date in dates if date]
+        entry["since"] = min(dates) if dates else None
+        entry["ins"] = max(1, len(stays))
+        entry["outs"] = sum(1 for stay in stays if stay.get("out"))
+
+
+# What the pages read
+
+def more_for_page(book: dict, wall: list, top: dict | None) -> dict:
+    songs = {}
+    for song in wall:
+        entry = book["songs"].get(song["id"]) or {}
+        songs[song["id"]] = {"since": entry.get("since"), "ins": entry.get("ins", 1), "outs": entry.get("outs", 0)}
+    return {"updated_at": None, "songs": songs, "top": top or {}}
+
+
+def arts_for_page(book: dict) -> dict:
+    tiles = []
+    for song_id, entry in book["songs"].items():
+        images = entry["album"]["images"]
+        if not entry.get("liked_at") or not images:
+            continue
+        tiles.append({"id": song_id, "name": entry["name"], "url": entry["url"],
+                      "by": ", ".join(artist["name"] for artist in entry["artists"]),
+                      "small": pick_image(images, 64), "medium": pick_image(images, 300),
+                      "large": pick_image(images, 640), "liked": entry["liked_at"],
+                      "rank": entry.get("rank"), "colour": entry.get("colour")})
+    ranked = sorted((tile for tile in tiles if tile["rank"] is not None), key=lambda tile: tile["rank"])
+    rest = sorted((tile for tile in tiles if tile["rank"] is None), key=lambda tile: tile["liked"], reverse=True)
+    return {"updated_at": None, "total": len(tiles), "tiles": ranked + rest}
+
+
+def fetch_live(name: str, log) -> dict | None:
+    try:
+        status, _, body = sync.http_request("GET", LIVE[name], headers={"Accept": "application/json"},
+                                            follow_redirects=True)
+    except sync.NetworkError:
+        return None
+    if status != 200:
+        return None
+    try:
+        data = sync.parse_json(body)
+    except Exception:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def stamp(data: dict, live: dict | None, now: str) -> bool:
+    """Date the data; True when it differs from the live copy."""
+    def body(value):
+        return {key: item for key, item in value.items() if key != "updated_at"}
+    if live is not None and body(live) == body(data):
+        data["updated_at"] = live.get("updated_at") or now
+        return False
+    data["updated_at"] = now
+    return True
+
+
+# The run
+
+def hours_since(stamp_text: str | None, now: str) -> float:
+    if not stamp_text:
+        return float("inf")
+    try:
+        return seconds_between(stamp_text, now) / 3600
+    except ValueError:
+        return float("inf")
+
+
+def run(args, env, log) -> dict:
+    result = {"status": "error", "message": "", "changed": False, "rotated": False, "wrote": []}
+    cfg = sync.Config(argparse.Namespace(out=None, dry_run=args.dry_run), env, log)
+    out_dir = Path(args.out_dir)
+    book_file = args.songbook or env.get("VIBES_SONGBOOK", "").strip()
+    book_path = Path(book_file) if book_file else None
+    live = {name: fetch_live(name, log) for name in LIVE}
+
+    def keep_live(why: str) -> dict:
+        result["message"] = why
+        for name, data in live.items():
+            if data is not None and not args.dry_run:
+                sync.write_json(out_dir / name, data)
+                result["wrote"].append(name)
+        return result
+
+    if not all(cfg.credentials.values()):
+        result["status"] = "skipped"
+        return keep_live("no Spotify keys, so the live copies are kept")
+
+    if book_path is None and env.get("GITHUB_ACTIONS") == "true":
+        result["status"] = "skipped"
+        return keep_live("no songbook to keep the counts in, so the live copies are kept")
+
+    spotify = sync.Spotify(
+        cfg.credentials["SPOTIFY_CLIENT_ID"], cfg.credentials["SPOTIFY_CLIENT_SECRET"],
+        cfg.credentials["SPOTIFY_REFRESH_TOKEN"], log, accounts=cfg.accounts, api=cfg.api,
+        on_new_refresh_token=lambda token: sync.save_new_refresh_token(token, cfg.token_file, log, cfg.keychain))
+    now = sync.utc_now()
+    try:
+        book = load_book(book_path)
+        if book_path is None:
+            log.info("no songbook file given, so every count starts from today")
+        before = json.dumps(book, sort_keys=True)
+        wall = sync.read_vibes(spotify, cfg.playlist_id, log, sync.Result())["tracks"]
+        note_wall(book, wall, now)
+        top = None
+        if spotify.can("user-library-read"):
+            liked = read_liked(spotify)
+            note_liked(book, liked, now)
+            log.info(f"{len(liked)} liked songs")
+        else:
+            log.info("the saved login can't read your Liked Songs yet; scripts/vibes-login adds that")
+        if spotify.can("user-top-read"):
+            top = top_for_page(spotify)
+            if args.deep or hours_since(book.get("ranked_at"), now) >= RANK_EVERY_H:
+                ranked = read_top(spotify, "tracks", RANGES["long"], RANK_PAGES)
+                note_ranks(book, ranked, now)
+                log.info(f"ranked the songbook against {len(ranked)} most-played songs")
+        else:
+            log.info("the saved login can't read your most-played lists yet; scripts/vibes-login adds that")
+        note_colours(book, None if args.deep else COLOURS_PER_RUN, log)
+        settle(book)
+    except sync.Problem as problem:
+        result["status"], result["rotated"] = problem.status, spotify.rotated
+        return keep_live(problem.message)
+    except Exception as err:
+        sys.stderr.write(log.redact(traceback.format_exc()))
+        result["rotated"] = spotify.rotated
+        return keep_live(f"unexpected problem ({type(err).__name__}: {sync.one_line(err, 120)})")
+
+    more, arts = more_for_page(book, wall, top), arts_for_page(book)
+    if top is None and live[MORE_FILE]:
+        more["top"] = live[MORE_FILE].get("top") or {}
+    changed = [stamp(more, live[MORE_FILE], now), stamp(arts, live[ARTS_FILE], now)]
+    book_changed = json.dumps(book, sort_keys=True) != before
+    if book_changed:
+        book["updated_at"] = now
+    if not args.dry_run:
+        sync.write_json(out_dir / MORE_FILE, more)
+        sync.write_json(out_dir / ARTS_FILE, arts)
+        result["wrote"] = [MORE_FILE, ARTS_FILE]
+        if book_path is not None and book_changed:
+            sync.write_json(book_path, book)
+    result.update(status="ok", changed=any(changed), rotated=spotify.rotated,
+                  message=f"{len(book['songs'])} songs in the songbook, {arts['total']} covers, "
+                          f"{'changed' if any(changed) else 'unchanged'}"
+                          + (", songbook updated" if book_changed else ""))
+    return result
+
+
+def main(argv: list | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="vibes-songbook",
+        description="Read liked songs and most-played lists from Spotify, keep the songbook up to date, and "
+                    "write data/vibes_more.json and data/albumarts.json for the pages.",
+        epilog="Keys as for scripts/vibes-sync. Without keys, the live copies from saberhq.com are used.")
+    parser.add_argument("--songbook", metavar="FILE", help="the songbook to read and update (or VIBES_SONGBOOK)")
+    parser.add_argument("--out-dir", metavar="DIR", default=str(sync.REPO_ROOT / "data"),
+                        help="where to write the pages' data (default: data/)")
+    parser.add_argument("--deep", action="store_true", help="re-rank every song and colour every cover now")
+    parser.add_argument("--dry-run", action="store_true", help="read Spotify and report; write nothing")
+    args = parser.parse_args(argv)
+    env = os.environ
+    log = sync.Log(github=env.get("GITHUB_ACTIONS") == "true", prefix="vibes-songbook")
+    for name in sync.CREDENTIALS:
+        log.protect(env.get(name, "").strip(), mask=False)
+    try:
+        result = run(args, env, log)
+    except sync.UsageError as err:
+        print(f"vibes-songbook: {err}", file=sys.stderr)
+        return 2
+    if result["status"] in ("reauth", "error"):
+        log.problem(result["status"], result["message"])
+    print(log.redact(f"vibes-songbook: {result['status']} · {result['message']}"), flush=True)
+    if env.get("GITHUB_OUTPUT"):
+        with open(env["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+            for key in ("status", "message"):
+                handle.write(f"{key}={log.redact(sync.one_line(result[key]))}\n")
+            for key in ("changed", "rotated"):
+                handle.write(f"{key}={'true' if result[key] else 'false'}\n")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print("vibes-songbook: stopped", file=sys.stderr)
+        sys.exit(130)

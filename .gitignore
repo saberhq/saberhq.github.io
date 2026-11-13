@@ -4,6 +4,8 @@
 /resources/
 .hugo_build.lock
 /data/vibes.json
+/data/vibes_more.json
+/data/albumarts.json
 
 # OS / Editor junk
 .DS_Store

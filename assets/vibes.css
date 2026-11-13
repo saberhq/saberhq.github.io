@@ -83,6 +83,11 @@
 }
 .vb-sign { margin: 6px 0 0; font-size: clamp(14px, 0.98vw, 16px); line-height: 1.6; color: var(--ink-2); }
 .vb-actions { margin-top: 20px; display: flex; flex-wrap: wrap; gap: var(--space-3); }
+a.vb-more, a.vb-more:visited {
+  align-self: center; white-space: nowrap; text-decoration: none; color: var(--accent-3);
+  font-family: var(--font-mono); font-size: 12.5px; letter-spacing: var(--meta-track);
+}
+a.vb-more:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .vb-meta {
   margin: 12px 0 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.6;
   letter-spacing: var(--meta-track); color: var(--ink-3);
@@ -206,6 +211,11 @@ a.vb-title-link:focus-visible::after { outline: 2px solid var(--focus-ring); out
 @media (min-width: 901px) and (hover: hover) {
   .vb-artists, .vb-weeks { position: relative; z-index: 1; }
 }
+/* in and out: blue hour and vermillion, a pair that stays apart for colour-blind readers */
+.vb-io { margin-left: 8px; display: inline-flex; gap: 6px; }
+.vb-in { color: var(--accent-3); }
+.vb-out { color: var(--accent); }
+.vb-in.is-zero, .vb-out.is-zero { color: var(--ink-4); }
 .vb-weeks.is-new .vb-weeks-n {
   display: inline-block; padding: 0 6px; border-radius: var(--radius-sm);
   color: var(--accent-3); background: var(--accent-3-wash);
@@ -234,6 +244,61 @@ a.vb-title-link:focus-visible::after { outline: 2px solid var(--focus-ring); out
 
 .vb-empty { margin: 0; padding: 24px 0; font-size: var(--body-size); color: var(--ink-2); }
 
+/* ---------- Most played: a folded section under the wall ---------- */
+.vb-page--top { --chrome: 154px; }   /* + the folded section's 48px strip */
+.vb-top { max-width: var(--vb-max); margin: 0 auto; padding: 0 var(--gut); }
+.vb-top-fold { border-top: var(--rule-w) solid var(--rule); }
+.vb-top-sum {
+  display: flex; align-items: baseline; gap: var(--space-3); min-height: 47px; padding: 14px 0; cursor: pointer; list-style: none;
+  font-family: var(--font-mono); font-size: var(--label-size); line-height: 1.6;
+}
+.vb-top-sum::-webkit-details-marker { display: none; }
+.vb-top-label { font-weight: 500; letter-spacing: var(--label-track); text-transform: uppercase; color: var(--accent-3); }
+.vb-top-hint { letter-spacing: var(--meta-track); color: var(--ink-3); }
+.vb-top-mark { margin-left: auto; color: var(--ink-3); }
+.vb-top-mark::before { content: "+"; font-size: 1.3em; line-height: 1; }
+.vb-top-fold[open] .vb-top-mark::before { content: "–"; }
+.vb-top-sum:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
+.vb-top-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 4px 0 0; }
+.vb-top-tabs[hidden] { display: none; }
+.vb-chip {
+  font-family: var(--font-mono); font-size: 11.5px; line-height: 1.6; letter-spacing: var(--meta-track);
+  padding: 4px 12px; border-radius: 999px; border: var(--rule-w) solid var(--rule); background: none;
+  color: var(--ink-2); cursor: pointer; transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.vb-chip:hover { color: var(--ink); border-color: var(--ink-4); }
+.vb-chip[aria-pressed="true"] { color: var(--accent-3); border-color: var(--accent-3); }
+.vb-chip:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.vb-top-panel { padding: var(--space-5) 0 var(--space-7); }
+.vb-top-panel[hidden] { display: none; }
+.vb-top-period {
+  margin: 0 0 var(--space-4); font-family: var(--font-mono); font-size: var(--label-size); font-weight: 500;
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink-2);
+}
+.js .vb-top-period { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.vb-top-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6) var(--cgap); }
+.vb-top-kind {
+  margin: 0 0 var(--space-3); font-family: var(--font-mono); font-size: 11px; font-weight: 400; line-height: 1.6;
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink-3);
+}
+.vb-top-list {
+  list-style: none; margin: 0; padding: 0; counter-reset: top;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: column;
+  grid-template-rows: repeat(5, auto); gap: 10px var(--space-5);
+}
+.vb-top-list li { counter-increment: top; margin: 0; min-width: 0; }
+a.vb-top-row, a.vb-top-row:visited { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--ink); text-decoration: none; }
+a.vb-top-row::before {
+  content: counter(top); flex: none; width: 1.4em; text-align: right;
+  font-family: var(--font-mono); font-size: 11px; color: var(--ink-3);
+}
+.vb-top-row img, .vb-top-blank { flex: none; display: block; width: 40px; height: 40px; border-radius: 4px; background: var(--surface-sunken); }
+.vb-top-text { min-width: 0; display: flex; flex-direction: column; }
+.vb-top-name { font-size: var(--t-size); font-weight: 500; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vb-top-by { font-size: var(--a-size); line-height: 1.35; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+a.vb-top-row:hover .vb-top-name { color: var(--accent-3); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a.vb-top-row:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 4px; }
+
 .vb-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
 /* wide screens with JS: each cover becomes a button that cues the song in the player */
@@ -251,6 +316,7 @@ a.vb-title-link:focus-visible::after { outline: 2px solid var(--focus-ring); out
     align-content: start; padding-top: var(--space-7); padding-bottom: var(--space-7);
   }
   .vb-story { max-width: 560px; padding-top: 0; }
+  .vb-top-cols { grid-template-columns: minmax(0, 1fr); }
   /* touch screens have no hover tooltip: show Spotify's full metadata, never clamp it */
   .vb-title, .vb-artists { display: block; -webkit-line-clamp: none; overflow: visible; }
 }
@@ -266,6 +332,8 @@ a.vb-title-link:focus-visible::after { outline: 2px solid var(--focus-ring); out
   .vb-title { font-size: 14px; }
   .vb-artists { font-size: 12.5px; }
   .vb-actions .sq-btn { flex: 1; }
+  .vb-top-list { grid-template-columns: minmax(0, 1fr); grid-auto-flow: row; grid-template-rows: none; }
+  .vb-top-hint { display: none; }
   a.vb-spotify, a.vb-spotify:visited { margin-left: var(--space-3); }
   .vb-spotify img { width: 72px; }
 }
