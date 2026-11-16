@@ -26,7 +26,7 @@ jobs:
       data: ${{ steps.sync.outputs.data }}
       status: ${{ steps.sync.outputs.status }}
       message: ${{ steps.sync.outputs.message }}
-      rotated: ${{ steps.sync.outputs.rotated }}
+      rotated: ${{ steps.sync.outputs.rotated == 'true' || steps.songbook.outputs.rotated == 'true' }}
       token_saved: ${{ steps.save_token.outputs.saved }}
     steps:
       - name: Checkout
@@ -44,9 +44,81 @@ jobs:
           VIBES_NEW_REFRESH_TOKEN_FILE: ${{ runner.temp }}/vibes-new-refresh-token
         run: python3 scripts/vibes-sync
 
+      - name: Fetch the songbook
+        id: book
+        continue-on-error: true
+        env:
+          SONGBOOK_KEY: ${{ secrets.SONGBOOK_DEPLOY_KEY }}
+          SONGBOOK_REPO: ${{ vars.SONGBOOK_REPO }}
+          KEY_FILE: ${{ runner.temp }}/songbook-key
+          BOOK_DIR: ${{ runner.temp }}/songbook
+        run: |
+          set -euo pipefail
+          if [ -z "${SONGBOOK_KEY:-}" ] || [ -z "${SONGBOOK_REPO:-}" ]; then
+            echo "There is no songbook key or address, so this hour's counts start from scratch and aren't kept."
+            exit 0
+          fi
+          install -m 600 /dev/null "$KEY_FILE"
+          printf '%s\n' "$SONGBOOK_KEY" > "$KEY_FILE"
+          export GIT_SSH_COMMAND="ssh -i $KEY_FILE -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git clone --quiet --depth 1 --branch songbook "$SONGBOOK_REPO" "$BOOK_DIR"
+          echo "file=$BOOK_DIR/songbook.json" >> "$GITHUB_OUTPUT"
+
+      - name: Update the songbook and the pages' data
+        id: songbook
+        continue-on-error: true
+        timeout-minutes: 8
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+          VIBES_NEW_REFRESH_TOKEN_FILE: ${{ runner.temp }}/vibes-new-refresh-token
+          VIBES_SONGBOOK: ${{ steps.book.outputs.file }}
+        run: |
+          python3 -m pip install --quiet --user pillow 2>/dev/null \
+            || python3 -m pip install --quiet --user --break-system-packages pillow 2>/dev/null \
+            || echo "Pillow couldn't be installed, so new covers get their colour later."
+          python3 scripts/vibes-songbook
+
+      - name: Save the songbook
+        if: steps.book.outputs.file != ''
+        continue-on-error: true
+        env:
+          KEY_FILE: ${{ runner.temp }}/songbook-key
+          BOOK_DIR: ${{ runner.temp }}/songbook
+        run: |
+          set -euo pipefail
+          cd "$BOOK_DIR"
+          if git diff --quiet -- songbook.json; then
+            echo "The songbook didn't change."
+            exit 0
+          fi
+          export GIT_SSH_COMMAND="ssh -i $KEY_FILE -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git -c user.name="saberhq.com sync" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "The hourly sync updated the songbook [saber_vibes]" -- songbook.json
+          git push --quiet origin songbook
+          echo "Saved the songbook."
+
+      - name: Remove the songbook key
+        if: always()
+        env:
+          KEY_FILE: ${{ runner.temp }}/songbook-key
+        run: rm -f "$KEY_FILE"
+
+      - name: Pass the pages' data to the build
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: vibes-data
+          path: |
+            data/vibes_more.json
+            data/albumarts.json
+          if-no-files-found: ignore
+          retention-days: 1
+
       - name: Store Spotify's new login key
         id: save_token
-        if: steps.sync.outputs.rotated == 'true'
+        if: steps.sync.outputs.rotated == 'true' || steps.songbook.outputs.rotated == 'true'
         env:
           GH_TOKEN: ${{ secrets.SPOTIFY_SECRETS_PAT }}
           TOKEN_FILE: ${{ runner.temp }}/vibes-new-refresh-token
@@ -72,6 +144,7 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           CHANGED: ${{ steps.sync.outputs.changed }}
+          MORE_CHANGED: ${{ steps.songbook.outputs.changed }}
           WROTE: ${{ steps.sync.outputs.wrote }}
         run: |
           set -euo pipefail
@@ -88,6 +161,8 @@ jobs:
           if [ "$EVENT" = "schedule" ]; then
             if [ "$CHANGED" = "true" ]; then
               echo "The playlist changed, so the site is rebuilt."
+            elif [ "$MORE_CHANGED" = "true" ]; then
+              echo "The liked songs or the most-played lists changed, so the site is rebuilt."
             elif new_sidechain_post; then
               echo "A new Sidechain post gets its card, so the site is rebuilt."
             elif [[ "$(date -u +%u%H)" =~ ^10[67]$ ]] && [ "$WROTE" = "true" ]; then
@@ -140,6 +215,19 @@ jobs:
             else
               echo "No playlist this time; the /vibes/ page shows its empty state."
             fi
+          fi
+
+      - name: Add the liked songs and the most-played lists
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: vibes-data
+          path: data
+
+      - name: Fall back to the live copies of that data
+        run: |
+          if [ ! -s data/vibes_more.json ] || [ ! -s data/albumarts.json ]; then
+            python3 scripts/vibes-songbook || true
           fi
 
       - name: Build

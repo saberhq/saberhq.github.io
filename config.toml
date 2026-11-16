@@ -27,52 +27,10 @@ disableKinds = ["taxonomy", "term"]
   BookSection = "docs"
   BookDateFormat = "2006-01-02"
   BookRepo = "https://github.com/saberhq/saberhq.github.io"
+  # a post's "updated" date links here, its file path added
+  contentHistory = "https://github.com/saberhq/saberhq.github.io/commits/main/content/"
   # saberhq.com pages that open in a new tab (links to other sites always do)
   newTab = ["/resume/"]
-
-# Top navigation
-[menu]
-  # Links shown on landing page header (Book's landing layout uses menu.home).
-  # accent = true draws the entry in carmine (--accent-2) — Sidechain only;
-  # accent = "vibes" draws it in blue hour (--accent-3) — Saber Vibes only.
-  [[menu.home]]
-    name = "Sidechain"
-    url = "/sidechain/"
-    weight = 5
-    [menu.home.params]
-      accent = true
-
-  [[menu.home]]
-    name = "Saber Vibes"
-    url = "/vibes/"
-    weight = 6
-    [menu.home.params]
-      accent = "vibes"
-
-  [[menu.home]]
-  name = "GitHub"
-  url = "https://github.com/saberhq"
-  weight = 10
-
-  [[menu.home]]
-    name = "LinkedIn"
-    url = "https://www.linkedin.com/in/saberhq"
-    weight = 20
-
-  [[menu.home]]
-    name = "Scholar"
-    url = "https://scholar.google.com/citations?user=q2fsO2IAAAAJ&hl=en"
-    weight = 30
-
-  [[menu.home]]
-    name = "YouTube"
-    url = "https://www.youtube.com/@saberhq"
-    weight = 40
-
-  [[menu.home]]
-    name = "X"
-    url = "https://x.com/saberhq"
-    weight = 50
 
 # Footer socials (optional)
 [params.social]

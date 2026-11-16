@@ -33,8 +33,11 @@
   | resources.Concat "css/brand-tokens.css" | resources.Minify | resources.Fingerprint "sha384" }}
 <link rel="stylesheet" href="{{ $tokens.RelPermalink }}" integrity="{{ $tokens.Data.Integrity }}" crossorigin="anonymous">
 
-{{/* Site styles built on the tokens */}}
-{{ $css := resources.Get "custom.css" | resources.Minify | resources.Fingerprint "sha384" }}
+{{/* Site styles built on the tokens: the post card and post page, the site, the blog list, the header, the footer */}}
+{{ $css := slice
+  (resources.Get "post-card.css") (resources.Get "post.css") (resources.Get "custom.css")
+  (resources.Get "blog.css") (resources.Get "header.css") (resources.Get "footer.css")
+  | resources.Concat "css/site.css" | resources.Minify | resources.Fingerprint "sha384" }}
 {{ with $css }}
   <link rel="stylesheet" href="{{ .RelPermalink }}" integrity="{{ .Data.Integrity }}" crossorigin="anonymous">
 {{ end }}

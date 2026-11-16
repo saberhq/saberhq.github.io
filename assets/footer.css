@@ -1,0 +1,25 @@
+/* The site footer: layouts/_partials/saberhq/site-footer.html */
+
+.sq-sitefooter { border-top: var(--rule-w) solid var(--rule); }
+.sq-sitefooter-in { padding-top: 12px; padding-bottom: 14px; }
+.sq-foot-clip { overflow: hidden; }
+
+/* Columns split by hairlines; the first of each row loses its line to the overflow */
+.sq-foot-row {
+  display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2) 0;
+  margin-left: -18px; font-family: var(--font-mono);
+}
+.sq-foot-col:first-child { margin-right: auto; }
+.sq-foot-col {
+  min-width: 0; display: flex; flex-direction: column; gap: 3px;
+  padding: 1px 18px 1px 17px; border-left: var(--rule-w) solid var(--rule);
+  white-space: nowrap;
+}
+.sq-foot-k {
+  font-size: var(--micro-size); line-height: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sq-foot-v { font-size: 13px; line-height: 17px; color: var(--ink); }
+
+.sq-sitefooter a, .sq-sitefooter a:visited { color: inherit; text-decoration: none; }
+.sq-sitefooter a:hover { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }

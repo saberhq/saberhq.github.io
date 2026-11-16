@@ -1,9 +1,21 @@
-{{/* Saber HQ micro footer strip — same on every page.
-     Context: dict "page" . plus optional "crumb" (dict "label" "href") for the left trail. */}}
-{{ $p := .page }}
+{{/* Site footer: the same columns on every page. Context: the page. */}}
 <footer class="sq-sitefooter">
   <div class="sq-wrap sq-sitefooter-in">
-    <span><a href="{{ $p.Site.Home.RelPermalink }}">SABERHQ.COM</a>{{ with .crumb }} <span class="sq-dash">—</span> <a href="{{ .href }}">{{ .label }}</a>{{ end }}</span>
-    <span>© {{ now.Format "2006" }} SABER HAFEZQORANI · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="license noopener">CC BY 4.0<span class="sq-sr-only"> (opens in a new tab)</span></a>{{ with site.Params.version }} · <a href="https://github.com/saberhq/saberhq.github.io/releases/tag/{{ . }}" target="_blank" rel="noopener">{{ . }}<span class="sq-sr-only"> release note (opens in a new tab)</span></a>{{ end }}</span>
+    <div class="sq-foot-clip"><div class="sq-foot-row">
+      <div class="sq-foot-col">
+        <span class="sq-foot-k"><a href="{{ site.Home.RelPermalink }}">saberhq.com</a></span>
+        <span class="sq-foot-v">© {{ now.Format "2006" }} Saber Hafezqorani</span>
+      </div>
+      <div class="sq-foot-col">
+        <span class="sq-foot-k">Licence</span>
+        <span class="sq-foot-v"><a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="license noopener">CC BY 4.0<span class="sq-sr-only"> (opens in a new tab)</span></a></span>
+      </div>
+      {{ with site.Params.version }}
+      <div class="sq-foot-col">
+        <span class="sq-foot-k">Version</span>
+        <span class="sq-foot-v"><a href="https://github.com/saberhq/saberhq.github.io/releases/tag/{{ . }}" target="_blank" rel="noopener">{{ . }}<span class="sq-sr-only"> release note (opens in a new tab)</span></a></span>
+      </div>
+      {{ end }}
+    </div></div>
   </div>
 </footer>

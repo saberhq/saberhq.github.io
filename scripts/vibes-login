@@ -69,18 +69,23 @@ def today_utc() -> dt.date:
 
 # Step 1: the app's keys
 
-def app_keys(env) -> tuple[str, str]:
+def app_keys(env, keychain: str | None = None) -> tuple[str, str]:
     client_id = env.get("SPOTIFY_CLIENT_ID", "").strip()
     client_secret = env.get("SPOTIFY_CLIENT_SECRET", "").strip()
+    from_id, from_secret = "SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_SECRET"
+    if keychain and not client_id and not client_secret:
+        client_id = sync.keychain_get("SPOTIFY_CLIENT_ID", keychain)
+        client_secret = sync.keychain_get("SPOTIFY_CLIENT_SECRET", keychain)
+        from_id = from_secret = "this Mac's keychain"
     if not (client_id and client_secret):
         say(f"  Find them at {DASHBOARD} → your app → Settings (click \"View client secret\").")
     try:
         if client_id:
-            say("  Client ID: from SPOTIFY_CLIENT_ID")
+            say(f"  Client ID: from {from_id}")
         else:
             client_id = input("  Client ID: ").strip()
         if client_secret:
-            say("  Client secret: from SPOTIFY_CLIENT_SECRET")
+            say(f"  Client secret: from {from_secret}")
         else:
             client_secret = getpass.getpass("  Client secret (stays hidden while you paste it): ").strip()
     except EOFError:
@@ -290,6 +295,16 @@ def exchange_code(client_id: str, client_secret: str, code: str, redirect: str,
     raise LoginError(f"Spotify said no to the login ({detail}). Run scripts/vibes-login again in a minute.")
 
 
+def describe_access(tokens: dict):
+    """(what this login can read, what Spotify left out), in plain words; (None, []) if Spotify didn't say."""
+    granted = tokens.get("scope")
+    if not isinstance(granted, str) or not granted.strip():
+        return None, []
+    have = set(granted.split())
+    return ([text for scope, text in sync.SCOPES.items() if scope in have],
+            [text for scope, text in sync.SCOPES.items() if scope not in have])
+
+
 # Step 3: try the new login
 
 ADVICE = {
@@ -328,8 +343,12 @@ KEEPABLE = {"premium", "not_registered", "not_found", "quota", "rate_limited", "
 
 def login_client(client_id, client_secret, tokens, accounts, api):
     """A Spotify client for the new login."""
-    return sync.Spotify(client_id, client_secret, tokens["refresh_token"], _log, accounts=accounts, api=api,
-                        access_token=tokens["access_token"])
+    client = sync.Spotify(client_id, client_secret, tokens["refresh_token"], _log, accounts=accounts, api=api,
+                          access_token=tokens["access_token"])
+    granted = tokens.get("scope")
+    if isinstance(granted, str) and granted.strip():
+        client.scopes = set(granted.split())
+    return client
 
 
 def try_playlist(client_id, client_secret, tokens, playlist_id, accounts, api, client=None):
@@ -428,6 +447,17 @@ def save_to_github(repo: str, client_id: str, client_secret: str, refresh_token:
             "it, but GitHub won't remind you before the login expires.")
 
 
+def save_to_keychain(service: str, client_id: str, client_secret: str, refresh_token: str) -> None:
+    saved = [sync.keychain_set(name, value, service) for name, value in (
+        ("SPOTIFY_CLIENT_ID", client_id), ("SPOTIFY_CLIENT_SECRET", client_secret),
+        ("SPOTIFY_REFRESH_TOKEN", refresh_token))]
+    if all(saved):
+        say("  saved the three keys in this Mac's keychain, so scripts/vibes-sync can read Spotify from here")
+    else:
+        say("  Couldn't save the keys in this Mac's keychain. The website works without that; only "
+            "scripts/vibes-sync on this Mac keeps copying the live list.")
+
+
 def site_has_vibes(repo: str):
     """Does the deploy workflow on GitHub's default branch run the Saber Vibes sync yet?"""
     result = gh(["api", f"repos/{repo}/contents/.github/workflows/{WORKFLOW}",
@@ -443,14 +473,13 @@ def offer_deploy(repo: str) -> None:
         say("  the page shows the playlist on its own.")
         return
     if not ask_yes("  Update the website now, so the page shows the playlist? [Y/n] ", default=True):
-        say("  OK. The site picks the playlist up on the next daily run (06:23 UTC) or the next push.")
+        say("  OK. The site picks the playlist up within the hour.")
         return
     result = gh(["workflow", "run", WORKFLOW, "--repo", repo])
     if result.returncode == 0:
         say(f"  Started. The site updates in about two minutes: https://github.com/{repo}/actions/workflows/{WORKFLOW}")
     else:
-        say(f"  GitHub didn't start it ({gh_said(result)}). The site picks the playlist up on the next daily "
-            "run (06:23 UTC) or the next push.")
+        say(f"  GitHub didn't start it ({gh_said(result)}). The site picks the playlist up within the hour.")
 
 
 def print_manual_steps(client_id: str, refresh_token: str, today: str) -> None:
@@ -461,7 +490,7 @@ def print_manual_steps(client_id: str, refresh_token: str, today: str) -> None:
     print(f"    SPOTIFY_REFRESH_TOKEN   {refresh_token}", flush=True)
     say("  Variables tab → \"New repository variable\":")
     say(f"    SPOTIFY_AUTHORIZED_AT   {today}")
-    say("  Careful: SPOTIFY_REFRESH_TOKEN works like a password for reading your playlists. Paste it only")
+    say("  Careful: SPOTIFY_REFRESH_TOKEN works like a password for reading your Spotify library. Paste it only")
     say("  into GitHub, then clear this Terminal window (Cmd+K).")
 
 
@@ -469,21 +498,33 @@ def print_manual_steps(client_id: str, refresh_token: str, today: str) -> None:
 
 def run(args, env, accounts: str, api: str, port: int, playlist_id: str) -> int:
     say("Saber Vibes · connect Spotify to the website")
-    say("This lets the website read your Saber Vibes playlist every day. It takes about a minute.")
+    say("This lets the website read your Spotify library: the Saber Vibes playlist, your Liked Songs and")
+    say("your most-played lists. It can only read; it can never change anything on your account.")
+    say("It takes about a minute.")
     say()
 
     repo = None
     if not args.no_github:
         repo = github_repo(env)
 
+    keychain = None
+    if not args.no_keychain:
+        keychain = env.get("VIBES_KEYCHAIN_SERVICE", "").strip() or sync.KEYCHAIN_SERVICE
+
     say("Step 1 of 4 · Your Spotify app's keys")
-    client_id, client_secret = app_keys(env)
+    client_id, client_secret = app_keys(env, keychain)
     say()
 
     say("Step 2 of 4 · Log in to Spotify")
     code = browser_login(client_id, accounts, port)
     tokens = exchange_code(client_id, client_secret, code, redirect_uri(port), accounts)
     say("  Logged in.")
+    can_read, left_out = describe_access(tokens)
+    if can_read is not None:
+        say("  This login can read: " + (", ".join(can_read) or "nothing") + ".")
+    if left_out:
+        say("  Spotify left out: " + ", ".join(left_out) + ". The pages that need those stay as they are;")
+        say("  run scripts/vibes-login again to add them.")
     say()
 
     say("Step 3 of 4 · Checking the playlist with the new login")
@@ -510,12 +551,15 @@ def run(args, env, accounts: str, api: str, port: int, playlist_id: str) -> int:
     else:
         say(f"Step 4 of 4 · Saving to GitHub ({repo})")
         save_to_github(repo, client_id, client_secret, refresh_token, today)
+    if keychain and sync._has_keychain():
+        save_to_keychain(keychain, client_id, client_secret, refresh_token)
+    if not args.no_github:
         offer_deploy(repo)
     say()
     remind = nice_date(today_utc() + dt.timedelta(days=REMIND_AFTER_DAYS))
     if args.no_github:
-        say("Once those are pasted, the site picks the playlist up on the next daily run (06:23 UTC) or the "
-            f"next push. Spotify logins last six months; GitHub will remind you around {remind}.")
+        say("Once those are pasted, the site picks the playlist up within the hour. Spotify logins last "
+            f"six months; GitHub will remind you around {remind}.")
     else:
         say(f"All set. Spotify logins last six months, so GitHub will open an issue to remind you around "
             f"{remind}. Then run scripts/vibes-login again.")
@@ -532,6 +576,8 @@ def main(argv: list | None = None) -> int:
     )
     parser.add_argument("--no-github", action="store_true",
                         help="don't use gh; print what to paste into GitHub instead")
+    parser.add_argument("--no-keychain", action="store_true",
+                        help="don't read or save the keys in this Mac's keychain")
     args = parser.parse_args(argv)
     env = os.environ
     try:
