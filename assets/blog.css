@@ -1,0 +1,6 @@
+/* The /blog/ page: the list of posts */
+
+.sq-listing { padding-top: var(--space-8); padding-bottom: var(--space-8); }
+.sq-listing-content { margin-top: 14px; }
+.sq-listing-content > p { color: var(--ink-2); font-size: 16px; max-width: 60ch; }
+.sq-listing .sq-card-grid { margin-top: var(--space-5); }
