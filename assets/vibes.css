@@ -12,11 +12,6 @@
 .vb-page ::selection { background: var(--accent-3-wash); }
 .vb-page > main { flex: 1 0 auto; }
 .vb-page .sq-wrap { max-width: var(--vb-max); padding-left: var(--gut); padding-right: var(--gut); }
-.vb-page .sq-crumb, .vb-page a.sq-crumb:visited { color: var(--accent-3); }
-.vb-page a.sq-crumb:hover { color: var(--ink); }
-.vb-page .sq-sitefooter-in,
-.vb-page .sq-sitefooter a, .vb-page .sq-sitefooter a:visited { color: var(--ink-3); }
-.vb-page .sq-sitefooter a:hover { color: var(--ink); }
 /* Book rings every :focus, mouse clicks included; keep the ring for keyboard focus only */
 .vb-page :focus:not(:focus-visible) { outline: none; }
 
@@ -31,7 +26,7 @@
   --gx: clamp(14px, 1.2vw, 24px);
   --gy: clamp(18px, 3vh, 32px);
   --pady: clamp(16px, 7vh - 22px, 96px);
-  --chrome: 106px;            /* header strip 57 + footer strip 49 — update if a strip changes */
+  --chrome: 120px;            /* header strip 57 + footer strip 62, +1 measured — update if a strip changes */
   --head: 50px;               /* wall head: rule + 11px + logo row + 16px */
   --t-size: clamp(13px, 0.86vw, 15px);    /* song title */
   --a-size: clamp(12px, 0.8vw, 13.5px);   /* artists */
@@ -236,7 +231,7 @@ a.vb-title-link:focus-visible::after { outline: 2px solid var(--focus-ring); out
 .vb-empty { margin: 0; padding: 24px 0; font-size: var(--body-size); color: var(--ink-2); }
 
 /* ---------- Most played: a folded section under the wall ---------- */
-.vb-page--top { --chrome: 154px; }   /* + the folded section's 48px strip */
+.vb-page--top { --chrome: 168px; }   /* + the folded section's 48px strip */
 .vb-top { max-width: var(--vb-max); margin: 0 auto; padding: 0 var(--gut); }
 .vb-top-fold { border-top: var(--rule-w) solid var(--rule); }
 .vb-top-sum {

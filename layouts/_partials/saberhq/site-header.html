@@ -1,40 +1,24 @@
-{{/* Site header strip. Context: dict "page" . plus optional "crumb", "crumbHref", "back" (dict "href" "label"),
-     "nonav" and "hideMark". */}}
-{{ $p := .page }}
+{{/* Site header: the mark, the sections (config.toml, menu.header) and the theme switch. Context: the page. */}}
+{{- $here := .RelPermalink }}
+{{- $home := site.Home.RelPermalink }}
 <header class="sq-siteheader">
   <div class="sq-wrap sq-siteheader-in">
-    {{ if not .hideMark }}<a class="sq-mark" href="{{ $p.Site.Home.RelPermalink }}">saberhq.com</a>{{ end }}
-    {{ with .crumb }}{{ with $.crumbHref }}<a class="sq-crumb" href="{{ . }}"{{ if eq . $p.RelPermalink }} aria-current="page"{{ end }}>/ {{ $.crumb }}</a>{{ else }}<span class="sq-crumb">/ {{ . }}</span>{{ end }}{{ end }}
+    <a class="sq-mark" href="{{ $home }}" title="Home"{{ if eq $here $home }} aria-current="page"{{ end }}>saberhq.com</a>
+    <nav class="sq-tabs" aria-label="Sections">
+      {{- range site.Menus.header }}
+        {{- $cls := "sq-tab" }}
+        {{- with .Params.accent }}{{ $cls = printf "%s %s" $cls (cond (eq (string .) "vibes") "sq-tab--vibes" "sq-tab--sidechain") }}{{ end }}
+        {{- $current := "" }}
+        {{- if eq $here .URL }}{{ $current = "page" }}{{ else if hasPrefix $here .URL }}{{ $current = "true" }}{{ end }}
+      <a class="{{ $cls }}" href="{{ .URL }}"{{ with $current }} aria-current="{{ . }}"{{ end }}>{{ .Name }}</a>
+      {{- end }}
+    </nav>
     <span class="sq-fill"></span>
-    {{ with .back }}
-      <a class="sq-back" href="{{ .href }}">{{ .label }}</a>
-    {{ else }}{{ if not .nonav }}
-      {{/* The menu (config.toml, menu.home); off-site links are written twice, the stylesheet shows one. */}}
-      {{ $social := slice }}
-      {{ range $p.Site.Menus.home }}{{ if hasPrefix .URL "http" }}{{ $social = $social | append . }}{{ end }}{{ end }}
-      <nav class="sq-nav" aria-label="Links">
-        {{ range $p.Site.Menus.home }}
-          {{ if not (hasPrefix .URL "http") }}
-          {{ $cls := "" }}
-          {{ with .Params.accent }}{{ $cls = cond (eq (string .) "vibes") "sq-nav-accent-3" "sq-nav-accent" }}{{ end }}
-          <a href="{{ .URL }}"{{ with $cls }} class="{{ . }}"{{ end }}>{{ .Name }}</a>
-          {{ end }}
-        {{ end }}
-        {{ with $social }}
-        <span class="sq-nav-social">
-          {{ range . }}<a href="{{ .URL }}" target="_blank" rel="noopener">{{ .Name }}<span class="sq-sr-only"> (opens in a new tab)</span></a>
-          {{ end }}
-        </span>
-        <details class="sq-nav-group">
-          <summary>Elsewhere</summary>
-          <div class="sq-nav-group-links">
-            {{ range . }}<a href="{{ .URL }}" target="_blank" rel="noopener">{{ .Name }}<span class="sq-sr-only"> (opens in a new tab)</span></a>
-            {{ end }}
-          </div>
-        </details>
-        {{ end }}
-      </nav>
-    {{ end }}{{ end }}
-    <button class="sq-theme-toggle" type="button" data-theme-toggle aria-label="Toggle color theme"></button>
+    <button class="sq-switch" type="button" role="switch" aria-checked="false" aria-label="Dark theme" title="Dark theme" data-theme-toggle>
+      <span class="sq-switch-track" aria-hidden="true"><span class="sq-switch-knob">
+        <svg class="sq-switch-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.6"/><path d="M8 1.8v1.5M8 12.7v1.5M1.8 8h1.5M12.7 8h1.5M3.6 3.6l1.05 1.05M11.35 11.35l1.05 1.05M3.6 12.4l1.05-1.05M11.35 4.65l1.05-1.05"/></svg>
+        <svg class="sq-switch-moon" viewBox="0 0 16 16"><path d="M12.9 9.7A5.1 5.1 0 0 1 6.3 3.1a5.1 5.1 0 1 0 6.6 6.6z"/></svg>
+      </span></span>
+    </button>
   </div>
 </header>

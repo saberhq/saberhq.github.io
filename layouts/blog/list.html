@@ -6,7 +6,7 @@
 </head>
 <body class="sq-shell book-type-blog">
 
-  {{ partial "saberhq/site-header" (dict "page" . "crumb" "blog") }}
+  {{ partial "saberhq/site-header" . }}
 
   <main class="sq-listing sq-wrap">
     <div class="sq-kicker"><span class="sq-kicker-accent">BLOG</span> · {{ len .RegularPages }} POSTS</div>
@@ -15,7 +15,7 @@
     </div>
   </main>
 
-  {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "BLOG" "href" .RelPermalink)) }}
+  {{ partial "saberhq/site-footer" . }}
   {{ partial "docs/inject/body" . }}
 </body>
 </html>

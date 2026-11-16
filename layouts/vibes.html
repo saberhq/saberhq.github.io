@@ -60,7 +60,7 @@
 </head>
 <body class="sq-shell vb-page{{ if $hasTop }} vb-page--top{{ end }}">
 
-  {{ partial "saberhq/site-header" (dict "page" . "crumb" "vibes" "crumbHref" .RelPermalink "nonav" true) }}
+  {{ partial "saberhq/site-header" . }}
 
   <main>
     <div class="vb-stage{{ if eq $rows 1 }} vb-stage--one-row{{ end }}" style="--n-cols: {{ $cols }}; --n-rows: {{ $rows }}">
@@ -208,7 +208,7 @@
     {{- end }}
   </main>
 
-  {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "VIBES" "href" .RelPermalink)) }}
+  {{ partial "saberhq/site-footer" . }}
   {{ partial "docs/inject/body" . }}
 
   {{- /* The current data, also published at /vibes/vibes.json: the CI sync falls back to this

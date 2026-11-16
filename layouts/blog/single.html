@@ -6,8 +6,7 @@
 </head>
 <body class="sq-shell book-type-blog">
 
-  {{ $blog := .CurrentSection }}
-  {{ partial "saberhq/site-header" (dict "page" . "crumb" "blog" "back" (dict "href" $blog.RelPermalink "label" "← all posts")) }}
+  {{ partial "saberhq/site-header" . }}
 
   <main>
     <article class="sq-article">
@@ -39,7 +38,7 @@
     </article>
   </main>
 
-  {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "BLOG" "href" $blog.RelPermalink)) }}
+  {{ partial "saberhq/site-footer" . }}
   {{ partial "docs/inject/body" . }}
 </body>
 </html>

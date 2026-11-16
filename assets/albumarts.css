@@ -6,7 +6,7 @@
   --aa-rail: clamp(160px, 15vw, 280px);
   --aa-gap: clamp(28px, 2.6vw, 48px);
   --pady: clamp(16px, 4vh - 8px, 40px);
-  --chrome: 110px;
+  --chrome: 123px;
 }
 .aa-stage {
   --m-w: calc(min(100vw, var(--vb-max)) - 2 * var(--gut) - var(--aa-left) - var(--aa-rail) - 2 * var(--aa-gap));

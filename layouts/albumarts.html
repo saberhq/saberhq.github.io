@@ -2,9 +2,8 @@
 {{- $d := site.Data.albumarts | default dict }}
 {{- $tiles := $d.tiles | default slice }}
 {{- $total := len $tiles }}
-{{- $vibesHref := "/vibes/" }}
 {{- $playlist := "https://open.spotify.com/" }}
-{{- with site.GetPage "/vibes" }}{{ $vibesHref = .RelPermalink }}{{ with .Params.playlist }}{{ $playlist = . }}{{ end }}{{ end }}
+{{- with site.GetPage "/vibes" }}{{ with .Params.playlist }}{{ $playlist = . }}{{ end }}{{ end }}
 {{- $keys := slice }}
 {{- range $tiles }}{{ $keys = $keys | append (.album_url | default .medium | default .id) }}{{ end }}
 {{- $albums := len (uniq $keys) }}
@@ -26,7 +25,7 @@
 </head>
 <body class="sq-shell vb-page aa-page">
 
-  {{ partial "saberhq/site-header" (dict "page" . "crumb" "vibes" "crumbHref" $vibesHref "nonav" true) }}
+  {{ partial "saberhq/site-header" . }}
 
   <main>
     <div class="vb-stage aa-stage">
@@ -113,7 +112,7 @@
     </div>
   </main>
 
-  {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "VIBES" "href" $vibesHref)) }}
+  {{ partial "saberhq/site-footer" . }}
   {{ partial "docs/inject/body" . }}
 
   {{- with site.Data.albumarts }}{{ (resources.FromString "vibes/albumarts.json" (jsonify .)).Publish }}{{ end }}

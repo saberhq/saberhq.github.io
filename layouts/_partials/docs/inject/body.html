@@ -1,36 +1,26 @@
-{{/* Saber HQ theme toggle — any element with data-theme-toggle flips light/dark, persists
-     the choice, and keeps the browser-chrome color in sync (values mirror --paper). */}}
-<script>
-document.addEventListener('click', function (e) {
-  var btn = e.target.closest('[data-theme-toggle]');
-  if (!btn) return;
-  var root = document.documentElement;
-  var toDark = root.getAttribute('data-theme') !== 'dark';
-  if (toDark) { root.setAttribute('data-theme', 'dark'); } else { root.removeAttribute('data-theme'); }
-  document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
-    m.removeAttribute('media');
-    m.setAttribute('content', toDark ? '#16130F' : '#FAF9F7');
-  });
-  try { localStorage.setItem('saberhq-theme', toDark ? 'dark' : 'light'); } catch (err) {}
-});
-</script>
-
-{{/* The header's folded "Elsewhere" menu (tablets and phones) is a plain <details>, so it opens
-     and closes on its own entry without any script. This only adds what people expect of a
-     menu: a click anywhere else, or Escape, closes it. */}}
+{{/* The theme switch: any element with data-theme-toggle flips light/dark and keeps the choice. */}}
 <script>
 (function () {
-  function shut(focus) {
-    document.querySelectorAll('details.sq-nav-group[open]').forEach(function (d) {
-      d.removeAttribute('open');
-      if (focus) { var s = d.querySelector('summary'); if (s) s.focus(); }
+  var root = document.documentElement;
+  function mark() {
+    var dark = root.getAttribute('data-theme') === 'dark';
+    document.querySelectorAll('[data-theme-toggle][role="switch"]').forEach(function (b) {
+      b.setAttribute('aria-checked', dark ? 'true' : 'false');
     });
   }
+  mark();
   document.addEventListener('click', function (e) {
-    var inside = e.target.closest && e.target.closest('details.sq-nav-group');
-    if (!inside) shut(false);
+    var btn = e.target.closest('[data-theme-toggle]');
+    if (!btn) return;
+    var toDark = root.getAttribute('data-theme') !== 'dark';
+    if (toDark) { root.setAttribute('data-theme', 'dark'); } else { root.removeAttribute('data-theme'); }
+    document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
+      m.removeAttribute('media');
+      m.setAttribute('content', toDark ? '#16130F' : '#FAF9F7');
+    });
+    try { localStorage.setItem('saberhq-theme', toDark ? 'dark' : 'light'); } catch (err) {}
+    mark();
   });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shut(true); });
 })();
 </script>
 

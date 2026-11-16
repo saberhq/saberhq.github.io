@@ -30,46 +30,55 @@ disableKinds = ["taxonomy", "term"]
   # saberhq.com pages that open in a new tab (links to other sites always do)
   newTab = ["/resume/"]
 
-# Top navigation
+# The header's sections, left to right by weight.
+# accent = true: carmine (Sidechain only); accent = "vibes": blue hour (Saber Vibes only).
 [menu]
-  # Links shown on landing page header (Book's landing layout uses menu.home).
-  # accent = true draws the entry in carmine (--accent-2) — Sidechain only;
-  # accent = "vibes" draws it in blue hour (--accent-3) — Saber Vibes only.
-  [[menu.home]]
+  [[menu.header]]
     name = "Sidechain"
     url = "/sidechain/"
-    weight = 5
-    [menu.home.params]
+    weight = 10
+    [menu.header.params]
       accent = true
 
-  [[menu.home]]
+  [[menu.header]]
     name = "Saber Vibes"
     url = "/vibes/"
-    weight = 6
-    [menu.home.params]
+    weight = 20
+    [menu.header.params]
       accent = "vibes"
 
-  [[menu.home]]
-  name = "GitHub"
-  url = "https://github.com/saberhq"
-  weight = 10
+  [[menu.header]]
+    name = "Blog"
+    url = "/blog/"
+    weight = 30
 
-  [[menu.home]]
+  [[menu.header]]
+    name = "About"
+    url = "/about/"
+    weight = 40
+
+  # The footer's "Elsewhere" column: Saber on other sites, left to right by weight.
+  [[menu.elsewhere]]
+    name = "GitHub"
+    url = "https://github.com/saberhq"
+    weight = 10
+
+  [[menu.elsewhere]]
     name = "LinkedIn"
     url = "https://www.linkedin.com/in/saberhq"
     weight = 20
 
-  [[menu.home]]
+  [[menu.elsewhere]]
     name = "Scholar"
     url = "https://scholar.google.com/citations?user=q2fsO2IAAAAJ&hl=en"
     weight = 30
 
-  [[menu.home]]
+  [[menu.elsewhere]]
     name = "YouTube"
     url = "https://www.youtube.com/@saberhq"
     weight = 40
 
-  [[menu.home]]
+  [[menu.elsewhere]]
     name = "X"
     url = "https://x.com/saberhq"
     weight = 50

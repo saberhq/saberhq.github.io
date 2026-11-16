@@ -6,7 +6,7 @@
 </head>
 <body class="sq-shell book-kind-home">
 
-  {{ partial "saberhq/site-header" (dict "page" . "hideMark" true) }}
+  {{ partial "saberhq/site-header" . }}
 
   <main class="sq-landing">
 
@@ -74,7 +74,7 @@
 
   </main>
 
-  {{ partial "saberhq/site-footer" (dict "page" .) }}
+  {{ partial "saberhq/site-footer" . }}
   {{ partial "docs/inject/body" . }}
 
   {{/* Split-flap Sidechain label; skipped for reduced motion. */}}

@@ -6,9 +6,9 @@
 {{- range site.Menus.after }}
   {{- if and (not $mailto) (hasPrefix .URL "mailto:") }}{{ $mailto = .URL }}{{ end }}
 {{- end }}
-{{- /* The Scholar profile from the header menu, for the "publications" aside */ -}}
+{{- /* The Scholar profile from menu.elsewhere, for the "publications" aside */ -}}
 {{- $scholar := "" }}
-{{- range site.Menus.home }}
+{{- range site.Menus.elsewhere }}
   {{- if and (not $scholar) (strings.Contains .URL "scholar.google") }}{{ $scholar = .URL }}{{ end }}
 {{- end }}
 
@@ -30,7 +30,7 @@
 </head>
 <body class="sq-shell book-kind-page sq-me-page">
 
-  {{ partial "saberhq/site-header" (dict "page" . "crumb" "about") }}
+  {{ partial "saberhq/site-header" . }}
 
   <main class="sq-me">
 
@@ -102,19 +102,15 @@
     </div>
     {{- end }}
 
-    {{- /* The off-site entries of the header menu (menu.home in config.toml — the socials; in-site
-         links like Sidechain are skipped), then the mailto, labelled "Email": the address
-         itself is never spelled out. */}}
+    {{- /* menu.elsewhere in config.toml, then the mailto, labelled "Email". */}}
     <section class="sq-section sq-wrap" aria-labelledby="sq-me-elsewhere">
       <div class="sq-section-head">
         <h2 class="sq-section-label" id="sq-me-elsewhere">Elsewhere</h2>
         <span class="sq-section-fill"></span>
       </div>
       <ul class="sq-me-links" role="list">
-        {{- range site.Menus.home }}
-          {{- if hasPrefix .URL "http" }}
+        {{- range site.Menus.elsewhere }}
         <li><a class="sq-me-link" href="{{ .URL }}" target="_blank" rel="noopener">{{ .Name }} <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a></li>
-          {{- end }}
         {{- end }}
         {{- with $mailto }}
         <li><a class="sq-me-link" href="{{ . }}">Email</a></li>
@@ -124,7 +120,7 @@
 
   </main>
 
-  {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "ABOUT" "href" .RelPermalink)) }}
+  {{ partial "saberhq/site-footer" . }}
   {{ partial "docs/inject/body" . }}
 </body>
 </html>
