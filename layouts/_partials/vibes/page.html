@@ -625,24 +625,18 @@
         else t.removeAttribute('aria-current');
       });
       if (titles[view]) document.title = titles[view];
-      trail(view);
+      trail();
       if (push) { try { history.pushState(null, '', paths[view]); } catch (e) {} }
       rest();
       if (view === 'arts') arts.start();
     }
-    // the header's trail follows the view: SABER H. / VIBES, or SABER H. / VIBES / ALBUMARTS
-    function trail(view) {
+    // the header's trail reads SABER H. / VIBES in both views (Album Arts is a view of Saber Vibes)
+    function trail() {
       var t = document.querySelector('.sq-trail');
       var wall = t && t.querySelector('.sq-trail-link[href="' + paths.wall + '"]');
       if (!wall) return;
       while (wall.nextSibling) t.removeChild(wall.nextSibling);
-      if (view !== 'arts') { wall.setAttribute('aria-current', 'page'); return; }
-      wall.removeAttribute('aria-current');
-      var sep = document.createElement('span'), a = document.createElement('a');
-      sep.className = 'sq-trail-sep'; sep.setAttribute('aria-hidden', 'true'); sep.textContent = '/';
-      a.className = 'sq-trail-link'; a.href = paths.arts; a.setAttribute('aria-current', 'page');
-      a.textContent = paths.arts.split('/').filter(Boolean).pop();
-      t.appendChild(sep); t.appendChild(a);
+      wall.setAttribute('aria-current', 'page');
     }
     document.addEventListener('click', function (e) {
       var a = e.target.closest ? e.target.closest('a[href]') : null;
@@ -656,6 +650,7 @@
       var to = viewOf(location.pathname);
       if (to && to !== stage.getAttribute('data-view')) setView(to, false);
     });
+    trail();
     if (stage.getAttribute('data-view') === 'arts') arts.start();
     else {
       var later = window.requestIdleCallback || function (f) { return setTimeout(f, 1500); };
