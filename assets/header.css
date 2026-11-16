@@ -20,8 +20,8 @@ html { scroll-padding-top: calc(var(--sq-header-h) + var(--space-3)); }
 }
 .sq-siteheader-in > * { flex-shrink: 0; }
 
-/* One voice for every word in the bar: Geist Mono 13px, uppercase, tracked */
-.sq-trail, a.sq-menu-link, .sq-menu-more > summary, .sq-menu-more-links a {
+/* One voice for every word in the bar, the mark included: Geist Mono 13px, uppercase, tracked */
+.sq-trail, a.sq-mark, a.sq-menu-link, .sq-menu-more > summary, .sq-menu-more-links a {
   font-family: var(--font-mono); font-size: 13px; font-weight: 400;
   letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap;
 }
@@ -32,10 +32,7 @@ html { scroll-padding-top: calc(var(--sq-header-h) + var(--space-3)); }
   flex-shrink: 1; line-height: 40px;
 }
 .sq-trail > * { flex-shrink: 0; }
-a.sq-mark, a.sq-mark:visited {
-  font-family: var(--font-pixel); font-size: 13.15px; font-weight: 400;
-  letter-spacing: 0; text-transform: none; color: var(--ink); text-decoration: none;
-}
+a.sq-mark, a.sq-mark:visited { color: var(--ink); text-decoration: none; }
 a.sq-mark:hover { color: var(--ink); text-decoration: none; }
 .sq-trail-sep { padding: 0 0.6em 0 0.5em; color: var(--ink-4); }
 a.sq-trail-link, a.sq-trail-link:visited { color: var(--ink-3); text-decoration: none; }
