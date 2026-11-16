@@ -2,9 +2,12 @@
 {{- $d := site.Data.albumarts | default dict }}
 {{- $tiles := $d.tiles | default slice }}
 {{- $total := len $tiles }}
-{{- $vibes := site.GetPage "/vibes" }}
+{{- $vibesHref := "/vibes/" }}
 {{- $playlist := "https://open.spotify.com/" }}
-{{- with $vibes }}{{ with .Params.playlist }}{{ $playlist = . }}{{ end }}{{ end }}
+{{- with site.GetPage "/vibes" }}{{ $vibesHref = .RelPermalink }}{{ with .Params.playlist }}{{ $playlist = . }}{{ end }}{{ end }}
+{{- $keys := slice }}
+{{- range $tiles }}{{ $keys = $keys | append (.album_url | default .medium | default .id) }}{{ end }}
+{{- $albums := len (uniq $keys) }}
 {{- $first := 10 }}
 {{- if lt $total 100 }}{{ $first = int (math.Floor (math.Sqrt $total)) }}{{ end }}
 <!DOCTYPE html>
@@ -23,61 +26,114 @@
 </head>
 <body class="sq-shell vb-page aa-page">
 
-  {{ partial "saberhq/site-header" (dict "page" . "crumb" "vibes" "back" (dict "href" (cond (not $vibes) "/vibes/" $vibes.RelPermalink) "label" "← Saber Vibes")) }}
+  {{ partial "saberhq/site-header" (dict "page" . "crumb" "vibes" "crumbHref" $vibesHref "nonav" true) }}
 
-  <main class="aa-main">
-    <div class="aa-bar">
-      <h1 class="aa-title">{{ .Title }}</h1>
-      {{- if $total }}
-      <div class="aa-controls" data-controls hidden>
-        <div class="aa-chips" role="group" aria-label="Size" data-sizes></div>
-        <div class="aa-chips" role="group" aria-label="Order">
-          <button class="vb-chip" type="button" data-order="played" aria-pressed="true">Most played</button>
-          <button class="vb-chip" type="button" data-order="colour" aria-pressed="false">Colour</button>
-          <button class="vb-chip" type="button" data-order="liked" aria-pressed="false">Date liked</button>
+  <main>
+    <div class="vb-stage aa-stage">
+
+      <section class="vb-story aa-story" aria-labelledby="aa-title">
+        {{- with .Params.kicker }}
+        <p class="sq-kicker">{{ . }}</p>
+        {{- end }}
+        {{- $words := split (.Title | default "Album Arts") " " }}
+        {{- $last := sub (len $words) 1 }}
+        <h1 class="vb-wordmark" id="aa-title">{{ range $i, $w := $words }}{{ if $i }} {{ end }}<span class="vb-wordmark-line">{{ $w }}{{ if eq $i $last }}<span class="vb-wordmark-dot" aria-hidden="true">.</span>{{ end }}</span>{{ end }}</h1>
+        {{- with .Params.lede }}
+        <p class="vb-lede">{{ . }}</p>
+        {{- end }}
+        {{- with .Params.body }}
+        <p class="vb-body">{{ $.RenderString . }}</p>
+        {{- end }}
+        {{- if $total }}
+        <div class="aa-controls" data-controls hidden>
+          <div class="aa-group">
+            <p class="aa-group-label" id="aa-l-covers">Covers</p>
+            <div class="aa-chips" role="group" aria-labelledby="aa-l-covers">
+              <button class="vb-chip" type="button" data-mode="albums" aria-pressed="true">Per album</button>
+              <button class="vb-chip" type="button" data-mode="songs" aria-pressed="false">Per song</button>
+            </div>
+            <p class="aa-hint" data-hint>A cover’s size shows how many of its songs are liked.</p>
+          </div>
+          <div class="aa-group">
+            <p class="aa-group-label" id="aa-l-order">Order</p>
+            <div class="aa-chips" role="group" aria-labelledby="aa-l-order">
+              <button class="vb-chip" type="button" data-order="played" aria-pressed="true">Most played</button>
+              <button class="vb-chip" type="button" data-order="colour" aria-pressed="false">Colour</button>
+              <button class="vb-chip" type="button" data-order="liked" aria-pressed="false">Date liked</button>
+            </div>
+          </div>
+          <div class="aa-group">
+            <p class="aa-group-label" id="aa-l-size">Grid</p>
+            <div class="aa-chips" role="group" aria-labelledby="aa-l-size" data-sizes></div>
+          </div>
         </div>
-        <button class="vb-chip aa-print" type="button" data-print>Print</button>
-      </div>
-      {{- end }}
-      <span class="aa-fill"></span>
-      {{ partial "vibes/spotify-logo" (dict "href" $playlist) }}
-    </div>
+        <div class="aa-foot">
+          <button class="vb-chip aa-print" type="button" data-print hidden>Print</button>
+          <p class="vb-meta">{{ $total }} liked song{{ if ne $total 1 }}s{{ end }} <span aria-hidden="true">·</span> {{ $albums }} album{{ if ne $albums 1 }}s{{ end }}</p>
+        </div>
+        {{- end }}
+      </section>
 
-    {{- if $total }}
-    {{- /* Covers only: each is a link to its song; the name lives in the alt text and the line below. */}}
-    <ol class="aa-grid" style="--n: {{ $first }}" data-grid data-first="{{ $first }}">
-      {{- range $i, $t := $tiles }}
-      <li class="aa-tile"{{ if ge $i (mul $first $first) }} hidden{{ end }} data-liked="{{ $t.liked }}"{{ with $t.colour }} data-colour="{{ . }}"{{ end }}{{ with $t.large }} data-large="{{ . }}"{{ end }}><a href="{{ $t.url }}" target="_blank" rel="noopener"><img src="{{ $t.medium | default $t.small }}"{{ if and $t.small $t.medium }} srcset="{{ $t.small }} 64w, {{ $t.medium }} 300w" sizes="10vw"{{ end }} width="300" height="300" alt="{{ $t.name }}{{ with $t.by }} by {{ . }}{{ end }}" loading="lazy" decoding="async" referrerpolicy="no-referrer"></a></li>
-      {{- end }}
-    </ol>
-    <p class="aa-note"><span data-note>{{ if lt (mul $first $first) $total }}{{ mul $first $first }} of {{ end }}{{ $total }} liked songs <span aria-hidden="true">·</span> most played first</span><span class="aa-now" data-now aria-hidden="true"></span></p>
-    <p class="vb-sr" aria-live="polite" data-status></p>
-    {{- else }}
-    <p class="vb-empty">The covers aren’t here for a moment — the songs themselves are <a href="{{ $playlist }}" target="_blank" rel="noopener">on Spotify <span aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a></p>
-    {{- end }}
+      <section class="aa-picture" aria-label="Album covers">
+        {{- if $total }}
+        {{- /* Covers only: each is a link to its song; the name lives in the alt text and the close-up. */}}
+        <ol class="aa-grid" style="--n: {{ $first }}" data-grid data-first="{{ $first }}">
+          {{- range $i, $t := $tiles }}
+          <li class="aa-tile"{{ if ge $i (mul $first $first) }} hidden{{ end }} data-name="{{ $t.name }}" data-by="{{ $t.by }}"{{ with $t.album }} data-album="{{ . }}"{{ end }}{{ with $t.album_url }} data-album-url="{{ . }}"{{ end }} data-liked="{{ $t.liked }}"{{ with $t.colour }} data-colour="{{ . }}"{{ end }}{{ with $t.medium }} data-medium="{{ . }}"{{ end }}{{ with $t.large }} data-large="{{ . }}"{{ end }}><a href="{{ $t.url }}" target="_blank" rel="noopener"><img src="{{ $t.medium | default $t.small }}"{{ if and $t.small $t.medium }} srcset="{{ $t.small }} 64w, {{ $t.medium }} 300w{{ with $t.large }}, {{ . }} 640w{{ end }}" sizes="(max-width: 900px) 10vw, 70px"{{ end }} width="300" height="300" alt="{{ $t.name }}{{ with $t.by }} by {{ . }}{{ end }}" loading="lazy" decoding="async" referrerpolicy="no-referrer"></a></li>
+          {{- end }}
+        </ol>
+        <p class="vb-sr" aria-live="polite" data-status></p>
+        {{- else }}
+        <p class="vb-empty">The covers aren’t here for a moment — the songs themselves are <a href="{{ $playlist }}" target="_blank" rel="noopener">on Spotify <span aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a></p>
+        {{- end }}
+      </section>
+
+      <aside class="aa-rail" aria-labelledby="aa-rail-label">
+        <div class="sq-section-head vb-wall-head">
+          <h2 class="sq-section-label" id="aa-rail-label">Close-up</h2>
+          <span class="sq-section-fill"></span>
+          {{ partial "vibes/spotify-logo" (dict "href" $playlist) }}
+        </div>
+        {{- if $total }}
+        <div class="aa-card" data-card aria-hidden="true">
+          <div class="aa-card-idle" data-card-idle>
+            <p class="aa-card-idle-text">Point at a cover to see it here. Click it to open on Spotify.</p>
+          </div>
+          <div class="aa-card-info" data-card-info hidden>
+            <img class="aa-card-art" data-card-art width="300" height="300" alt="" decoding="async" referrerpolicy="no-referrer">
+            <p class="aa-card-title" data-card-title dir="auto"></p>
+            <p class="aa-card-by" data-card-by dir="auto"></p>
+            <dl class="aa-card-facts" data-card-facts></dl>
+            <ul class="aa-card-songs" data-card-songs hidden></ul>
+          </div>
+        </div>
+        {{- end }}
+      </aside>
+
+    </div>
   </main>
 
-  {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "VIBES" "href" (cond (not $vibes) "/vibes/" $vibes.RelPermalink))) }}
+  {{ partial "saberhq/site-footer" (dict "page" . "crumb" (dict "label" "VIBES" "href" $vibesHref)) }}
   {{ partial "docs/inject/body" . }}
 
   {{- with site.Data.albumarts }}{{ (resources.FromString "vibes/albumarts.json" (jsonify .)).Publish }}{{ end }}
 
-  {{/* Album Arts: size and order chips rearrange the covers; Print loads the large covers first. */}}
+  {{/* Album Arts: covers per album or per song, three orders, two sizes; the close-up names the cover under the pointer; Print loads the large covers first. */}}
   <script>
   (function () {
     var grid = document.querySelector('[data-grid]');
     if (!grid) return;
-    var tiles = Array.prototype.slice.call(grid.children);   // most played first
+    var songs = Array.prototype.slice.call(grid.children);   // most played first
     var controls = document.querySelector('[data-controls]');
     var sizesBox = document.querySelector('[data-sizes]');
-    var note = document.querySelector('[data-note]');
-    var nowEl = document.querySelector('[data-now]');
+    var hint = document.querySelector('[data-hint]');
+    var printButton = document.querySelector('[data-print]');
     var status = document.querySelector('[data-status]');
-    var total = tiles.length;
-    var max = Math.floor(Math.sqrt(total));
-    var sizes = [10, 20, max].filter(function (n, i, all) { return n <= max && all.indexOf(n) === i; });
+    var max = Math.floor(Math.sqrt(songs.length));
+    var sizes = [10, 20].filter(function (n) { return n <= max; });
     if (!sizes.length) sizes = [max];
-    var state = { n: sizes[0], order: 'played' };
+    var state = { n: sizes[0], order: 'played', mode: 'albums' };
+    var albums = null;
 
     function hsl(hex) {
       var r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
@@ -86,53 +142,160 @@
       if (d) h = hi === r ? ((g - b) / d + 6) % 6 : hi === g ? (b - r) / d + 2 : (r - g) / d + 4;
       return { h: h * 60, s: s, l: l };
     }
-    tiles.forEach(function (el, i) {
+    songs.forEach(function (el, i) {
       el._rank = i;
+      el._k = 1;
       el._liked = Date.parse(el.getAttribute('data-liked')) || 0;
       el._c = hsl(el.getAttribute('data-colour') || '#808080');
       el._grey = el._c.s < 0.12 || el._c.l < 0.08 || el._c.l > 0.92;
     });
 
-    // most played: the centre first, ring by ring
-    function rings(n) {
-      var mid = (n - 1) / 2, cells = [];
-      for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) {
-        cells.push({ at: r * n + c, d: Math.max(Math.abs(r - mid), Math.abs(c - mid)), a: Math.atan2(r - mid, c - mid) });
-      }
-      cells.sort(function (x, y) { return x.d - y.d || x.a - y.a; });
-      return cells;
+    // one cover per album, sized by its liked songs: 1, 2-4, 5-9, 10 or more
+    function albumBy(songList) {
+      var by = function (el) { return el.getAttribute('data-by') || ''; };
+      var first = by(songList[0]);
+      if (songList.every(function (el) { return by(el) === first; })) return first;
+      var lead = first.split(', ')[0];
+      return songList.every(function (el) { return by(el).split(', ')[0] === lead; }) ? lead : 'Various artists';
     }
-    // colour: hue runs left to right, light to dark runs down each column; greys sit at the right
-    function byColour(chosen, n) {
-      var list = chosen.slice().sort(function (x, y) { return (x._grey - y._grey) || (x._grey ? 0 : x._c.h - y._c.h); });
-      var out = new Array(n * n);
-      for (var c = 0; c < n; c++) {
-        list.slice(c * n, c * n + n).sort(function (x, y) { return y._c.l - x._c.l; })
-          .forEach(function (el, r) { out[r * n + c] = el; });
+    function makeAlbums() {
+      var seen = {}, list = [];
+      songs.forEach(function (el) {
+        var key = el.getAttribute('data-album-url') || el.getAttribute('data-medium') || el.getAttribute('data-name');
+        var a = seen[key];
+        if (!a) {
+          a = el.cloneNode(true);
+          a.hidden = true;
+          a.classList.add('aa-tile--album');
+          var url = el.getAttribute('data-album-url');
+          if (url) a.querySelector('a').href = url;
+          a._rank = el._rank; a._c = el._c; a._grey = el._grey; a._liked = el._liked; a._songs = [];
+          seen[key] = a; list.push(a);
+        }
+        a._songs.push(el);
+        if (el._liked && (!a._liked || el._liked < a._liked)) a._liked = el._liked;
+      });
+      list.forEach(function (a) {
+        var n = a._songs.length, name = a.getAttribute('data-album') || a.getAttribute('data-name');
+        a._k = n >= 10 ? 4 : n >= 5 ? 3 : n >= 2 ? 2 : 1;
+        a._by = albumBy(a._songs);
+        a.querySelector('img').alt = name + (a._by ? ' by ' + a._by : '') + ', ' + n + ' liked song' + (n === 1 ? '' : 's');
+        grid.appendChild(a);
+      });
+      return list;
+    }
+
+    // places k-by-k covers on an n-by-n grid, each at the first free spot in the order asked
+    // (or, for 'target', the free spot nearest its own _tx, _ty); a cover that no longer fits shrinks
+    function spots(n, k, how) {
+      var out = [], mid = (n - 1) / 2, half = (k - 1) / 2;
+      for (var r = 0; r + k <= n; r++) for (var c = 0; c + k <= n; c++) {
+        var y = r + half - mid, x = c + half - mid;
+        out.push({ r: r, c: c, d: Math.max(Math.abs(y), Math.abs(x)), a: Math.atan2(y, x) });
       }
+      if (how === 'centre') out.sort(function (p, q) { return p.d - q.d || p.a - q.a; });
       return out;
     }
-    function arrange() {
-      var n = state.n, chosen = tiles.slice(0, n * n), out;
-      if (state.order === 'colour') out = byColour(chosen, n);
-      else if (state.order === 'liked') out = chosen.slice().sort(function (x, y) { return x._liked - y._liked; });
-      else { out = new Array(n * n); rings(n).forEach(function (cell, k) { out[cell.at] = chosen[k]; }); }
-      var px = Math.ceil(grid.getBoundingClientRect().width / n) || 64;
-      var frag = document.createDocumentFragment();
-      out.forEach(function (el) {
-        el.hidden = false;
-        var img = el.querySelector('img');
-        if (img.srcset) img.sizes = px + 'px';
-        frag.appendChild(el);
+    function pack(list, n, how) {
+      var used = new Uint8Array(n * n), free = n * n, placed = [], cache = {}, top = n >= 20 ? 4 : 3;
+      function fits(p, k) {
+        for (var r = p.r; r < p.r + k; r++) for (var c = p.c; c < p.c + k; c++) if (used[r * n + c]) return false;
+        return true;
+      }
+      for (var i = 0; i < list.length && free > 0; i++) {
+        for (var k = Math.min(list[i]._k, top); k >= 1; k--) {
+          var all = cache[k] || (cache[k] = spots(n, k, how)), hit = null, it = list[i], h = (k - 1) / 2, best = Infinity;
+          if (how === 'target') {
+            for (var t = 0; t < all.length; t++) {
+              var dx = all[t].c + h - it._tx, dy = all[t].r + h - it._ty, cost = 4 * dx * dx + dy * dy;
+              if (cost < best && fits(all[t], k)) { best = cost; hit = all[t]; }
+            }
+          } else {
+            for (var j = 0; j < all.length && !hit; j++) if (fits(all[j], k)) hit = all[j];
+          }
+          if (!hit) continue;
+          for (var r = hit.r; r < hit.r + k; r++) for (var c = hit.c; c < hit.c + k; c++) used[r * n + c] = 1;
+          free -= k * k;
+          placed.push({ el: list[i], r: hit.r, c: hit.c, k: k });
+          break;
+        }
+      }
+      return placed;
+    }
+    function byHue(x, y) { return (x._grey - y._grey) || (x._grey ? y._c.l - x._c.l : x._c.h - y._c.h); }
+
+    // songs: most played from the centre ring by ring; colour by columns; date liked in reading order
+    function songOrder(n) {
+      var chosen = songs.slice(0, n * n), out;
+      if (state.order === 'colour') {
+        var list = chosen.slice().sort(byHue);
+        out = new Array(n * n);
+        for (var c = 0; c < n; c++) {
+          list.slice(c * n, c * n + n).sort(function (x, y) { return y._c.l - x._c.l; })
+            .forEach(function (el, r) { out[r * n + c] = el; });
+        }
+      } else if (state.order === 'liked') {
+        out = chosen.slice().sort(function (x, y) { return x._liked - y._liked; });
+      } else {
+        out = new Array(n * n);
+        spots(n, 1, 'centre').forEach(function (p, k) { out[p.r * n + p.c] = chosen[k]; });
+      }
+      return out.filter(Boolean).map(function (el) { return { el: el, k: 1 }; });
+    }
+    // albums: the most played that fill the grid; then most played from the centre outwards,
+    // colour with hue across and light to dark down (biggest covers placed first), or date liked in reading order
+    function albumOrder(n) {
+      var placed;
+      if (state.order === 'played') placed = pack(albums, n, 'centre');
+      else {
+        var chosen = pack(albums, n, 'rows').map(function (p) { p.el._in = true; p.el._area = p.k * p.k; return p.el; });
+        var rest = albums.filter(function (a) { var was = a._in; a._in = false; return !was; });
+        if (state.order === 'colour') {
+          var run = 0;
+          chosen.sort(byHue).forEach(function (a) {
+            a._tx = (run + a._area / 2) / (n * n) * n - 0.5;
+            a._ty = (1 - a._c.l) * n - 0.5;
+            run += a._area;
+          });
+          rest.forEach(function (a) { a._tx = a._grey ? n - 1 : a._c.h / 360 * n; a._ty = (1 - a._c.l) * n - 0.5; });
+          chosen.sort(function (x, y) { return y._area - x._area; });
+          placed = pack(chosen.concat(rest), n, 'target');
+        } else {
+          chosen.sort(function (x, y) { return x._liked - y._liked; });
+          placed = pack(chosen.concat(rest), n, 'rows');
+        }
+      }
+      return placed.sort(function (p, q) { return p.r - q.r || p.c - q.c; });
+    }
+
+    var shownTiles = [];
+    function fitImages() {
+      var cell = grid.getBoundingClientRect().width / state.n || 64;
+      shownTiles.forEach(function (p) {
+        var img = p.el.querySelector('img');
+        if (img.srcset) img.sizes = Math.ceil(cell * p.k) + 'px';
       });
-      tiles.slice(n * n).forEach(function (el) { el.hidden = true; frag.appendChild(el); });
+    }
+    function arrange() {
+      var n = state.n;
+      if (state.mode === 'albums' && !albums) albums = makeAlbums();
+      shownTiles = state.mode === 'albums' ? albumOrder(n) : songOrder(n);
+      var all = songs.concat(albums || []), frag = document.createDocumentFragment();
+      all.forEach(function (el) { el.hidden = true; el._on = false; });
+      shownTiles.forEach(function (p) {
+        p.el.hidden = false; p.el._on = true;
+        p.el.style.gridArea = p.r === undefined ? '' : (p.r + 1) + ' / ' + (p.c + 1) + ' / span ' + p.k + ' / span ' + p.k;
+        frag.appendChild(p.el);
+      });
+      all.forEach(function (el) { if (!el._on) frag.appendChild(el); });
       grid.style.setProperty('--n', n);
       grid.appendChild(frag);
-      var words = { played: 'most played in the middle', colour: 'by colour', liked: 'oldest like first' };
-      note.textContent = (n * n < total ? n * n + ' of ' : '') + total + ' liked songs · ' + words[state.order];
+      fitImages();
+      hint.hidden = state.mode !== 'albums';
+      controls.querySelectorAll('[data-mode]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-mode') === state.mode ? 'true' : 'false'); });
       controls.querySelectorAll('[data-order]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-order') === state.order ? 'true' : 'false'); });
       sizesBox.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', +b.getAttribute('data-n') === n ? 'true' : 'false'); });
-      try { history.replaceState(null, '', '#' + n + '-' + state.order); } catch (e) {}
+      try { history.replaceState(null, '', '#' + n + '-' + state.order + '-' + state.mode); } catch (e) {}
     }
 
     sizes.forEach(function (n) {
@@ -142,37 +305,90 @@
       b.setAttribute('aria-label', n + ' by ' + n + ' covers');
       sizesBox.appendChild(b);
     });
-    var asked = /^#(\d+)-(played|colour|liked)$/.exec(location.hash);
+    var asked = /^#(\d+)-(played|colour|liked)(?:-(albums|songs))?$/.exec(location.hash);
     if (asked) {
       if (sizes.indexOf(+asked[1]) !== -1) state.n = +asked[1];
       state.order = asked[2];
+      if (asked[3]) state.mode = asked[3];
     }
     controls.hidden = false;
+    printButton.hidden = false;
     controls.addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (!b) return;
       if (b.hasAttribute('data-n')) state.n = +b.getAttribute('data-n');
       else if (b.hasAttribute('data-order')) state.order = b.getAttribute('data-order');
-      else if (b.hasAttribute('data-print')) return printLarge(b);
+      else if (b.hasAttribute('data-mode')) state.mode = b.getAttribute('data-mode');
+      else return;
       arrange();
     });
+    printButton.addEventListener('click', function () { printLarge(printButton); });
     arrange();
     var timer;
-    window.addEventListener('resize', function () { clearTimeout(timer); timer = setTimeout(arrange, 200); });
+    window.addEventListener('resize', function () { clearTimeout(timer); timer = setTimeout(fitImages, 200); });
 
-    // the song under the pointer or the keyboard, named below the picture, never on it
-    function name(e) {
-      var img = e.target.closest ? e.target.closest('.aa-tile') : null;
-      nowEl.textContent = img ? img.querySelector('img').alt : '';
+    // the close-up: the cover under the pointer or the keyboard, with its song or album
+    var card = document.querySelector('[data-card]');
+    var current = null;
+    if (card) {
+      var idle = card.querySelector('[data-card-idle]'), info = card.querySelector('[data-card-info]');
+      var art = card.querySelector('[data-card-art]'), title = card.querySelector('[data-card-title]');
+      var by = card.querySelector('[data-card-by]'), facts = card.querySelector('[data-card-facts]');
+      var list = card.querySelector('[data-card-songs]');
+      var day = function (t) { return t ? new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''; };
+      var fact = function (term, value) {
+        if (!value) return;
+        var row = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
+        dt.textContent = term; dd.textContent = value;
+        row.appendChild(dt); row.appendChild(dd); facts.appendChild(row);
+      };
+      var show = function (e) {
+        var el = e.target.closest ? e.target.closest('.aa-tile') : null;
+        if (!el || el === current) return;
+        if (current) current.classList.remove('is-close');
+        current = el;
+        el.classList.add('is-close');
+        var img = el.querySelector('img');
+        art.src = el.getAttribute('data-medium') || img.currentSrc || img.src;
+        facts.replaceChildren();
+        list.replaceChildren();
+        if (el._songs) {
+          var n = el._songs.length;
+          title.textContent = el.getAttribute('data-album') || el.getAttribute('data-name');
+          by.textContent = el._by || '';
+          if (n === 1) fact('Song', el._songs[0].getAttribute('data-name'));
+          else fact('Liked songs', String(n));
+          fact(n === 1 ? 'Liked' : 'First liked', day(el._liked));
+          el._songs.slice(0, n > 7 ? 6 : 7).forEach(function (s) {
+            var li = document.createElement('li');
+            li.textContent = s.getAttribute('data-name');
+            li.dir = 'auto';
+            list.appendChild(li);
+          });
+          if (n > 7) {
+            var more = document.createElement('li');
+            more.className = 'aa-card-more';
+            more.textContent = 'and ' + (n - 6) + ' more';
+            list.appendChild(more);
+          }
+          list.hidden = n < 2;
+        } else {
+          title.textContent = el.getAttribute('data-name');
+          by.textContent = el.getAttribute('data-by') || '';
+          fact('Album', el.getAttribute('data-album'));
+          fact('Liked', day(el._liked));
+          list.hidden = true;
+        }
+        idle.hidden = true;
+        info.hidden = false;
+      };
+      grid.addEventListener('mouseover', show);
+      grid.addEventListener('focusin', show);
     }
-    grid.addEventListener('mouseover', name);
-    grid.addEventListener('focusin', name);
-    grid.addEventListener('mouseleave', function () { nowEl.textContent = ''; });
-    grid.addEventListener('focusout', function () { nowEl.textContent = ''; });
 
     // print: swap in the 640px covers, wait for them, then open the print dialog
     function printLarge(button) {
-      var shown = tiles.filter(function (el) { return !el.hidden; });
+      var shown = shownTiles.map(function (p) { return p.el; });
       var label = button.textContent, left = shown.length;
       button.disabled = true;
       status.textContent = 'Loading the large covers for printing.';

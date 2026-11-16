@@ -12,7 +12,8 @@
 .vb-page ::selection { background: var(--accent-3-wash); }
 .vb-page > main { flex: 1 0 auto; }
 .vb-page .sq-wrap { max-width: var(--vb-max); padding-left: var(--gut); padding-right: var(--gut); }
-.vb-page .sq-crumb { color: var(--accent-3); }
+.vb-page .sq-crumb, .vb-page a.sq-crumb:visited { color: var(--accent-3); }
+.vb-page a.sq-crumb:hover { color: var(--ink); }
 .vb-page .sq-sitefooter-in,
 .vb-page .sq-sitefooter a, .vb-page .sq-sitefooter a:visited { color: var(--ink-3); }
 .vb-page .sq-sitefooter a:hover { color: var(--ink); }
@@ -81,13 +82,10 @@
   margin: 10px 0 0; font-size: clamp(14px, 0.98vw, 16px); line-height: 1.6;
   color: var(--ink-2); text-wrap: pretty;
 }
+.vb-body a, .vb-body a:visited { color: var(--accent-3); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.vb-body a:hover { color: var(--ink); }
 .vb-sign { margin: 6px 0 0; font-size: clamp(14px, 0.98vw, 16px); line-height: 1.6; color: var(--ink-2); }
 .vb-actions { margin-top: 20px; display: flex; flex-wrap: wrap; gap: var(--space-3); }
-a.vb-more, a.vb-more:visited {
-  align-self: center; white-space: nowrap; text-decoration: none; color: var(--accent-3);
-  font-family: var(--font-mono); font-size: 12.5px; letter-spacing: var(--meta-track);
-}
-a.vb-more:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .vb-meta {
   margin: 12px 0 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.6;
   letter-spacing: var(--meta-track); color: var(--ink-3);
@@ -146,8 +144,6 @@ a.vb-fine:hover { color: var(--ink); }
 .vb-wallwrap { min-width: 0; }
 .vb-wall-head { border-top-color: var(--accent-3); padding-top: 11px; margin-bottom: 16px; align-items: center; }
 .vb-wall-head .sq-section-label { margin: 0; font-size: inherit; font-weight: inherit; line-height: 1.6; color: var(--accent-3); }
-.vb-order { font-weight: 400; color: var(--ink-3); letter-spacing: var(--meta-track); white-space: nowrap; }
-.vb-order .sq-glyph { font-size: 1.2em; }
 /* Spotify attribution: the official logo files, unmodified */
 a.vb-spotify, a.vb-spotify:visited { display: block; flex: none; line-height: 0; margin-left: var(--space-5); }
 .vb-spotify img { display: block; width: 76px; height: auto; }
@@ -211,11 +207,6 @@ a.vb-title-link:focus-visible::after { outline: 2px solid var(--focus-ring); out
 @media (min-width: 901px) and (hover: hover) {
   .vb-artists, .vb-weeks { position: relative; z-index: 1; }
 }
-/* in and out: blue hour and vermillion, a pair that stays apart for colour-blind readers */
-.vb-io { margin-left: 8px; display: inline-flex; gap: 6px; }
-.vb-in { color: var(--accent-3); }
-.vb-out { color: var(--accent); }
-.vb-in.is-zero, .vb-out.is-zero { color: var(--ink-4); }
 .vb-weeks.is-new .vb-weeks-n {
   display: inline-block; padding: 0 6px; border-radius: var(--radius-sm);
   color: var(--accent-3); background: var(--accent-3-wash);

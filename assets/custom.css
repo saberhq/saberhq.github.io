@@ -74,6 +74,8 @@ strong, b { font-weight: 600; }
 a.sq-mark, a.sq-mark:visited { font-family: var(--font-pixel); font-size: 18px; font-weight: 400; line-height: 1; color: var(--ink); }
 a.sq-mark:hover { color: var(--ink); }
 .sq-crumb { font-family: var(--font-mono); font-size: var(--small-size); color: var(--ink-3); }
+a.sq-crumb, a.sq-crumb:visited { color: var(--ink-3); text-decoration: none; }
+a.sq-crumb:hover { color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .sq-nav { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) 20px; font-family: var(--font-mono); font-size: var(--small-size); }
 /* The off-site links: in the row on wide screens (the wrapper adds no box of its own), folded
    into one "Elsewhere" entry that opens a small menu on tablets and phones (see Responsive). */

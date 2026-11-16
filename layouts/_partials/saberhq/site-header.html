@@ -1,10 +1,10 @@
-{{/* Site header strip. Context: dict "page" . plus optional "crumb", "back" (dict "href" "label"),
+{{/* Site header strip. Context: dict "page" . plus optional "crumb", "crumbHref", "back" (dict "href" "label"),
      "nonav" and "hideMark". */}}
 {{ $p := .page }}
 <header class="sq-siteheader">
   <div class="sq-wrap sq-siteheader-in">
     {{ if not .hideMark }}<a class="sq-mark" href="{{ $p.Site.Home.RelPermalink }}">saberhq.com</a>{{ end }}
-    {{ with .crumb }}<span class="sq-crumb">/ {{ . }}</span>{{ end }}
+    {{ with .crumb }}{{ with $.crumbHref }}<a class="sq-crumb" href="{{ . }}"{{ if eq . $p.RelPermalink }} aria-current="page"{{ end }}>/ {{ $.crumb }}</a>{{ else }}<span class="sq-crumb">/ {{ . }}</span>{{ end }}{{ end }}
     <span class="sq-fill"></span>
     {{ with .back }}
       <a class="sq-back" href="{{ .href }}">{{ .label }}</a>

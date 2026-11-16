@@ -296,6 +296,7 @@ def arts_for_page(book: dict) -> dict:
             continue
         tiles.append({"id": song_id, "name": entry["name"], "url": entry["url"],
                       "by": ", ".join(artist["name"] for artist in entry["artists"]),
+                      "album": entry["album"].get("name"), "album_url": entry["album"].get("url"),
                       "small": pick_image(images, 64), "medium": pick_image(images, 300),
                       "large": pick_image(images, 640), "liked": entry["liked_at"],
                       "rank": entry.get("rank"), "colour": entry.get("colour")})

@@ -8,7 +8,6 @@
 {{- $top := $more.top | default dict }}
 {{- $hasTop := false }}
 {{- range $top }}{{ if or .tracks .artists }}{{ $hasTop = true }}{{ end }}{{ end }}
-{{- $arts := site.GetPage "/albumarts" }}
 {{- $url := .Params.playlist }}
 {{- if not $url }}{{ with $v }}{{ with .playlist }}{{ $url = .url }}{{ end }}{{ end }}{{ end }}
 {{- if not $url }}{{ warnf "vibes: no playlist URL - set `playlist:` in content/%s" .File.Path }}{{ end }}
@@ -38,16 +37,9 @@
   {{- end }}
 {{- end }}{{ end }}
 
-{{- /* "oldest -> newest" only when it's true: every song has a date and they never go backwards.
-     If Saber rearranges the playlist on purpose, or dates are missing, the note quietly goes and
-     his order stands. The body's weeks sentence needs at least one date. */ -}}
+{{- /* The body's weeks sentence needs at least one date. */ -}}
 {{- $anyDate := false }}
-{{- $chrono := gt $n 1 }}
-{{- $prev := 0 }}
-{{- range $songs }}
-  {{- with .added }}{{ $anyDate = true }}{{ if lt .Unix $prev }}{{ $chrono = false }}{{ end }}{{ $prev = .Unix }}
-  {{- else }}{{ $chrono = false }}{{ end }}
-{{- end }}
+{{- range $songs }}{{ if .added }}{{ $anyDate = true }}{{ end }}{{ end }}
 
 {{- /* Wall shape: the songs plus one open slot (at most ten cells); five across at most, two rows
      from six cells up. The stylesheet sizes the sleeves from these and the viewport. */ -}}
@@ -68,7 +60,7 @@
 </head>
 <body class="sq-shell vb-page{{ if $hasTop }} vb-page--top{{ end }}">
 
-  {{ partial "saberhq/site-header" (dict "page" . "crumb" "vibes" "nonav" true) }}
+  {{ partial "saberhq/site-header" (dict "page" . "crumb" "vibes" "crumbHref" .RelPermalink "nonav" true) }}
 
   <main>
     <div class="vb-stage{{ if eq $rows 1 }} vb-stage--one-row{{ end }}" style="--n-cols: {{ $cols }}; --n-rows: {{ $rows }}">
@@ -87,16 +79,13 @@
         {{- $body := .Params.body | default "" }}
         {{- if $anyDate }}{{ with .Params.weeksLine }}{{ $body = trim (printf "%s %s" $body .) " " }}{{ end }}{{ end }}
         {{- with $body }}
-        <p class="vb-body">{{ . }}</p>
+        <p class="vb-body">{{ $.RenderString . }}</p>
         {{- end }}
         {{- with .Params.signoff }}
         <p class="vb-sign">{{ . }}</p>
         {{- end }}
         <div class="vb-actions">
           <a class="sq-btn" href="{{ $url }}" target="_blank" rel="noopener">Listen on Spotify <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a>
-          {{- with $arts }}
-          <a class="vb-more" href="{{ .RelPermalink }}">{{ .Title }} <span class="sq-glyph" aria-hidden="true">→</span></a>
-          {{- end }}
         </div>
         {{- if $n }}
           {{- $ms := 0.0 }}
@@ -122,9 +111,6 @@
       <section class="vb-wallwrap" aria-labelledby="vb-wall-label">
         <div class="sq-section-head vb-wall-head">
           <h2 class="sq-section-label" id="vb-wall-label">On the wall</h2>
-          {{- if $chrono }}
-          <span class="vb-order"><span aria-hidden="true">·</span> oldest <span class="sq-glyph" aria-hidden="true">→</span><span class="vb-sr"> to </span> newest</span>
-          {{- end }}
           <span class="sq-section-fill"></span>
           {{ partial "vibes/spotify-logo" (dict "href" $url) }}
         </div>
@@ -156,7 +142,7 @@
               {{- with $by }}
               <p class="vb-artists" dir="auto" title="{{ . }}">{{ . }}</p>
               {{- end }}
-              {{- /* How long the song has been with Saber, and how often it came onto the wall and left. */}}
+              {{- /* How long the song has been with Saber. */}}
               {{- $st := index $stats $tr.id | default dict }}
               {{- $from := .added }}{{ $raw := $tr.added_at }}
               {{- with $st.since }}{{ with try (time.AsTime .) }}{{ if not .Err }}{{ $from = .Value }}{{ $raw = $st.since }}{{ end }}{{ end }}{{ end }}
@@ -169,9 +155,7 @@
                 {{- else if ge $days 14 }}{{ $text = printf "%d weeks" (div $days 7) }}
                 {{- else if ge $days 7 }}{{ $text = "1 week" }}{{ end }}
                 {{- $since := .Format "2 Jan 2006" }}
-                {{- $ins := int ($st.ins | default 1) }}{{ $outs := int ($st.outs | default 0) }}
-              <p class="vb-weeks{{ if lt $days 7 }} is-new{{ end }}" data-since="{{ $raw }}" title="A vibe since {{ $since }}"><span class="vb-weeks-n">{{ $text }}</span><span class="vb-sr"> a vibe, since {{ $since }}</span>
-                {{- if $st }}<span class="vb-io" title="Came onto the wall {{ $ins }} time{{ if ne $ins 1 }}s{{ end }}, left {{ $outs }} time{{ if ne $outs 1 }}s{{ end }}"><span class="vb-in{{ if not $ins }} is-zero{{ end }}"><span aria-hidden="true">↑</span>{{ $ins }}<span class="vb-sr"> time{{ if ne $ins 1 }}s{{ end }} onto the wall,</span></span><span class="vb-out{{ if not $outs }} is-zero{{ end }}"><span aria-hidden="true">↓</span>{{ $outs }}<span class="vb-sr"> time{{ if ne $outs 1 }}s{{ end }} off it</span></span></span>{{ end }}</p>
+              <p class="vb-weeks{{ if lt $days 7 }} is-new{{ end }}" data-since="{{ $raw }}" title="A vibe since {{ $since }}"><span class="vb-weeks-n">{{ $text }}</span><span class="vb-sr"> a vibe, since {{ $since }}</span></p>
               {{- end }}
             </div>
           </li>
