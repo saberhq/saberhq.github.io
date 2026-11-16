@@ -30,10 +30,8 @@
   --head: 50px;               /* wall head: rule + 11px + logo row + 16px */
   --t-size: clamp(13px, 0.86vw, 15px);    /* song title */
   --a-size: clamp(12px, 0.8vw, 13.5px);   /* artists */
-  /* caption budget, the tallest a caption gets: 10px pad + title (2 lines × 1.3) + 2px + artists
-     (2 lines × 1.35) + 4px + weeks (16px). Derived from the sizes above so it can't drift: a flat
-     92px undercounted it (98px at 1280–1440, 107px at 1920), and short windows overflowed. */
-  --cap: calc(32px + 2.6 * var(--t-size) + 2.7 * var(--a-size));
+  /* caption budget, the tallest a caption gets: 10px pad + title (2 lines × 1.3) + 2px + artists (2 lines × 1.35) */
+  --cap: calc(12px + 2.6 * var(--t-size) + 2.7 * var(--a-size));
   --art-r: 8px;               /* Spotify: 8px corners on large screens, 4px on small */
 }
 .vb-stage {
@@ -85,41 +83,49 @@
   margin: 12px 0 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.6;
   letter-spacing: var(--meta-track); color: var(--ink-3);
 }
+[data-view="wall"] .vb-meta[data-for="arts"], [data-view="arts"] .vb-meta[data-for="wall"] { display: none; }
 
-/* ---------- Player (JS + wide screens only) ----------
-   Idle: a hairline frame exactly the embed's height, so nothing moves when Spotify's own
-   player replaces it on the first click (there is no Spotify iframe before that click). */
-.vb-player { display: none; margin-top: auto; padding-top: 24px; }
-.vb-deck {
-  height: 152px; display: flex; align-items: center; gap: 16px; padding: 15px;
+/* ---------- Close-up (JS and a pointer, wide screens only): the cover under the pointer ---------- */
+.vb-closeup { display: none; margin-top: auto; padding-top: 24px; }
+.vb-closeup [hidden] { display: none; }
+.vb-closeup p { margin: 0; }
+.vb-closeup-idle, .vb-closeup-info {
+  height: 152px; padding: 15px; overflow: hidden;
   border: var(--rule-w) solid var(--rule); border-radius: 12px;
 }
-.vb-deck.is-live { padding: 0; border: 0; display: block; }
-.vb-deck iframe { display: block; width: 100%; height: 100%; border: 0; border-radius: 12px; }
-.vb-deck-copy { min-width: 0; }
-.vb-deck p { margin: 0; }
-.vb-deck-label {
+.vb-closeup-idle { display: flex; flex-direction: column; justify-content: center; }
+.vb-closeup-label {
   font-family: var(--font-mono); font-size: var(--label-size); font-weight: 500; line-height: 1.6;
   letter-spacing: var(--label-track); text-transform: uppercase; color: var(--accent-3);
 }
-.vb-deck-text { margin-top: 2px !important; font-size: var(--small-size); line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
-.vb-player-foot {
-  display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3);
-  margin: 8px 0 0; font-family: var(--font-mono); font-size: 10.5px; line-height: 1.5;
-  letter-spacing: var(--meta-track); color: var(--ink-3);
+.vb-closeup-note { margin-top: 2px !important; font-size: var(--small-size); line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
+.vb-closeup-info { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
+.vb-closeup-art {
+  display: block; width: 120px; height: 120px; max-width: none; border-radius: 6px;
+  outline: var(--rule-w) solid var(--rule); background: var(--surface-sunken);
 }
-a.vb-fine, a.vb-fine:visited { color: var(--ink-3); text-decoration: none; white-space: nowrap; }
-a.vb-fine:hover { color: var(--ink); }
-.vb-close {
-  white-space: nowrap; font: inherit; letter-spacing: inherit; color: var(--ink-2); background: none; border: 0; padding: 0; cursor: pointer;
-  transition: color var(--dur) var(--ease);
+.vb-closeup-words { min-width: 0; }
+.vb-closeup-title {
+  font-size: 15px; line-height: 1.3; font-weight: 500; letter-spacing: -0.006em; color: var(--ink); overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.vb-close:hover { color: var(--ink); }
-.vb-close[hidden] { display: none; }
-.vb-stage--one-row .vb-player { margin-top: 0; }
+.vb-closeup-by { margin-top: 2px !important; font-size: 13px; line-height: 1.35; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vb-closeup-by:empty { display: none; }
+.vb-closeup-facts { margin: 8px 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1px 10px; }
+.vb-closeup-facts > div { display: contents; }
+.vb-closeup-facts dt {
+  font-family: var(--font-mono); font-size: 10px; line-height: 17px;
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink-3); white-space: nowrap;
+}
+.vb-closeup-facts dd { margin: 0; font-size: 12.5px; line-height: 17px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vb-stage--one-row .vb-closeup { margin-top: 0; }
 @media (max-height: 820px) {
-  .vb-player { padding-top: 18px; }
-  .vb-deck { height: 80px; padding: 11px; gap: 14px; }   /* Spotify's compact 80px player */
+  .vb-closeup { padding-top: 18px; }
+  .vb-closeup-idle, .vb-closeup-info { height: 100px; padding: 11px; }
+  .vb-closeup-art { width: 76px; height: 76px; }
+  .vb-closeup-title { -webkit-line-clamp: 1; }
+  .vb-closeup-facts { margin-top: 4px; }
+  .vb-closeup-facts > div:nth-child(n+3) { display: none; }
 }
 /* Short desktop windows: tighten so the page still fits one screen */
 @media (min-width: 901px) and (max-height: 800px) {
@@ -129,16 +135,24 @@ a.vb-fine:hover { color: var(--ink); }
   .vb-body { line-height: 1.5; }
   .vb-actions { margin-top: 14px; }
   .vb-meta { margin-top: 8px; }
-  .vb-player { padding-top: 12px; }
+  .vb-closeup { padding-top: 12px; }
 }
 @media (min-width: 901px) and (max-height: 640px) {
   .vb-page { --pady: 12px; }
 }
 
-/* ---------- Wall ---------- */
-.vb-wallwrap { min-width: 0; }
+/* ---------- Right: the two views, named on the blue line; only the area under it changes ---------- */
+.vb-right { min-width: 0; display: flex; flex-direction: column; }
 .vb-wall-head { border-top-color: var(--accent-3); padding-top: 11px; margin-bottom: 16px; align-items: center; }
-.vb-wall-head .sq-section-label { margin: 0; font-size: inherit; font-weight: inherit; line-height: 1.6; color: var(--accent-3); }
+.vb-tabs { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+a.vb-tab, a.vb-tab:visited { line-height: 1.6; letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink-3); text-decoration: none; transition: color var(--dur) var(--ease); }
+a.vb-tab:hover { color: var(--ink); }
+a.vb-tab[aria-current="page"] { color: var(--accent-3); }
+a.vb-tab:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 2px; }
+.vb-tab-dot { color: var(--ink-4); }
+.vb-views { flex: 1 0 auto; display: grid; grid-template: "view" 1fr / minmax(0, 1fr); }
+.vb-view { grid-area: view; min-width: 0; }
+[data-view="wall"] .vb-view--arts, [data-view="arts"] .vb-view--wall { visibility: hidden; }
 /* Spotify attribution: the official logo files, unmodified */
 a.vb-spotify, a.vb-spotify:visited { display: block; flex: none; line-height: 0; margin-left: var(--space-5); }
 .vb-spotify img { display: block; width: 76px; height: auto; }
@@ -170,7 +184,6 @@ a.vb-spotify:focus-visible { outline: 2px solid var(--focus-ring); outline-offse
    hairline when a mouse click focuses it (the page drops only the mouse focus *ring*). */
 .vb-sleeve:empty { background: var(--surface-sunken); outline: var(--rule-w) solid var(--rule); }
 .vb-page .vb-sleeve:empty:focus:not(:focus-visible) { outline: var(--rule-w) solid var(--rule); }
-.vb-sleeve--cue { display: none; }
 
 .vb-cap { position: relative; padding-top: 10px; }
 /* Spotify's metadata is shown exactly as delivered: one string, one style, no text-transform.
@@ -183,7 +196,7 @@ a.vb-spotify:focus-visible { outline: 2px solid var(--focus-ring); outline-offse
 a.vb-title-link, a.vb-title-link:visited { color: var(--ink); text-decoration: none; }
 a.vb-title-link:hover { color: var(--accent-3); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
 /* the title link's hit area and focus ring span the whole caption, so the ring can't be clipped
-   (on desktop the artists and weeks lines sit above the hit area — see .vb-weeks below) */
+   (on desktop the artists line sits above the hit area, so its tooltip can show) */
 a.vb-title-link::after { content: ""; position: absolute; inset: 4px -6px -4px; border-radius: var(--radius); }
 a.vb-title-link:focus-visible { outline: none; }
 a.vb-title-link:focus-visible::after { outline: 2px solid var(--focus-ring); outline-offset: 0; }
@@ -191,21 +204,10 @@ a.vb-title-link:focus-visible::after { outline: 2px solid var(--focus-ring); out
   margin: 2px 0 0; font-size: var(--a-size); line-height: 1.35; color: var(--ink-3);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.vb-weeks {
-  margin: 4px 0 0;
-  font-family: var(--font-mono); font-size: 11px; line-height: 16px; letter-spacing: var(--meta-track);
-  color: var(--ink-2); white-space: nowrap;   /* "21 weeks · cued" never wraps: cueing changes no size */
-}
-/* Where captions are clamped (desktop), the artists and weeks lines sit above the title's
-   caption-wide hit area, so their own tooltips can show: the full artist list when it is cut
-   short (Spotify: full metadata must stay viewable) and the date the song went up. */
+/* Where captions are clamped (desktop), the artists line sits above the title's hit area, so the
+   full artist list shows in its tooltip when it is cut short (Spotify: full metadata must stay viewable). */
 @media (min-width: 901px) and (hover: hover) {
-  .vb-artists, .vb-weeks { position: relative; z-index: 1; }
-}
-.vb-weeks.is-new .vb-weeks-n {
-  display: inline-block; padding: 0 6px; border-radius: var(--radius-sm);
-  color: var(--accent-3); background: var(--accent-3-wash);
-  box-shadow: inset 0 0 0 var(--rule-w) var(--accent-3); line-height: 15px;
+  .vb-artists { position: relative; z-index: 1; }
 }
 
 /* hover / focus: the sleeve (the card) lifts; the art itself never changes */
@@ -214,10 +216,6 @@ a.vb-title-link:focus-visible::after { outline: 2px solid var(--focus-ring); out
 }
 [data-theme="dark"] .vb-item:hover .vb-sleeve, [data-theme="dark"] .vb-item:focus-within .vb-sleeve { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); }
 .vb-sleeve:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
-
-/* the song in the player: accent title and "· cued"; nothing changes size */
-.vb-item[aria-current="true"] a.vb-title-link { color: var(--accent-3); }
-.vb-item[aria-current="true"] .vb-weeks::after { content: " · cued"; color: var(--accent-3); }
 
 /* the open slot: "room for one more" — this is not a top ten */
 .vb-open { min-width: 0; margin: 0; }
@@ -287,11 +285,9 @@ a.vb-top-row:focus-visible { outline: 2px solid var(--focus-ring); outline-offse
 
 .vb-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
-/* wide screens with JS: each cover becomes a button that cues the song in the player */
-@media (min-width: 901px) {
-  .js .vb-player { display: block; }
-  .js .vb-sleeve--link { display: none; }
-  .js .vb-sleeve--cue { display: block; }
+/* the close-up needs a pointer: wide screens with JS and hover only */
+@media (min-width: 901px) and (hover: hover) {
+  .js .vb-closeup { display: block; }
 }
 
 /* ---------- Tablet and phone: story on top, wall below; the page scrolls ---------- */
@@ -302,6 +298,8 @@ a.vb-top-row:focus-visible { outline: 2px solid var(--focus-ring); outline-offse
     align-content: start; padding-top: var(--space-7); padding-bottom: var(--space-7);
   }
   .vb-story { max-width: 560px; padding-top: 0; }
+  .vb-views { display: block; }
+  [data-view="wall"] .vb-view--arts, [data-view="arts"] .vb-view--wall { display: none; }
   .vb-top-cols { grid-template-columns: minmax(0, 1fr); }
   /* touch screens have no hover tooltip: show Spotify's full metadata, never clamp it */
   .vb-title, .vb-artists { display: block; -webkit-line-clamp: none; overflow: visible; }
@@ -318,6 +316,7 @@ a.vb-top-row:focus-visible { outline: 2px solid var(--focus-ring); outline-offse
   .vb-title { font-size: 14px; }
   .vb-artists { font-size: 12.5px; }
   .vb-actions .sq-btn { flex: 1; }
+  .vb-tabs { gap: 8px; }
   .vb-top-list { grid-template-columns: minmax(0, 1fr); grid-auto-flow: row; grid-template-rows: none; }
   .vb-top-hint { display: none; }
   a.vb-spotify, a.vb-spotify:visited { margin-left: var(--space-3); }

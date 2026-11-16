@@ -1,41 +1,9 @@
-/* Album Arts (/vibes/albumarts/): loaded by layouts/albumarts.html after vibes.css */
+/* Album Arts, the second view of Saber Vibes: loaded by the Vibes page after vibes.css */
 
-/* ---- Geometry: the Saber Vibes stage, with the picture in the middle and the close-up on the right ---- */
-.aa-page {
-  --aa-left: clamp(200px, 17vw, 320px);
-  --aa-rail: clamp(160px, 15vw, 280px);
-  --aa-gap: clamp(28px, 2.6vw, 48px);
-  --pady: clamp(16px, 4vh - 8px, 40px);
-  --chrome: 123px;
-}
-.aa-stage {
-  --m-w: calc(min(100vw, var(--vb-max)) - 2 * var(--gut) - var(--aa-left) - var(--aa-rail) - 2 * var(--aa-gap));
-  --m-h: calc(100vh - var(--chrome) - 2 * var(--pady));
-  --m: clamp(300px, min(var(--m-w), var(--m-h)), 1200px);
-  grid-template-columns: minmax(var(--aa-left), 1fr) var(--m) minmax(var(--aa-rail), 1fr);
-  grid-template-areas: "story picture rail";
-  column-gap: var(--aa-gap);
-}
-@supports (height: 100dvh) { .aa-stage { --m-h: calc(100dvh - var(--chrome) - 2 * var(--pady)); } }
-.aa-story { grid-area: story; }
-.aa-picture { grid-area: picture; min-width: 0; }
-.aa-rail { grid-area: rail; min-width: 0; }
-
-/* ---------- Left: the controls ---------- */
-.aa-controls { margin-top: 28px; display: flex; flex-direction: column; gap: 18px; }
-.aa-controls[hidden] { display: none; }
-.aa-group-label {
-  margin: 0 0 8px; font-family: var(--font-mono); font-size: 11px; font-weight: 400; line-height: 1.6;
-  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink-3);
-}
-.aa-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.aa-hint { margin: 8px 0 0; font-size: 13px; line-height: 1.45; color: var(--ink-3); text-wrap: pretty; }
-.aa-hint[hidden] { display: none; }
-.aa-foot { margin-top: auto; padding-top: 24px; }
-.aa-print[hidden] { display: none; }
-.aa-foot .vb-meta { margin-top: 10px; }
-
-/* ---------- Middle: the covers, square, whole, edge to edge, nothing on top ---------- */
+/* ---- The view fills the space the wall takes; the picture is the largest square that fits ---- */
+.vb-view--arts { container: arts / size; }
+.aa-layout { height: 100%; display: flex; flex-direction: column; gap: 14px; }
+.aa-frame { flex: 1 1 0; min-height: 0; min-width: 0; container: frame / size; }
 .aa-grid {
   list-style: none; margin: 0; padding: 0;
   display: grid; width: 100%; aspect-ratio: 1;
@@ -43,6 +11,28 @@
   grid-template-rows: repeat(var(--n, 10), minmax(0, 1fr));
   background: var(--surface-sunken);
 }
+@supports (width: 1cqmin) { .aa-grid { width: 100cqmin; height: 100cqmin; } }
+
+/* ---- Controls: one row above the picture, or a column beside it when the space is wide ---- */
+.aa-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+.aa-controls[hidden] { display: none; }
+.aa-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.aa-group-label {
+  display: none; margin: 0 0 8px; font-family: var(--font-mono); font-size: 11px; font-weight: 400; line-height: 1.6;
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink-3);
+}
+.aa-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.aa-hint { display: none; margin: 8px 0 0; font-size: 13px; line-height: 1.45; color: var(--ink-3); text-wrap: pretty; }
+@container arts (min-aspect-ratio: 13 / 10) {
+  .aa-layout { flex-direction: row-reverse; justify-content: flex-end; gap: 28px; }
+  .aa-frame { flex: 0 0 auto; width: min(100cqh, 100cqw - 228px); height: 100%; }
+  .aa-controls { flex: 0 0 200px; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 18px; }
+  .aa-group { display: block; }
+  .aa-group-label, .aa-hint { display: block; }
+}
+.aa-controls .aa-hint[hidden] { display: none; }
+
+/* ---- The covers: square, whole, edge to edge, nothing on top ---- */
 .aa-tile { position: relative; margin: 0; min-width: 0; min-height: 0; }
 .aa-tile[hidden] { display: none; }
 .aa-tile a { display: block; width: 100%; height: 100%; }
@@ -51,66 +41,33 @@
 /* the cover in the close-up keeps a thin paper frame, so the eye can find it again */
 .aa-tile.is-close::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 2px var(--paper); pointer-events: none; }
 
-/* ---------- Right: the close-up ---------- */
-.aa-rail .vb-wall-head { margin-bottom: 16px; }
-.aa-card { display: none; }
-.js .aa-card { display: block; }
-.aa-card [hidden] { display: none; }
-.aa-card-idle { padding: 15px; border: var(--rule-w) solid var(--rule); border-radius: 12px; }
-.aa-card-idle-text { margin: 0; font-size: var(--small-size); line-height: 1.45; color: var(--ink-2); text-wrap: pretty; }
-.aa-card-art {
-  display: block; width: 100%; height: auto; aspect-ratio: 1; max-width: none;
-  border-radius: var(--art-r); outline: var(--rule-w) solid var(--rule); background: var(--surface-sunken);
-}
-.aa-card-title { margin: 14px 0 0; font-size: 16px; line-height: 1.3; font-weight: 500; letter-spacing: -0.006em; color: var(--ink); overflow-wrap: anywhere; }
-.aa-card-by { margin: 3px 0 0; font-size: 14px; line-height: 1.35; color: var(--ink-3); overflow-wrap: anywhere; }
-.aa-card-by:empty { display: none; }
-.aa-card-facts { margin: 12px 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; }
-.aa-card-facts > div { display: contents; }
-.aa-card-facts dt {
-  font-family: var(--font-mono); font-size: 10.5px; line-height: 19px;
-  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink-3); white-space: nowrap;
-}
-.aa-card-facts dd { margin: 0; font-size: 13px; line-height: 19px; color: var(--ink-2); overflow-wrap: anywhere; }
-.aa-card-songs { margin: 12px 0 0; padding: 0; list-style: none; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
-.aa-card-songs li { margin: 2px 0 0; padding-left: 1.3em; text-indent: -1.3em; overflow-wrap: anywhere; }
-.aa-card-songs li::before { content: "— "; color: var(--accent-3); }
-.aa-card-songs .aa-card-more { text-indent: 0; color: var(--ink-3); }
-.aa-card-songs .aa-card-more::before { content: none; }
-
-/* Short windows: tighter controls, and the close-up's cover gives way to the words */
-@media (min-width: 901px) and (max-height: 720px) {
-  .aa-controls { margin-top: 18px; gap: 12px; }
-  .aa-group-label { margin-bottom: 6px; }
-  .aa-foot { padding-top: 14px; }
-  .aa-card-art { width: 50%; }
-}
-
-/* ---------- Tablet and phone: words, then the logo line, then the picture ---------- */
+/* ---- Tablet and phone: the chips, then the picture as wide as the page ---- */
 @media (max-width: 900px) {
-  .aa-stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: "story" "rail" "picture"; row-gap: var(--space-5); }
-  .aa-controls { margin-top: 20px; gap: 14px; }
-  .aa-foot { padding-top: 18px; }
-  .js .aa-card { display: none; }
-  .aa-rail .vb-wall-head { margin-bottom: 0; }
-  .aa-rail .sq-section-label { visibility: hidden; }
+  .vb-view--arts, .aa-frame { container: none; }
+  .aa-layout { display: block; height: auto; }
+  .aa-controls { margin-bottom: 14px; }
+  .aa-grid { width: 100%; height: auto; }
 }
 
+/* ---- Print (Album Arts only): the name, the picture and the Spotify logo ---- */
 @media print {
   @page { margin: 10mm; }
-  .aa-page .sq-siteheader, .aa-page .sq-sitefooter, .aa-page .sq-kicker, .aa-page .vb-lede, .aa-page .vb-body,
-  .aa-controls, .aa-foot, .aa-card, .aa-rail .sq-section-label { display: none !important; }
-  html:has(.aa-page), .aa-page, .aa-page main { display: block; min-height: 0; background: #fff; }
-  .aa-stage { display: block; padding: 0; min-height: 0; max-width: none; }
-  .aa-story { display: block; padding: 0 0 4mm; max-width: none; }
-  .aa-page .vb-wordmark { margin: 0; font-size: 14pt; color: #000; }
-  .aa-page .vb-wordmark-line { display: inline; }
-  .aa-grid { background: none; }
+  html:has([data-view="arts"]), body:has([data-view="arts"]), body:has([data-view="arts"]) main { display: block; min-height: 0; background: #fff; }
+  body:has([data-view="arts"]) .sq-siteheader, body:has([data-view="arts"]) .sq-sitefooter, body:has([data-view="arts"]) .vb-top,
+  [data-view="arts"] .sq-kicker, [data-view="arts"] .vb-lede, [data-view="arts"] .vb-body, [data-view="arts"] .vb-sign,
+  [data-view="arts"] .vb-actions, [data-view="arts"] .vb-meta, [data-view="arts"] .vb-closeup, [data-view="arts"] .vb-tabs,
+  [data-view="arts"] .vb-view--wall, [data-view="arts"] .aa-controls { display: none !important; }
+  [data-view="arts"].vb-stage, [data-view="arts"] .vb-right, [data-view="arts"] .vb-views { display: block; padding: 0; min-height: 0; max-width: none; }
+  [data-view="arts"] .vb-story { display: block; padding: 0 0 4mm; max-width: none; }
+  [data-view="arts"] .vb-wordmark { margin: 0; font-size: 14pt; color: #000; }
+  [data-view="arts"] .vb-wordmark-line { display: inline; }
+  [data-view="arts"] .vb-wall-head { border: 0; padding: 0 0 3mm; margin: 0; justify-content: flex-end; }
+  .vb-view--arts, .aa-frame, .aa-layout { container: none; display: block; height: auto; visibility: visible; }
+  .aa-grid { width: 100%; height: auto; background: none; }
   .aa-tile { break-inside: avoid; }
   .aa-tile.is-close::after { display: none; }
   .aa-tile img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .aa-rail .vb-wall-head { border: 0; padding: 4mm 0 0; margin: 0; justify-content: flex-end; }
-  .aa-page .vb-spotify img { width: 22mm; }
-  .aa-page .vb-spotify .vb-spotify-dark { display: none !important; }
-  .aa-page .vb-spotify .vb-spotify-light { display: block !important; }
+  [data-view="arts"] .vb-spotify img { width: 22mm; }
+  [data-view="arts"] .vb-spotify .vb-spotify-dark { display: none !important; }
+  [data-view="arts"] .vb-spotify .vb-spotify-light { display: block !important; }
 }

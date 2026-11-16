@@ -1,0 +1,652 @@
+{{- /* Saber Vibes, one page with two views: the wall (/vibes/) and Album Arts (/vibes/albumarts/). Context: the page; `view: arts` opens Album Arts. */ -}}
+{{- $main := . }}
+{{- with site.GetPage "/vibes" }}{{ $main = . }}{{ end }}
+{{- $view := cond (eq .Params.view "arts") "arts" "wall" }}
+{{- $wallHref := $main.RelPermalink }}
+{{- $artsHref := "/vibes/albumarts/" }}
+{{- $artsPage := site.GetPage "/albumarts" }}
+{{- with $artsPage }}{{ $artsHref = .RelPermalink }}{{ end }}
+{{- $titleWall := partial "docs/html-head-title" $main | plainify }}
+{{- $titleArts := "saberhq.com - Album Arts" }}
+{{- with $artsPage }}{{ $titleArts = partial "docs/html-head-title" . | plainify }}{{ end }}
+
+{{- $v := site.Data.vibes }}
+{{- $more := site.Data.vibes_more | default dict }}
+{{- $top := $more.top | default dict }}
+{{- $hasTop := false }}
+{{- range $top }}{{ if or .tracks .artists }}{{ $hasTop = true }}{{ end }}{{ end }}
+{{- $url := $main.Params.playlist }}
+{{- if not $url }}{{ with $v }}{{ with .playlist }}{{ $url = .url }}{{ end }}{{ end }}{{ end }}
+{{- if not $url }}{{ warnf "vibes: no playlist URL - set `playlist:` in content/vibes/index.md" }}{{ end }}
+
+{{- /* The wall: the first ten songs, in playlist order; entries without an id or a name are skipped. */ -}}
+{{- $songs := slice }}
+{{- with $v }}{{ with .tracks }}
+  {{- range . }}
+    {{- if and (lt (len $songs) 10) (reflect.IsMap .) .id .name }}{{ $songs = $songs | append . }}{{ end }}
+  {{- end }}
+{{- end }}{{ end }}
+{{- $n := len $songs }}
+{{- $updated := false }}
+{{- with $v }}{{ with .updated_at }}
+  {{- $raw := . }}
+  {{- with try (time.AsTime $raw) }}
+    {{- with .Err }}{{ warnf "vibes: can't read updated_at %q (%s)" $raw . }}{{ else }}{{ $updated = .Value }}{{ end }}
+  {{- end }}
+{{- end }}{{ end }}
+{{- /* Wall shape: the songs plus one open slot (at most ten cells); five across at most, two rows from six cells up. */ -}}
+{{- $slots := cond (lt $n 10) (add $n 1) 10 }}
+{{- $cols := cond (le $slots 5) $slots (div (add $slots 1) 2) }}
+{{- $rows := cond (le $slots 5) 1 2 }}
+
+{{- /* Album Arts: one tile per liked song, most played first; the covers are drawn here only on its own address. */ -}}
+{{- $tiles := (site.Data.albumarts | default dict).tiles | default slice }}
+{{- $total := len $tiles }}
+{{- $keys := slice }}
+{{- range $tiles }}{{ $keys = $keys | append (.album_url | default .medium | default .id) }}{{ end }}
+{{- $albums := len (uniq $keys) }}
+{{- $first := 10 }}
+{{- if lt $total 100 }}{{ $first = int (math.Floor (math.Sqrt $total)) }}{{ end }}
+<!DOCTYPE html>
+<html lang="{{ default .Site.Language.Lang .Site.LanguageCode }}" dir="{{ default "ltr" .Site.Language.LanguageDirection }}">
+<head>
+  {{ partial "docs/html-head" . }}
+  {{ partial "docs/inject/head" . }}
+  {{- range slice "vibes.css" "albumarts.css" }}
+  {{- $css := resources.Get . | resources.Minify | resources.Fingerprint "sha384" }}
+  <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}" crossorigin="anonymous">
+  {{- end }}
+  <script>document.documentElement.classList.add('js');</script>
+  {{- if or $n $total }}
+  <link rel="preconnect" href="https://i.scdn.co">
+  {{- end }}
+</head>
+<body class="sq-shell vb-page{{ if $hasTop }} vb-page--top{{ end }}">
+
+  {{ partial "saberhq/site-header" . }}
+
+  <main>
+    <div class="vb-stage{{ if eq $rows 1 }} vb-stage--one-row{{ end }}" style="--n-cols: {{ $cols }}; --n-rows: {{ $rows }}" data-stage data-view="{{ $view }}" data-wall-href="{{ $wallHref }}" data-arts-href="{{ $artsHref }}" data-title-wall="{{ $titleWall }}" data-title-arts="{{ $titleArts }}" data-arts-data="{{ $wallHref }}albumarts.json">
+
+      <section class="vb-story" aria-labelledby="vb-title">
+        {{- with $main.Params.kicker }}
+        <p class="sq-kicker">{{ . }}</p>
+        {{- end }}
+        {{- /* The page name as a sleeve title block, one word per line; the full stop is decoration */}}
+        {{- $words := split ($main.Title | default "Saber Vibes") " " }}
+        {{- $last := sub (len $words) 1 }}
+        <h1 class="vb-wordmark" id="vb-title">{{ range $i, $w := $words }}{{ if $i }} {{ end }}<span class="vb-wordmark-line">{{ $w }}{{ if eq $i $last }}<span class="vb-wordmark-dot" aria-hidden="true">.</span>{{ end }}</span>{{ end }}</h1>
+        {{- with $main.Params.lede }}
+        <p class="vb-lede">{{ . }}</p>
+        {{- end }}
+        {{- with $main.Params.body }}
+        <p class="vb-body">{{ $main.RenderString . }}</p>
+        {{- end }}
+        {{- with $main.Params.signoff }}
+        <p class="vb-sign">{{ . }}</p>
+        {{- end }}
+        <div class="vb-actions">
+          <a class="sq-btn" href="{{ $url }}" target="_blank" rel="noopener">Listen on Spotify <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a>
+        </div>
+        {{- if $n }}
+          {{- $ms := 0.0 }}
+          {{- range $songs }}{{ $ms = add $ms (.duration_ms | default 0) }}{{ end }}
+        <p class="vb-meta" data-for="wall">{{ $n }} song{{ if ne $n 1 }}s{{ end }} <span aria-hidden="true">·</span> {{ int (math.Round (div $ms 60000.0)) }} min
+          {{- with $updated }} <span aria-hidden="true">·</span> updated <time datetime="{{ .Format "2006-01-02" }}">{{ .Format "2 Jan 2006" }}</time>{{ end }}</p>
+        {{- end }}
+        {{- if $total }}
+        <p class="vb-meta" data-for="arts">{{ $total }} liked song{{ if ne $total 1 }}s{{ end }} <span aria-hidden="true">·</span> {{ $albums }} album{{ if ne $albums 1 }}s{{ end }}</p>
+        {{- end }}
+        {{- /* The close-up: the cover under the pointer, in either view (JS and a pointer only). */}}
+        <div class="vb-closeup" data-card aria-hidden="true">
+          <div class="vb-closeup-idle" data-card-idle>
+            <p class="vb-closeup-label">Close-up</p>
+            <p class="vb-closeup-note">Point at a cover to see it here. Click it to open on Spotify.</p>
+          </div>
+          <div class="vb-closeup-info" data-card-info hidden>
+            <img class="vb-closeup-art" data-card-art width="300" height="300" alt="" decoding="async" referrerpolicy="no-referrer">
+            <div class="vb-closeup-words">
+              <p class="vb-closeup-title" data-card-title dir="auto"></p>
+              <p class="vb-closeup-by" data-card-by dir="auto"></p>
+              <dl class="vb-closeup-facts" data-card-facts></dl>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="vb-right" aria-label="Songs">
+        <div class="sq-section-head vb-wall-head">
+          <nav class="vb-tabs" aria-label="Views">
+            <a class="vb-tab" href="{{ $wallHref }}" data-to="wall"{{ if eq $view "wall" }} aria-current="page"{{ end }}>On the wall</a>
+            <span class="vb-tab-dot" aria-hidden="true">·</span>
+            <a class="vb-tab" href="{{ $artsHref }}" data-to="arts"{{ if eq $view "arts" }} aria-current="page"{{ end }}>Album Arts</a>
+          </nav>
+          <span class="sq-section-fill"></span>
+          {{ partial "vibes/spotify-logo" (dict "href" $url) }}
+        </div>
+        <div class="vb-views">
+
+          <div class="vb-view vb-view--wall" data-panel="wall"{{ if ne $view "wall" }} inert{{ end }}>
+            <h2 class="vb-sr">On the wall</h2>
+            {{- if $n }}
+            <ul class="vb-wall" role="list">
+              {{- range $songs }}
+                {{- $tr := . }}
+                {{- $names := slice }}
+                {{- range $tr.artists }}{{ with .name }}{{ $names = $names | append . }}{{ end }}{{ end }}
+                {{- $by := delimit $names ", " }}
+                {{- $href := $tr.url | default (printf "https://open.spotify.com/track/%v" $tr.id) }}
+                {{- /* Cover: the 300px rendition, 640px in srcset, hotlinked from Spotify (never re-hosted) */}}
+                {{- $ims := slice }}{{ with $tr.album }}{{ with .images }}{{ $ims = . }}{{ end }}{{ end }}
+                {{- $src := "" }}{{ $big := "" }}
+                {{- range $ims }}
+                  {{- $iw := int (.width | default 0) }}
+                  {{- if and (eq $iw 300) (not $src) }}{{ $src = .url }}{{ end }}
+                  {{- if and (eq $iw 640) (not $big) }}{{ $big = .url }}{{ end }}
+                {{- end }}
+                {{- with $ims }}{{ if not $src }}{{ $src = (index . 0).url }}{{ end }}{{ end }}
+                {{- /* For the close-up: the date liked and the most-played place, from the liked songs */}}
+                {{- $liked := "" }}{{ $pos := 0 }}
+                {{- range $i, $t := $tiles }}{{ if eq $t.id $tr.id }}{{ $liked = $t.liked }}{{ if $t.rank }}{{ $pos = add $i 1 }}{{ end }}{{ end }}{{ end }}
+              <li class="vb-item" data-name="{{ $tr.name }}" data-by="{{ $by }}"{{ with $tr.album }}{{ with .name }} data-album="{{ . }}"{{ end }}{{ end }}{{ with $liked }} data-liked="{{ . }}"{{ end }}{{ with $pos }} data-pos="{{ . }}"{{ end }}{{ with $src }} data-medium="{{ . }}"{{ end }}>
+                <a class="vb-sleeve" href="{{ $href }}" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">{{ with $src }}<img src="{{ . }}"{{ if and $big (ne $big .) }} srcset="{{ . }} 300w, {{ $big }} 640w" sizes="(max-width: 600px) 46vw, 14vw"{{ end }} width="300" height="300" alt="" decoding="async" referrerpolicy="no-referrer">{{ end }}</a>
+                <div class="vb-cap">
+                  <p class="vb-title" dir="auto" title="{{ $tr.name }}"><a class="vb-title-link" href="{{ $href }}" target="_blank" rel="noopener">{{ $tr.name }}<span class="vb-sr"> — opens on Spotify</span></a></p>
+                  {{- with $by }}
+                  <p class="vb-artists" dir="auto" title="{{ . }}">{{ . }}</p>
+                  {{- end }}
+                </div>
+              </li>
+              {{- end }}
+              {{- if lt $n 10 }}
+              <li class="vb-open" aria-hidden="true"><div class="vb-open-sleeve">room for<br>{{ index (slice "zero" "one" "two" "three" "four" "five" "six" "seven" "eight" "nine") (sub 10 $n) }} more</div></li>
+              {{- end }}
+            </ul>
+            {{- else }}
+            <p class="vb-empty">The wall is empty for a moment — the playlist itself is <a href="{{ $url }}" target="_blank" rel="noopener">on Spotify <span aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a></p>
+            {{- end }}
+          </div>
+
+          <div class="vb-view vb-view--arts" data-panel="arts"{{ if ne $view "arts" }} inert{{ end }}>
+            <h2 class="vb-sr">Album Arts</h2>
+            {{- if $total }}
+            <div class="aa-layout">
+            <div class="aa-controls" data-controls hidden>
+              <div class="aa-group">
+                <p class="aa-group-label" id="aa-l-covers">Covers</p>
+                <div class="aa-chips" role="group" aria-labelledby="aa-l-covers">
+                  <button class="vb-chip" type="button" data-mode="albums" aria-pressed="true" title="A cover’s size shows how many of its songs are liked">Per album</button>
+                  <button class="vb-chip" type="button" data-mode="songs" aria-pressed="false">Per song</button>
+                </div>
+                <p class="aa-hint" data-hint>A cover’s size shows how many of its songs are liked.</p>
+              </div>
+              <div class="aa-group">
+                <p class="aa-group-label" id="aa-l-order">Order</p>
+                <div class="aa-chips" role="group" aria-labelledby="aa-l-order">
+                  <button class="vb-chip" type="button" data-order="played" aria-pressed="true">Most played</button>
+                  <button class="vb-chip" type="button" data-order="colour" aria-pressed="false">Colour</button>
+                  <button class="vb-chip" type="button" data-order="liked" aria-pressed="false">Date liked</button>
+                </div>
+              </div>
+              <div class="aa-group">
+                <p class="aa-group-label" id="aa-l-size">Grid</p>
+                <div class="aa-chips" role="group" aria-labelledby="aa-l-size" data-sizes></div>
+              </div>
+              <div class="aa-group aa-group--print">
+                <button class="vb-chip aa-print" type="button" data-print>Print</button>
+              </div>
+            </div>
+            <div class="aa-frame">
+              <ol class="aa-grid" style="--n: {{ $first }}" data-grid data-first="{{ $first }}" data-total="{{ $total }}">
+                {{- if eq $view "arts" }}
+                {{- range $i, $t := $tiles }}
+                <li class="aa-tile"{{ if ge $i (mul $first $first) }} hidden{{ end }} data-name="{{ $t.name }}" data-by="{{ $t.by }}"{{ with $t.album }} data-album="{{ . }}"{{ end }}{{ with $t.album_url }} data-album-url="{{ . }}"{{ end }} data-liked="{{ $t.liked }}"{{ if $t.rank }} data-pos="{{ add $i 1 }}"{{ end }}{{ with $t.colour }} data-colour="{{ . }}"{{ end }}{{ with $t.medium }} data-medium="{{ . }}"{{ end }}{{ with $t.large }} data-large="{{ . }}"{{ end }}><a href="{{ $t.url }}" target="_blank" rel="noopener"><img src="{{ $t.medium | default $t.small }}"{{ if and $t.small $t.medium }} srcset="{{ $t.small }} 64w, {{ $t.medium }} 300w{{ with $t.large }}, {{ . }} 640w{{ end }}" sizes="(max-width: 900px) 10vw, 64px"{{ end }} width="300" height="300" alt="{{ $t.name }}{{ with $t.by }} by {{ . }}{{ end }}" loading="lazy" decoding="async" referrerpolicy="no-referrer"></a></li>
+                {{- end }}
+                {{- end }}
+              </ol>
+            </div>
+            </div>
+            <p class="vb-sr" aria-live="polite" data-status></p>
+            {{- else }}
+            <p class="vb-empty">The covers aren’t here for a moment — the songs themselves are <a href="{{ $url }}" target="_blank" rel="noopener">on Spotify <span aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a></p>
+            {{- end }}
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    {{- if $hasTop }}
+    <section class="vb-top" aria-labelledby="vb-top-label">
+      <details class="vb-top-fold" id="most-played">
+        <summary class="vb-top-sum"><span class="vb-top-label" id="vb-top-label">Most played</span><span class="vb-top-hint">songs and artists <span aria-hidden="true">·</span> 4 weeks, 6 months, a year</span><span class="vb-top-mark" aria-hidden="true"></span></summary>
+        <div class="vb-top-tabs" role="group" aria-label="Period" data-top-tabs hidden>
+          {{- range $i, $r := slice (dict "key" "short" "label" "4 weeks") (dict "key" "medium" "label" "6 months") (dict "key" "long" "label" "1 year") }}
+          {{- if index $top $r.key }}<button class="vb-chip" type="button" data-range="{{ $r.key }}" aria-pressed="false">{{ $r.label }}</button>{{ end }}
+          {{- end }}
+        </div>
+        {{- range slice (dict "key" "short" "label" "Last 4 weeks") (dict "key" "medium" "label" "Last 6 months") (dict "key" "long" "label" "Last year") }}
+        {{- $period := . }}
+        {{- with index $top .key }}
+        <div class="vb-top-panel" data-range="{{ $period.key }}">
+          <h3 class="vb-top-period">{{ $period.label }}</h3>
+          <div class="vb-top-cols">
+            {{- range slice (dict "name" "Songs" "items" .tracks) (dict "name" "Artists" "items" .artists) }}
+            {{- $col := . }}
+            {{- with .items }}
+            <div class="vb-top-col">
+              <h4 class="vb-top-kind">{{ $col.name }}</h4>
+              <ol class="vb-top-list">
+                {{- range . }}
+                <li><a class="vb-top-row" href="{{ .url }}" target="_blank" rel="noopener">{{ with .image }}<img src="{{ . }}" width="40" height="40" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">{{ else }}<span class="vb-top-blank"></span>{{ end }}<span class="vb-top-text"><span class="vb-top-name" dir="auto">{{ .name }}</span>{{ with .by }}<span class="vb-top-by" dir="auto">{{ . }}</span>{{ end }}</span><span class="sq-sr-only"> (opens on Spotify in a new tab)</span></a></li>
+                {{- end }}
+              </ol>
+            </div>
+            {{- end }}
+            {{- end }}
+          </div>
+        </div>
+        {{- end }}
+        {{- end }}
+      </details>
+    </section>
+    {{- end }}
+  </main>
+
+  {{ partial "saberhq/site-footer" . }}
+  {{ partial "docs/inject/body" . }}
+
+  {{- /* The data, also published at /vibes/*.json: the CI sync falls back to these deployed copies when Spotify can't be reached. */}}
+  {{- with $v }}{{ (resources.FromString "vibes/vibes.json" (jsonify .)).Publish }}{{ end }}
+  {{- with site.Data.vibes_more }}{{ (resources.FromString "vibes/more.json" (jsonify .)).Publish }}{{ end }}
+  {{- with site.Data.albumarts }}{{ (resources.FromString "vibes/albumarts.json" (jsonify .)).Publish }}{{ end }}
+
+  {{/* Saber Vibes: most-played tabs, the two views, the close-up, and Album Arts' covers. */}}
+  <script>
+  (function () {
+    var stage = document.querySelector('[data-stage]');
+    if (!stage) return;
+
+    // most played: one period at a time
+    var tabs = document.querySelector('[data-top-tabs]');
+    if (tabs) {
+      var panels = document.querySelectorAll('.vb-top-panel');
+      var pick = function (range) {
+        tabs.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-range') === range ? 'true' : 'false'); });
+        panels.forEach(function (el) { el.hidden = el.getAttribute('data-range') !== range; });
+      };
+      tabs.hidden = false;
+      tabs.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) pick(b.getAttribute('data-range')); });
+      var firstTab = tabs.querySelector('button');
+      if (firstTab) pick(firstTab.getAttribute('data-range'));
+      if (location.hash === '#most-played') tabs.parentNode.open = true;
+    }
+
+    // the close-up: the cover under the pointer or the keyboard, with its song or album
+    var card = document.querySelector('[data-card]');
+    var idle = card.querySelector('[data-card-idle]'), info = card.querySelector('[data-card-info]');
+    var art = card.querySelector('[data-card-art]'), title = card.querySelector('[data-card-title]');
+    var by = card.querySelector('[data-card-by]'), facts = card.querySelector('[data-card-facts]');
+    var current = null;
+    function day(t) { return t ? new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''; }
+    function place(pos) { return +pos ? 'No. ' + pos + ', past year' : ''; }
+    function fact(term, value) {
+      if (!value) return;
+      var row = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
+      dt.textContent = term; dd.textContent = value;
+      row.appendChild(dt); row.appendChild(dd); facts.appendChild(row);
+    }
+    function show(el) {
+      if (el === current) return;
+      if (current) current.classList.remove('is-close');
+      current = el;
+      el.classList.add('is-close');
+      var img = el.querySelector('img');
+      var src = el.getAttribute('data-medium') || (img ? img.currentSrc || img.src : '');
+      art.hidden = !src;
+      if (src) art.src = src;
+      facts.replaceChildren();
+      if (el._songs) {
+        var n = el._songs.length;
+        title.textContent = el.getAttribute('data-album') || el.getAttribute('data-name');
+        by.textContent = el._by || '';
+        if (n === 1) fact('Song', el._songs[0].getAttribute('data-name'));
+        else fact('Liked songs', String(n));
+        fact(n === 1 ? 'Liked' : 'First liked', day(el._liked));
+        fact('Most played', place(el._pos));
+      } else {
+        title.textContent = el.getAttribute('data-name');
+        by.textContent = el.getAttribute('data-by') || '';
+        fact('Album', el.getAttribute('data-album'));
+        fact('Liked', day(Date.parse(el.getAttribute('data-liked'))));
+        fact('Most played', place(el.getAttribute('data-pos')));
+      }
+      idle.hidden = true;
+      info.hidden = false;
+    }
+    function rest() {
+      if (current) current.classList.remove('is-close');
+      current = null;
+      idle.hidden = false;
+      info.hidden = true;
+    }
+    function point(e) {
+      var el = e.target.closest ? e.target.closest('.vb-item, .aa-tile') : null;
+      if (el && !el.hidden) show(el);
+    }
+    stage.addEventListener('mouseover', point);
+    stage.addEventListener('focusin', point);
+
+    // Album Arts: covers per album or per song, three orders, two sizes; Print loads the large covers first
+    var arts = (function () {
+      var grid = document.querySelector('[data-grid]');
+      if (!grid) return { start: function () {}, load: function () { return Promise.resolve(); } };
+      var controls = document.querySelector('[data-controls]');
+      var sizesBox = document.querySelector('[data-sizes]');
+      var hint = document.querySelector('[data-hint]');
+      var status = document.querySelector('[data-status]');
+      var started = false, loading = null, songs = [], albums = null, sizes = [], shownTiles = [];
+      var state = { n: 10, order: 'played', mode: 'albums' };
+
+      function tileFrom(t, i) {
+        var li = document.createElement('li'), a = document.createElement('a'), img = document.createElement('img');
+        li.className = 'aa-tile';
+        li.hidden = true;
+        var data = { name: t.name, by: t.by, album: t.album, 'album-url': t.album_url, liked: t.liked, colour: t.colour, medium: t.medium, large: t.large, pos: t.rank ? i + 1 : '' };
+        Object.keys(data).forEach(function (k) { if (data[k]) li.setAttribute('data-' + k, data[k]); });
+        a.href = t.url; a.target = '_blank'; a.rel = 'noopener';
+        img.src = t.medium || t.small || '';
+        if (t.small && t.medium) img.srcset = t.small + ' 64w, ' + t.medium + ' 300w' + (t.large ? ', ' + t.large + ' 640w' : '');
+        img.width = 300; img.height = 300;
+        img.alt = t.name + (t.by ? ' by ' + t.by : '');
+        img.loading = 'lazy'; img.decoding = 'async'; img.referrerPolicy = 'no-referrer';
+        a.appendChild(img); li.appendChild(a);
+        return li;
+      }
+      // on the wall's address the covers come from the published data, fetched when the page is idle or Album Arts is opened
+      function load() {
+        if (grid.children.length) return Promise.resolve();
+        if (!loading) {
+          loading = fetch(stage.getAttribute('data-arts-data')).then(function (r) {
+            if (!r.ok) throw new Error(r.status);
+            return r.json();
+          }).then(function (d) {
+            if (grid.children.length) return;
+            var frag = document.createDocumentFragment();
+            (d.tiles || []).forEach(function (t, i) { frag.appendChild(tileFrom(t, i)); });
+            grid.appendChild(frag);
+          });
+          loading.catch(function () { loading = null; });
+        }
+        return loading;
+      }
+      function start() {
+        if (started) return;
+        load().then(init, function () { status.textContent = 'The covers didn’t load. Try again in a moment.'; });
+      }
+
+      function hsl(hex) {
+        var r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+        var hi = Math.max(r, g, b), lo = Math.min(r, g, b), l = (hi + lo) / 2, d = hi - lo, h = 0;
+        var s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+        if (d) h = hi === r ? ((g - b) / d + 6) % 6 : hi === g ? (b - r) / d + 2 : (r - g) / d + 4;
+        return { h: h * 60, s: s, l: l };
+      }
+      function albumBy(list) {
+        var name = function (el) { return el.getAttribute('data-by') || ''; };
+        var first = name(list[0]);
+        if (list.every(function (el) { return name(el) === first; })) return first;
+        var lead = first.split(', ')[0];
+        return list.every(function (el) { return name(el).split(', ')[0] === lead; }) ? lead : 'Various artists';
+      }
+      // one cover per album, sized by its liked songs: 1, 2-4, 5-9, 10 or more
+      function makeAlbums() {
+        var seen = {}, list = [];
+        songs.forEach(function (el) {
+          var key = el.getAttribute('data-album-url') || el.getAttribute('data-medium') || el.getAttribute('data-name');
+          var a = seen[key];
+          if (!a) {
+            a = el.cloneNode(true);
+            a.hidden = true;
+            var url = el.getAttribute('data-album-url');
+            if (url) a.querySelector('a').href = url;
+            a._rank = el._rank; a._c = el._c; a._grey = el._grey; a._liked = el._liked; a._songs = [];
+            a._pos = el._pos ? list.length + 1 : 0;
+            seen[key] = a; list.push(a);
+          }
+          a._songs.push(el);
+          if (el._liked && (!a._liked || el._liked < a._liked)) a._liked = el._liked;
+        });
+        list.forEach(function (a) {
+          var n = a._songs.length, name = a.getAttribute('data-album') || a.getAttribute('data-name');
+          a._k = n >= 10 ? 4 : n >= 5 ? 3 : n >= 2 ? 2 : 1;
+          a._by = albumBy(a._songs);
+          a.querySelector('img').alt = name + (a._by ? ' by ' + a._by : '') + ', ' + n + ' liked song' + (n === 1 ? '' : 's');
+          grid.appendChild(a);
+        });
+        return list;
+      }
+
+      // places k-by-k covers on an n-by-n grid, each at the first free spot in the order asked
+      // (or, for 'target', the free spot nearest its own _tx, _ty); a cover that no longer fits shrinks
+      function spots(n, k, how) {
+        var out = [], mid = (n - 1) / 2, half = (k - 1) / 2;
+        for (var r = 0; r + k <= n; r++) for (var c = 0; c + k <= n; c++) {
+          var y = r + half - mid, x = c + half - mid;
+          out.push({ r: r, c: c, d: Math.max(Math.abs(y), Math.abs(x)), a: Math.atan2(y, x) });
+        }
+        if (how === 'centre') out.sort(function (p, q) { return p.d - q.d || p.a - q.a; });
+        return out;
+      }
+      function pack(list, n, how) {
+        var used = new Uint8Array(n * n), free = n * n, placed = [], cache = {}, top = n >= 20 ? 4 : 3;
+        function fits(p, k) {
+          for (var r = p.r; r < p.r + k; r++) for (var c = p.c; c < p.c + k; c++) if (used[r * n + c]) return false;
+          return true;
+        }
+        for (var i = 0; i < list.length && free > 0; i++) {
+          for (var k = Math.min(list[i]._k, top); k >= 1; k--) {
+            var all = cache[k] || (cache[k] = spots(n, k, how)), hit = null, it = list[i], h = (k - 1) / 2, best = Infinity;
+            if (how === 'target') {
+              for (var t = 0; t < all.length; t++) {
+                var dx = all[t].c + h - it._tx, dy = all[t].r + h - it._ty, cost = 4 * dx * dx + dy * dy;
+                if (cost < best && fits(all[t], k)) { best = cost; hit = all[t]; }
+              }
+            } else {
+              for (var j = 0; j < all.length && !hit; j++) if (fits(all[j], k)) hit = all[j];
+            }
+            if (!hit) continue;
+            for (var r = hit.r; r < hit.r + k; r++) for (var c = hit.c; c < hit.c + k; c++) used[r * n + c] = 1;
+            free -= k * k;
+            placed.push({ el: list[i], r: hit.r, c: hit.c, k: k });
+            break;
+          }
+        }
+        return placed;
+      }
+      function byHue(x, y) { return (x._grey - y._grey) || (x._grey ? y._c.l - x._c.l : x._c.h - y._c.h); }
+
+      // songs: most played from the centre ring by ring; colour by columns; date liked in reading order
+      function songOrder(n) {
+        var chosen = songs.slice(0, n * n), out;
+        if (state.order === 'colour') {
+          var list = chosen.slice().sort(byHue);
+          out = new Array(n * n);
+          for (var c = 0; c < n; c++) {
+            list.slice(c * n, c * n + n).sort(function (x, y) { return y._c.l - x._c.l; })
+              .forEach(function (el, r) { out[r * n + c] = el; });
+          }
+        } else if (state.order === 'liked') {
+          out = chosen.slice().sort(function (x, y) { return x._liked - y._liked; });
+        } else {
+          out = new Array(n * n);
+          spots(n, 1, 'centre').forEach(function (p, k) { out[p.r * n + p.c] = chosen[k]; });
+        }
+        return out.filter(Boolean).map(function (el) { return { el: el, k: 1 }; });
+      }
+      // albums: the most played that fill the grid; then most played from the centre outwards,
+      // colour with hue across and light to dark down (biggest covers placed first), or date liked in reading order
+      function albumOrder(n) {
+        var placed;
+        if (state.order === 'played') placed = pack(albums, n, 'centre');
+        else {
+          var chosen = pack(albums, n, 'rows').map(function (p) { p.el._in = true; p.el._area = p.k * p.k; return p.el; });
+          var rest = albums.filter(function (a) { var was = a._in; a._in = false; return !was; });
+          if (state.order === 'colour') {
+            var run = 0;
+            chosen.sort(byHue).forEach(function (a) {
+              a._tx = (run + a._area / 2) / (n * n) * n - 0.5;
+              a._ty = (1 - a._c.l) * n - 0.5;
+              run += a._area;
+            });
+            rest.forEach(function (a) { a._tx = a._grey ? n - 1 : a._c.h / 360 * n; a._ty = (1 - a._c.l) * n - 0.5; });
+            chosen.sort(function (x, y) { return y._area - x._area; });
+            placed = pack(chosen.concat(rest), n, 'target');
+          } else {
+            chosen.sort(function (x, y) { return x._liked - y._liked; });
+            placed = pack(chosen.concat(rest), n, 'rows');
+          }
+        }
+        return placed.sort(function (p, q) { return p.r - q.r || p.c - q.c; });
+      }
+
+      function fitImages() {
+        var cell = grid.getBoundingClientRect().width / state.n || 64;
+        shownTiles.forEach(function (p) {
+          var img = p.el.querySelector('img');
+          if (img.srcset) img.sizes = Math.ceil(cell * p.k) + 'px';
+        });
+      }
+      function arrange() {
+        var n = state.n;
+        if (state.mode === 'albums' && !albums) albums = makeAlbums();
+        shownTiles = state.mode === 'albums' ? albumOrder(n) : songOrder(n);
+        var all = songs.concat(albums || []), frag = document.createDocumentFragment();
+        all.forEach(function (el) { el.hidden = true; el._on = false; });
+        shownTiles.forEach(function (p) {
+          p.el.hidden = false; p.el._on = true;
+          p.el.style.gridArea = p.r === undefined ? '' : (p.r + 1) + ' / ' + (p.c + 1) + ' / span ' + p.k + ' / span ' + p.k;
+          frag.appendChild(p.el);
+        });
+        all.forEach(function (el) { if (!el._on) frag.appendChild(el); });
+        grid.style.setProperty('--n', n);
+        grid.appendChild(frag);
+        fitImages();
+        hint.hidden = state.mode !== 'albums';
+        controls.querySelectorAll('[data-mode]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-mode') === state.mode ? 'true' : 'false'); });
+        controls.querySelectorAll('[data-order]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-order') === state.order ? 'true' : 'false'); });
+        sizesBox.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', +b.getAttribute('data-n') === n ? 'true' : 'false'); });
+        if (stage.getAttribute('data-view') === 'arts') {
+          try { history.replaceState(null, '', '#' + n + '-' + state.order + '-' + state.mode); } catch (e) {}
+        }
+      }
+
+      function init() {
+        if (started) return;
+        started = true;
+        songs = Array.prototype.slice.call(grid.children);   // most played first
+        songs.forEach(function (el, i) {
+          el._rank = i;
+          el._k = 1;
+          el._pos = +el.getAttribute('data-pos') || 0;
+          el._liked = Date.parse(el.getAttribute('data-liked')) || 0;
+          el._c = hsl(el.getAttribute('data-colour') || '#808080');
+          el._grey = el._c.s < 0.12 || el._c.l < 0.08 || el._c.l > 0.92;
+        });
+        var max = Math.floor(Math.sqrt(songs.length));
+        sizes = [10, 20].filter(function (n) { return n <= max; });
+        if (!sizes.length) sizes = [max];
+        state.n = sizes[0];
+        sizes.forEach(function (n) {
+          var b = document.createElement('button');
+          b.type = 'button'; b.className = 'vb-chip'; b.setAttribute('data-n', n);
+          b.textContent = n + '×' + n;
+          b.setAttribute('aria-label', n + ' by ' + n + ' covers');
+          sizesBox.appendChild(b);
+        });
+        var asked = /^#(\d+)-(played|colour|liked)(?:-(albums|songs))?$/.exec(location.hash);
+        if (asked) {
+          if (sizes.indexOf(+asked[1]) !== -1) state.n = +asked[1];
+          state.order = asked[2];
+          if (asked[3]) state.mode = asked[3];
+        }
+        controls.hidden = false;
+        controls.addEventListener('click', function (e) {
+          var b = e.target.closest('button');
+          if (!b) return;
+          if (b.hasAttribute('data-print')) return printLarge(b);
+          if (b.hasAttribute('data-n')) state.n = +b.getAttribute('data-n');
+          else if (b.hasAttribute('data-order')) state.order = b.getAttribute('data-order');
+          else if (b.hasAttribute('data-mode')) state.mode = b.getAttribute('data-mode');
+          else return;
+          rest();
+          arrange();
+        });
+        arrange();
+        var timer;
+        window.addEventListener('resize', function () { clearTimeout(timer); timer = setTimeout(fitImages, 200); });
+      }
+
+      // print: swap in the 640px covers, wait for them, then open the print dialog
+      function printLarge(button) {
+        var shown = shownTiles.map(function (p) { return p.el; });
+        var label = button.textContent, left = shown.length;
+        button.disabled = true;
+        status.textContent = 'Loading the large covers for printing.';
+        function done() {
+          if (--left > 0) { button.textContent = 'Loading ' + (shown.length - left) + '/' + shown.length; return; }
+          button.textContent = label; button.disabled = false; status.textContent = '';
+          window.print();
+        }
+        shown.forEach(function (el) {
+          var img = el.querySelector('img'), large = el.getAttribute('data-large');
+          if (!large || img.getAttribute('src') === large) return done();
+          var probe = new Image();
+          probe.referrerPolicy = 'no-referrer';
+          probe.onload = function () { img.removeAttribute('srcset'); img.removeAttribute('sizes'); img.loading = 'eager'; img.src = large; done(); };
+          probe.onerror = done;
+          probe.src = large;
+        });
+      }
+
+      return { start: start, load: load };
+    })();
+
+    // the two views share one page: only the area under the blue line changes, and the address follows
+    var paths = { wall: stage.getAttribute('data-wall-href'), arts: stage.getAttribute('data-arts-href') };
+    var titles = { wall: stage.getAttribute('data-title-wall'), arts: stage.getAttribute('data-title-arts') };
+    function viewOf(path) { return path === paths.arts ? 'arts' : path === paths.wall ? 'wall' : null; }
+    function setView(view, push) {
+      stage.setAttribute('data-view', view);
+      document.querySelectorAll('[data-panel]').forEach(function (p) { p.inert = p.getAttribute('data-panel') !== view; });
+      document.querySelectorAll('.vb-tab').forEach(function (t) {
+        if (t.getAttribute('data-to') === view) t.setAttribute('aria-current', 'page');
+        else t.removeAttribute('aria-current');
+      });
+      if (titles[view]) document.title = titles[view];
+      if (push) { try { history.pushState(null, '', paths[view]); } catch (e) {} }
+      rest();
+      if (view === 'arts') arts.start();
+    }
+    document.querySelector('main').addEventListener('click', function (e) {
+      var a = e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target === '_blank') return;
+      var to = a.origin === location.origin ? viewOf(a.pathname) : null;
+      if (!to || a.hash) return;
+      e.preventDefault();
+      if (to !== stage.getAttribute('data-view')) setView(to, true);
+    });
+    window.addEventListener('popstate', function () {
+      var to = viewOf(location.pathname);
+      if (to && to !== stage.getAttribute('data-view')) setView(to, false);
+    });
+    if (stage.getAttribute('data-view') === 'arts') arts.start();
+    else {
+      var later = window.requestIdleCallback || function (f) { return setTimeout(f, 1500); };
+      later(function () { arts.load().catch(function () {}); });
+    }
+  })();
+  </script>
+</body>
+</html>
