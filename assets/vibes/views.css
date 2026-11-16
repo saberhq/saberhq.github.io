@@ -1,0 +1,32 @@
+/* Saber Vibes, the two views: their names on the blue line, the Spotify logo, and the area under the line */
+
+.vb-right { min-width: 0; display: flex; flex-direction: column; }
+.vb-wall-head { border-top: 0; border-bottom: var(--rule-w-strong) solid var(--accent-3); padding: 0 0 11px; margin-bottom: 16px; align-items: center; }
+.vb-tabs { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+a.vb-tab, a.vb-tab:visited { line-height: 1.6; letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink-3); text-decoration: none; transition: color var(--dur) var(--ease); }
+a.vb-tab:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+a.vb-tab[aria-current="page"], a.vb-tab[aria-current="page"]:hover { color: var(--accent-3); text-decoration: none; cursor: default; }
+a.vb-tab:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 2px; }
+.vb-tab-dot { color: var(--ink-4); }
+.vb-views { flex: 1 0 auto; display: grid; grid-template: "view" 1fr / minmax(0, 1fr); }
+.vb-view { grid-area: view; min-width: 0; }
+[data-view="wall"] .vb-view--arts, [data-view="arts"] .vb-view--wall { visibility: hidden; }
+/* Spotify attribution: the official logo files, unmodified */
+a.vb-spotify, a.vb-spotify:visited { display: block; flex: none; line-height: 0; margin-left: var(--space-5); }
+.vb-spotify img { display: block; width: 76px; height: auto; }
+.vb-spotify .vb-spotify-dark { display: none; }
+[data-theme="dark"] .vb-spotify .vb-spotify-light { display: none; }
+[data-theme="dark"] .vb-spotify .vb-spotify-dark { display: block; }
+a.vb-spotify:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; border-radius: 2px; }
+
+.vb-empty { margin: 0; padding: 24px 0; font-size: var(--body-size); color: var(--ink-2); }
+
+@media (max-width: 900px) {
+  .vb-views { display: block; }
+  [data-view="wall"] .vb-view--arts, [data-view="arts"] .vb-view--wall { display: none; }
+}
+@media (max-width: 600px) {
+  .vb-tabs { gap: 8px; }
+  a.vb-spotify, a.vb-spotify:visited { margin-left: var(--space-3); }
+  .vb-spotify img { width: 72px; }
+}

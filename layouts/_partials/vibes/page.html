@@ -34,17 +34,23 @@
     {{- with .Err }}{{ warnf "vibes: can't read updated_at %q (%s)" $raw . }}{{ else }}{{ $updated = .Value }}{{ end }}
   {{- end }}
 {{- end }}{{ end }}
-{{- /* Wall shape: the songs plus one open slot (at most ten cells); five across at most, two rows from six cells up. */ -}}
-{{- $slots := cond (lt $n 10) (add $n 1) 10 }}
-{{- $cols := cond (le $slots 5) $slots (div (add $slots 1) 2) }}
-{{- $rows := cond (le $slots 5) 1 2 }}
-
 {{- /* Album Arts: one tile per liked song, most played first; the covers are drawn here only on its own address. */ -}}
 {{- $tiles := (site.Data.albumarts | default dict).tiles | default slice }}
 {{- $total := len $tiles }}
 {{- $keys := slice }}
-{{- range $tiles }}{{ $keys = $keys | append (.album_url | default .medium | default .id) }}{{ end }}
+{{- $teaser := slice }}
+{{- range $tiles }}
+  {{- $k := .album_url | default .medium | default .id }}
+  {{- if and (lt (len $teaser) 30) (not (in $keys $k)) }}{{ $teaser = $teaser | append . }}{{ end }}
+  {{- $keys = $keys | append $k }}
+{{- end }}
 {{- $albums := len (uniq $keys) }}
+
+{{- /* Wall shape: the songs plus one open slot (at most ten cells), four across; the teaser takes the last column of rows two and three. */ -}}
+{{- $slots := cond (lt $n 10) (add $n 1) 10 }}
+{{- $hasTeaser := and $teaser (ge $slots 5) }}
+{{- $cols := cond (le $slots 4) $slots 4 }}
+{{- $rows := cond $hasTeaser 3 (int (math.Ceil (div $slots 4.0))) }}
 {{- $first := 10 }}
 {{- if lt $total 100 }}{{ $first = int (math.Floor (math.Sqrt $total)) }}{{ end }}
 <!DOCTYPE html>
@@ -52,10 +58,8 @@
 <head>
   {{ partial "docs/html-head" . }}
   {{ partial "docs/inject/head" . }}
-  {{- range slice "vibes.css" "albumarts.css" }}
-  {{- $css := resources.Get . | resources.Minify | resources.Fingerprint "sha384" }}
+  {{- $css := slice (resources.Get "vibes.css") (resources.Get "vibes/note.css") (resources.Get "vibes/views.css") (resources.Get "vibes/wall.css") (resources.Get "vibes/most-played.css") (resources.Get "albumarts.css") | resources.Concat "css/vibes.css" | resources.Minify | resources.Fingerprint "sha384" }}
   <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}" crossorigin="anonymous">
-  {{- end }}
   <script>document.documentElement.classList.add('js');</script>
   {{- if or $n $total }}
   <link rel="preconnect" href="https://i.scdn.co">
@@ -66,7 +70,7 @@
   {{ partial "saberhq/site-header" . }}
 
   <main>
-    <div class="vb-stage{{ if eq $rows 1 }} vb-stage--one-row{{ end }}" style="--n-cols: {{ $cols }}; --n-rows: {{ $rows }}" data-stage data-view="{{ $view }}" data-wall-href="{{ $wallHref }}" data-arts-href="{{ $artsHref }}" data-title-wall="{{ $titleWall }}" data-title-arts="{{ $titleArts }}" data-arts-data="{{ $wallHref }}albumarts.json">
+    <div class="vb-stage" style="--n-cols: {{ $cols }}; --n-rows: {{ $rows }}" data-stage data-view="{{ $view }}" data-wall-href="{{ $wallHref }}" data-arts-href="{{ $artsHref }}" data-title-wall="{{ $titleWall }}" data-title-arts="{{ $titleArts }}" data-arts-data="{{ $wallHref }}albumarts.json">
 
       <section class="vb-story" aria-labelledby="vb-title">
         {{- with $main.Params.kicker }}
@@ -96,6 +100,22 @@
         {{- end }}
         {{- if $total }}
         <p class="vb-meta" data-for="arts">{{ $total }} liked song{{ if ne $total 1 }}s{{ end }} <span aria-hidden="true">·</span> {{ $albums }} album{{ if ne $albums 1 }}s{{ end }}</p>
+        {{- /* The close-up: the cover under the pointer (Album Arts, JS and a pointer only). */}}
+        <div class="vb-close" aria-hidden="true">
+          <div class="vb-closeup" data-card>
+            <div class="vb-closeup-idle" data-card-idle>
+              <p class="vb-closeup-note">Point at a cover to see it here. Click it to open on Spotify.</p>
+            </div>
+            <div class="vb-closeup-info" data-card-info hidden>
+              <img class="vb-closeup-art" data-card-art width="300" height="300" alt="" decoding="async" referrerpolicy="no-referrer">
+              <div class="vb-closeup-text">
+                <p class="vb-closeup-title" data-card-title dir="auto"></p>
+                <p class="vb-closeup-by" data-card-by dir="auto"></p>
+                <dl class="vb-closeup-facts" data-card-facts></dl>
+              </div>
+            </div>
+          </div>
+        </div>
         {{- end }}
       </section>
 
@@ -114,7 +134,8 @@
           <div class="vb-view vb-view--wall" data-panel="wall"{{ if ne $view "wall" }} inert{{ end }}>
             <h2 class="vb-sr">On the wall</h2>
             {{- if $n }}
-            <ul class="vb-wall" role="list">
+            <div class="vb-wall">
+            <ul class="vb-wall-songs" role="list">
               {{- range $songs }}
                 {{- $tr := . }}
                 {{- $names := slice }}
@@ -147,6 +168,16 @@
               <li class="vb-open" aria-hidden="true"><div class="vb-open-sleeve">room for<br>{{ index (slice "zero" "one" "two" "three" "four" "five" "six" "seven" "eight" "nine") (sub 10 $n) }} more</div></li>
               {{- end }}
             </ul>
+            {{- if $hasTeaser }}
+            {{- /* Album Arts teaser: the top albums' covers, opening the Album Arts view */}}
+            <a class="vb-teaser" href="{{ $artsHref }}">
+              <span class="vb-teaser-frame" aria-hidden="true"><span class="vb-teaser-grid">
+                {{- range $teaser }}<img src="{{ .small | default .medium }}"{{ if and .small .medium }} srcset="{{ .small }} 64w, {{ .medium }} 300w" sizes="48px"{{ end }} width="64" height="64" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">{{ end -}}
+              </span></span>
+              <span class="vb-cap"><span class="vb-title">Album Arts</span><span class="vb-artists">{{ $total }} liked song{{ if ne $total 1 }}s{{ end }}<span class="vb-sr">, every cover in one picture</span></span></span>
+            </a>
+            {{- end }}
+            </div>
             {{- else }}
             <p class="vb-empty">The wall is empty for a moment — the playlist itself is <a href="{{ $url }}" target="_blank" rel="noopener">on Spotify <span aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a></p>
             {{- end }}
@@ -179,21 +210,6 @@
               </div>
               <div class="aa-group aa-group--print">
                 <button class="vb-chip aa-print" type="button" data-print>Print</button>
-              </div>
-              {{- /* The close-up: the cover under the pointer (JS, a pointer and the column of chips only). */}}
-              <div class="aa-group aa-group--close" aria-hidden="true">
-                <p class="aa-group-label">Close-up</p>
-                <div class="vb-closeup" data-card>
-                  <div class="vb-closeup-idle" data-card-idle>
-                    <p class="vb-closeup-note">Point at a cover to see it here. Click it to open on Spotify.</p>
-                  </div>
-                  <div class="vb-closeup-info" data-card-info hidden>
-                    <img class="vb-closeup-art" data-card-art width="300" height="300" alt="" decoding="async" referrerpolicy="no-referrer">
-                    <p class="vb-closeup-title" data-card-title dir="auto"></p>
-                    <p class="vb-closeup-by" data-card-by dir="auto"></p>
-                    <dl class="vb-closeup-facts" data-card-facts></dl>
-                  </div>
-                </div>
               </div>
             </div>
             <div class="aa-frame">
@@ -281,6 +297,24 @@
       var firstTab = tabs.querySelector('button');
       if (firstTab) pick(firstTab.getAttribute('data-range'));
       if (location.hash === '#most-played') tabs.parentNode.open = true;
+    }
+
+    // the teaser: whole covers, in as many rows as keep the frame's margins most even
+    var tframe = document.querySelector('.vb-teaser-frame');
+    if (tframe && window.ResizeObserver) {
+      var tgrid = tframe.firstElementChild;
+      new ResizeObserver(function () {
+        var css = getComputedStyle(tgrid), cols = +css.getPropertyValue('--tcols') || 3, pad = parseFloat(css.getPropertyValue('--pad')) || 0;
+        var W = tframe.clientWidth, H = tframe.clientHeight, w = W - 2 * pad, h = H - 2 * pad, ideal = h / (w / cols), best = null;
+        [Math.floor(ideal), Math.ceil(ideal)].forEach(function (rows) {
+          if (rows < 1) return;
+          var tc = Math.min(w / cols, h / rows), off = Math.abs((W - cols * tc) - (H - rows * tc));
+          if (!best || off < best.off) best = { rows: rows, tc: tc, off: off };
+        });
+        if (!best) return;
+        tgrid.style.setProperty('--tc', best.tc + 'px');
+        tgrid.style.height = best.rows * best.tc + 'px';
+      }).observe(tframe);
     }
 
     // the close-up (Album Arts only): the cover under the pointer or the keyboard, with its song or album
