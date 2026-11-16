@@ -1,4 +1,4 @@
-{{/* Site header: the trail to this page on the left; the menu (config.toml) and the theme switch on the right. Context: the page. */}}
+{{/* Site header: the trail to this page on the left; the menu (data/header.yaml) and the theme switch on the right. Context: the page. */}}
 {{- $here := .RelPermalink }}
 <header class="sq-siteheader">
   <div class="sq-siteheader-in">
@@ -18,17 +18,17 @@
     </nav>
     <span class="sq-fill"></span>
     <nav class="sq-menu" aria-label="Sections">
-      {{- range site.Menus.header }}
+      {{- range site.Data.header.menu }}
         {{- $cls := "sq-menu-link" }}
-        {{- with .Params.accent }}{{ $cls = printf "%s %s" $cls (cond (eq (string .) "vibes") "sq-menu-link--vibes" "sq-menu-link--sidechain") }}{{ end }}
-      <a class="{{ $cls }}" href="{{ .URL }}">{{ .Name }}</a>
+        {{- with .accent }}{{ $cls = printf "%s sq-menu-link--%s" $cls . }}{{ end }}
+      <a class="{{ $cls }}" href="{{ .url }}">{{ .name }}</a>
       {{- end }}
-      {{- with site.Menus.elsewhere }}
+      {{- with site.Data.header.elsewhere }}
       <details class="sq-menu-more">
         <summary>Elsewhere</summary>
         <div class="sq-menu-more-links">
           {{- range . }}
-          <a href="{{ .URL }}" target="_blank" rel="noopener">{{ .Name }}<span class="sq-sr-only"> (opens in a new tab)</span></a>
+          <a href="{{ .url }}" target="_blank" rel="noopener">{{ .name }}<span class="sq-sr-only"> (opens in a new tab)</span></a>
           {{- end }}
         </div>
       </details>

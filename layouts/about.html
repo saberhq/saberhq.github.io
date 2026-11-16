@@ -6,10 +6,10 @@
 {{- range site.Menus.after }}
   {{- if and (not $mailto) (hasPrefix .URL "mailto:") }}{{ $mailto = .URL }}{{ end }}
 {{- end }}
-{{- /* The Scholar profile from menu.elsewhere, for the "publications" aside */ -}}
+{{- /* The Scholar profile from data/header.yaml's Elsewhere, for the "publications" aside */ -}}
 {{- $scholar := "" }}
-{{- range site.Menus.elsewhere }}
-  {{- if and (not $scholar) (strings.Contains .URL "scholar.google") }}{{ $scholar = .URL }}{{ end }}
+{{- range site.Data.header.elsewhere }}
+  {{- if and (not $scholar) (strings.Contains .url "scholar.google") }}{{ $scholar = .url }}{{ end }}
 {{- end }}
 
 {{- /* The text comes in two parts, split at the `<!--more-->` line in content/about/index.md:
@@ -102,15 +102,15 @@
     </div>
     {{- end }}
 
-    {{- /* menu.elsewhere in config.toml, then the mailto, labelled "Email". */}}
+    {{- /* Elsewhere in data/header.yaml, then the mailto, labelled "Email". */}}
     <section class="sq-section sq-wrap" aria-labelledby="sq-me-elsewhere">
       <div class="sq-section-head">
         <h2 class="sq-section-label" id="sq-me-elsewhere">Elsewhere</h2>
         <span class="sq-section-fill"></span>
       </div>
       <ul class="sq-me-links" role="list">
-        {{- range site.Menus.elsewhere }}
-        <li><a class="sq-me-link" href="{{ .URL }}" target="_blank" rel="noopener">{{ .Name }} <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a></li>
+        {{- range site.Data.header.elsewhere }}
+        <li><a class="sq-me-link" href="{{ .url }}" target="_blank" rel="noopener">{{ .name }} <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a></li>
         {{- end }}
         {{- with $mailto }}
         <li><a class="sq-me-link" href="{{ . }}">Email</a></li>
