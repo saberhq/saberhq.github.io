@@ -43,6 +43,7 @@
   @container arts (min-aspect-ratio: 11 / 10) {
     .js .aa-group--close {
       display: flex; flex-direction: column; flex-wrap: nowrap; flex: 1 1 0; min-height: 0; margin-top: 8px;
+      padding-left: calc(64px + var(--space-2));
       container: close / size;
     }
     .aa-group--close .aa-group-label { flex: none; line-height: 1.6; margin-bottom: 8px; }
