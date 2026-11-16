@@ -20,32 +20,58 @@ html { scroll-padding-top: calc(var(--sq-header-h) + var(--space-3)); }
 }
 .sq-siteheader-in > * { flex-shrink: 0; }
 
-/* The mark: home */
+/* One voice for every word in the bar: Geist Mono 13px, uppercase, tracked */
+.sq-trail, a.sq-menu-link, .sq-menu-more > summary, .sq-menu-more-links a {
+  font-family: var(--font-mono); font-size: 13px; font-weight: 400;
+  letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap;
+}
+
+/* The trail: Saber H. / section / page; the words are links, the slashes are not */
+.sq-trail {
+  display: flex; align-items: baseline; min-width: 0; overflow: hidden;
+  flex-shrink: 1; line-height: 40px;
+}
+.sq-trail > * { flex-shrink: 0; }
 a.sq-mark, a.sq-mark:visited {
-  display: flex; align-items: center;
-  font-family: var(--font-mono); font-size: 15px; font-weight: 500; line-height: 1; letter-spacing: 0;
-  color: var(--ink); text-decoration: none; margin-right: var(--space-2);
+  font-family: var(--font-pixel); font-size: 13.15px; font-weight: 400;
+  letter-spacing: 0; text-transform: none; color: var(--ink); text-decoration: none;
 }
 a.sq-mark:hover { color: var(--ink); text-decoration: none; }
+.sq-trail-sep { padding: 0 0.6em 0 0.5em; color: var(--ink-4); }
+a.sq-trail-link, a.sq-trail-link:visited { color: var(--ink-3); text-decoration: none; }
+a.sq-trail-link[aria-current], .sq-trail-here { color: var(--link); }
+a.sq-trail-link:hover { color: var(--ink); text-decoration: none; }
+.sq-trail > :last-child { flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
-/* The sections */
-.sq-tabs { display: flex; gap: 2px; }
-a.sq-tab, a.sq-tab:visited {
-  position: relative; display: block; height: 40px; padding: 0 10px;
-  font-family: var(--font-mono); font-size: 13px; font-weight: 400; line-height: 40px;
-  letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap;
-  color: var(--ink-3); text-decoration: none;
+/* The menu */
+.sq-menu { display: flex; align-items: center; gap: 2px; }
+a.sq-menu-link, a.sq-menu-link:visited,
+.sq-menu-more > summary {
+  display: block; height: 40px; padding: 0 10px; line-height: 40px;
+  color: var(--ink-3); text-decoration: none; cursor: pointer;
   transition: color var(--dur) var(--ease);
 }
-a.sq-tab--sidechain, a.sq-tab--sidechain:visited { color: var(--accent-2); }
-a.sq-tab--vibes, a.sq-tab--vibes:visited { color: var(--accent-3); }
-a.sq-tab:hover { color: var(--ink); text-decoration: none; }
-a.sq-tab[aria-current] { color: var(--accent); font-weight: 500; }
-a.sq-tab--vibes[aria-current] { color: var(--accent-3); }
-a.sq-tab[aria-current]::after {
-  content: ""; position: absolute; left: 10px; right: calc(10px + 0.12em); bottom: 8px;
-  height: 2px; border-radius: 1px; background: currentColor;
+a.sq-menu-link--sidechain, a.sq-menu-link--sidechain:visited { color: var(--accent-2); }
+a.sq-menu-link--vibes, a.sq-menu-link--vibes:visited { color: var(--accent-3); }
+a.sq-menu-link:hover, .sq-menu-more > summary:hover { color: var(--ink); text-decoration: none; }
+
+/* Elsewhere: the links to other sites, folded into one entry */
+.sq-menu-more { position: relative; }
+.sq-menu-more > summary { list-style: none; }
+.sq-menu-more > summary::-webkit-details-marker { display: none; }
+.sq-menu-more > summary::after { content: " +"; }
+.sq-menu-more[open] > summary { color: var(--ink); }
+.sq-menu-more[open] > summary::after { content: " –"; }
+.sq-menu-more-links {
+  position: absolute; top: calc(100% + var(--space-1)); right: 0; z-index: 10;
+  display: grid; min-width: 12em; padding: var(--space-2) 0;
+  background: var(--surface-card); border: var(--rule-w) solid var(--rule); border-radius: var(--radius);
+  box-shadow: 0 8px 18px -10px var(--sq-header-shadow);
 }
+.sq-menu-more-links a, .sq-menu-more-links a:visited {
+  padding: 6px var(--space-4); line-height: 20px; color: var(--ink-2); text-decoration: none;
+}
+.sq-menu-more-links a:hover { color: var(--link); background: var(--surface-sunken); text-decoration: none; }
 
 /* The theme switch */
 .sq-switch {
@@ -80,21 +106,19 @@ a.sq-tab[aria-current]::after {
 [data-theme="dark"] .sq-switch-sun { opacity: 0; }
 [data-theme="dark"] .sq-switch-moon { opacity: 1; }
 
-/* Phones: the sections take a row of their own under the mark and the switch */
-@media (max-width: 700px) {
+/* Tablets and phones: the trail and the switch on top, the menu on a row of its own */
+@media (max-width: 900px) {
   :root { --sq-header-h: 93px; }
   .sq-siteheader-in { flex-wrap: wrap; padding-bottom: 0; }
-  .sq-siteheader-in > .sq-mark, .sq-siteheader-in > .sq-switch { height: 44px; }
-  .sq-tabs {
-    order: 9; flex: 1 0 100%; margin-left: -8px;
-    overflow-x: auto; scrollbar-width: none;
-  }
-  .sq-tabs::-webkit-scrollbar { display: none; }
-  a.sq-tab, a.sq-tab:visited { padding: 0 8px; letter-spacing: 0.1em; }
-  a.sq-tab[aria-current]::after { left: 8px; right: calc(8px + 0.1em); }
+  .sq-trail, .sq-siteheader-in > .sq-switch { height: 44px; line-height: 44px; }
+  .sq-menu { order: 9; flex: 1 0 100%; flex-wrap: wrap; margin-left: -10px; }
+  .sq-menu-more-links { right: auto; left: 0; }
 }
-@media (max-width: 380px) {
-  a.sq-tab, a.sq-tab:visited { padding: 0 6px; letter-spacing: 0.08em; }
-  .sq-tabs { margin-left: -6px; }
-  a.sq-tab[aria-current]::after { left: 6px; right: calc(6px + 0.08em); }
+/* Phones: tighter words; the bar scrolls away with the page */
+@media (max-width: 700px) {
+  :root { --sq-header-h: 0px; }
+  .sq-siteheader { position: static; }
+  .sq-trail, a.sq-menu-link, .sq-menu-more > summary { letter-spacing: 0.06em; }
+  a.sq-menu-link, a.sq-menu-link:visited, .sq-menu-more > summary { padding: 0 5px; height: 36px; line-height: 36px; }
+  .sq-menu { margin-left: -5px; padding-bottom: var(--space-1); }
 }

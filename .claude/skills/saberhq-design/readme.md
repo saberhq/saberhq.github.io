@@ -40,7 +40,7 @@ Personal brand system for **Saber Hafezqorani** (saberhq.com) — computational 
 ## Iconography
 No icon set exists in the sources — the typefaces provide the glyphs (see Content fundamentals). Keep it that way on brand surfaces. If a UI genuinely needs functional icons (nav, media controls), use Lucide from CDN at 1.5px stroke, 16–20px, `currentColor` — an intentional addition, not sourced.
 
-**Mark.** No drawn logo — the mark is typographic: primary `saberhq.com` in Geist Mono (footer strips, headers, corner marks); wordmark `SABER HQ` in Geist 600, uppercase, +0.04em tracking. Never draw a monogram glyph.
+**Mark.** No drawn logo — the mark is typographic: `Saber H.` in Geist Pixel, the only pixel letters in the header (13.15px there, the menu's capital height; 52.6px as the home page's title); `saberhq.com` in Geist Mono names the site (footer strips, corner marks); wordmark `SABER HQ` in Geist 600, uppercase, +0.04em tracking. Never draw a monogram glyph.
 
 ## Index
 - `styles.css` — entry point; imports everything under `tokens/`

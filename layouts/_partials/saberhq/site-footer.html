@@ -1,4 +1,4 @@
-{{/* Site footer: the same columns on every page; the "Elsewhere" links are config.toml's menu.elsewhere. Context: the page. */}}
+{{/* Site footer: the same columns on every page. Context: the page. */}}
 <footer class="sq-sitefooter">
   <div class="sq-wrap sq-sitefooter-in">
     <div class="sq-foot-clip"><div class="sq-foot-row">
@@ -6,14 +6,6 @@
         <span class="sq-foot-k"><a href="{{ site.Home.RelPermalink }}">saberhq.com</a></span>
         <span class="sq-foot-v">© {{ now.Format "2006" }} Saber Hafezqorani</span>
       </div>
-      {{ with site.Menus.elsewhere }}
-      <div class="sq-foot-col sq-foot-col--grow">
-        <span class="sq-foot-k">Elsewhere</span>
-        <span class="sq-foot-v sq-foot-links">
-          {{- range $i, $m := . }}{{ if $i }}<span class="sq-foot-dot" aria-hidden="true"> · </span>{{ end }}<a href="{{ $m.URL }}" target="_blank" rel="noopener">{{ $m.Name }}<span class="sq-sr-only"> (opens in a new tab)</span></a>{{ end -}}
-        </span>
-      </div>
-      {{ end }}
       <div class="sq-foot-col">
         <span class="sq-foot-k">Licence</span>
         <span class="sq-foot-v"><a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="license noopener">CC BY 4.0<span class="sq-sr-only"> (opens in a new tab)</span></a></span>

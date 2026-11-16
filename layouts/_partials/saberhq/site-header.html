@@ -1,19 +1,38 @@
-{{/* Site header: the mark, the sections (config.toml, menu.header) and the theme switch. Context: the page. */}}
+{{/* Site header: the trail to this page on the left; the menu (config.toml) and the theme switch on the right. Context: the page. */}}
 {{- $here := .RelPermalink }}
 {{- $home := site.Home.RelPermalink }}
 <header class="sq-siteheader">
   <div class="sq-wrap sq-siteheader-in">
-    <a class="sq-mark" href="{{ $home }}" title="Home"{{ if eq $here $home }} aria-current="page"{{ end }}>saberhq.com</a>
-    <nav class="sq-tabs" aria-label="Sections">
-      {{- range site.Menus.header }}
-        {{- $cls := "sq-tab" }}
-        {{- with .Params.accent }}{{ $cls = printf "%s %s" $cls (cond (eq (string .) "vibes") "sq-tab--vibes" "sq-tab--sidechain") }}{{ end }}
-        {{- $current := "" }}
-        {{- if eq $here .URL }}{{ $current = "page" }}{{ else if hasPrefix $here .URL }}{{ $current = "true" }}{{ end }}
-      <a class="{{ $cls }}" href="{{ .URL }}"{{ with $current }} aria-current="{{ . }}"{{ end }}>{{ .Name }}</a>
+    <nav class="sq-trail" aria-label="You are here">
+      <a class="sq-mark" href="{{ $home }}"{{ if eq $here $home }} aria-current="page"{{ end }}>Saber H.</a>
+      {{- if eq .Kind "404" }}
+      <span class="sq-trail-sep" aria-hidden="true">/</span><span class="sq-trail-here">404</span>
+      {{- else }}
+        {{- $path := "/" }}
+        {{- range split (strings.Trim $here "/") "/" }}{{ with . }}
+          {{- $path = printf "%s%s/" $path . }}
+      <span class="sq-trail-sep" aria-hidden="true">/</span><a class="sq-trail-link" href="{{ $path }}"{{ if eq $path $here }} aria-current="page"{{ end }}>{{ . }}</a>
+        {{- end }}{{ end }}
       {{- end }}
     </nav>
     <span class="sq-fill"></span>
+    <nav class="sq-menu" aria-label="Sections">
+      {{- range site.Menus.header }}
+        {{- $cls := "sq-menu-link" }}
+        {{- with .Params.accent }}{{ $cls = printf "%s %s" $cls (cond (eq (string .) "vibes") "sq-menu-link--vibes" "sq-menu-link--sidechain") }}{{ end }}
+      <a class="{{ $cls }}" href="{{ .URL }}">{{ .Name }}</a>
+      {{- end }}
+      {{- with site.Menus.elsewhere }}
+      <details class="sq-menu-more">
+        <summary>Elsewhere</summary>
+        <div class="sq-menu-more-links">
+          {{- range . }}
+          <a href="{{ .URL }}" target="_blank" rel="noopener">{{ .Name }}<span class="sq-sr-only"> (opens in a new tab)</span></a>
+          {{- end }}
+        </div>
+      </details>
+      {{- end }}
+    </nav>
     <button class="sq-switch" type="button" role="switch" aria-checked="false" aria-label="Dark theme" title="Dark theme" data-theme-toggle>
       <span class="sq-switch-track" aria-hidden="true"><span class="sq-switch-knob">
         <svg class="sq-switch-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.6"/><path d="M8 1.8v1.5M8 12.7v1.5M1.8 8h1.5M12.7 8h1.5M3.6 3.6l1.05 1.05M11.35 11.35l1.05 1.05M3.6 12.4l1.05-1.05M11.35 4.65l1.05-1.05"/></svg>

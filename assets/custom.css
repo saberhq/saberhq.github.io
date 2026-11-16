@@ -42,6 +42,10 @@ strong, b { font-weight: 600; }
   *, *::before, *::after { transition: none !important; }
 }
 
+/* Every page fills the window: the main part grows, so the footer sits at the bottom */
+body.sq-shell { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+body.sq-shell > main { flex: 1 0 auto; }
+
 /* ---------- Utilities ---------- */
 .sq-wrap { max-width: var(--page-max); margin: 0 auto; padding-left: var(--space-6); padding-right: var(--space-6); }
 .sq-fill { flex: 1; }
