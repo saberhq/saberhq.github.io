@@ -23,14 +23,58 @@
 }
 .aa-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .aa-hint { display: none; margin: 8px 0 0; font-size: 13px; line-height: 1.45; color: var(--ink-3); text-wrap: pretty; }
-@container arts (min-aspect-ratio: 13 / 10) {
+/* Wide: the picture on the left, the chips in a column beside it (each label in front of its chips),
+   and the close-up under them, as large a square as the height left over allows */
+@container arts (min-aspect-ratio: 11 / 10) {
   .aa-layout { flex-direction: row-reverse; justify-content: flex-end; gap: 28px; }
   .aa-frame { flex: 0 0 auto; width: min(100cqh, 100cqw - 228px); height: 100%; }
-  .aa-controls { flex: 0 0 200px; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 18px; }
-  .aa-group { display: block; }
-  .aa-group-label, .aa-hint { display: block; }
+  .aa-controls { flex: 0 1 400px; min-width: 200px; min-height: 0; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 10px; }
+  .aa-group { flex-wrap: wrap; align-items: flex-start; }
+  .aa-group .aa-chips { flex: 1 1 0; min-width: 0; }
+  .aa-group-label { display: block; flex: 0 0 64px; margin: 0; line-height: 32px; }
+  .aa-group--print { padding-left: calc(64px + var(--space-2)); }
+  .aa-hint { display: block; flex: 1 0 100%; box-sizing: border-box; margin: 0 0 4px; padding-left: calc(64px + var(--space-2)); }
 }
 .aa-controls .aa-hint[hidden] { display: none; }
+
+/* ---- The close-up, under the chips: a square that the cover under the pointer fills ---- */
+.aa-group--close { display: none; }
+@media (hover: hover) {
+  @container arts (min-aspect-ratio: 11 / 10) {
+    .js .aa-group--close {
+      display: flex; flex-direction: column; flex-wrap: nowrap; flex: 1 1 0; min-height: 0; margin-top: 8px;
+      container: close / size;
+    }
+    .aa-group--close .aa-group-label { flex: none; line-height: 1.6; margin-bottom: 8px; }
+  }
+}
+.vb-closeup-idle, .vb-closeup-art { width: min(100%, 100cqh - 170px); }
+@container close (max-height: 260px) { .vb-closeup, .aa-group--close .aa-group-label { display: none; } }
+.vb-closeup [hidden] { display: none; }
+.vb-closeup p { margin: 0; }
+.vb-closeup-idle {
+  display: flex; align-items: center; aspect-ratio: 1; padding: 15px; box-sizing: border-box;
+  border: var(--rule-w) solid var(--rule); border-radius: var(--art-r);
+}
+.vb-closeup-note { font-size: 13px; line-height: 1.45; color: var(--ink-3); text-wrap: pretty; }
+.vb-closeup-art {
+  display: block; height: auto; aspect-ratio: 1; max-width: none;
+  border-radius: var(--art-r); outline: var(--rule-w) solid var(--rule); background: var(--surface-sunken);
+}
+.vb-closeup-title {
+  margin-top: 10px !important; font-size: 15px; line-height: 1.3; font-weight: 500; letter-spacing: -0.006em;
+  color: var(--ink); overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.vb-closeup-by { margin-top: 2px !important; font-size: 13px; line-height: 1.35; color: var(--ink-3); overflow-wrap: anywhere; }
+.vb-closeup-by:empty { display: none; }
+.vb-closeup-facts { margin: 8px 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1px 10px; }
+.vb-closeup-facts > div { display: contents; }
+.vb-closeup-facts dt {
+  font-family: var(--font-mono); font-size: 10px; line-height: 17px;
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink-3); white-space: nowrap;
+}
+.vb-closeup-facts dd { margin: 0; font-size: 12.5px; line-height: 17px; color: var(--ink-2); overflow-wrap: anywhere; }
 
 /* ---- The covers: square, whole, edge to edge, nothing on top ---- */
 .aa-tile { position: relative; margin: 0; min-width: 0; min-height: 0; }

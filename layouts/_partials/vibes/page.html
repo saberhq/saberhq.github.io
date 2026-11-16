@@ -97,21 +97,6 @@
         {{- if $total }}
         <p class="vb-meta" data-for="arts">{{ $total }} liked song{{ if ne $total 1 }}s{{ end }} <span aria-hidden="true">·</span> {{ $albums }} album{{ if ne $albums 1 }}s{{ end }}</p>
         {{- end }}
-        {{- /* The close-up: the cover under the pointer, in either view (JS and a pointer only). */}}
-        <div class="vb-closeup" data-card aria-hidden="true">
-          <div class="vb-closeup-idle" data-card-idle>
-            <p class="vb-closeup-label">Close-up</p>
-            <p class="vb-closeup-note">Point at a cover to see it here. Click it to open on Spotify.</p>
-          </div>
-          <div class="vb-closeup-info" data-card-info hidden>
-            <img class="vb-closeup-art" data-card-art width="300" height="300" alt="" decoding="async" referrerpolicy="no-referrer">
-            <div class="vb-closeup-words">
-              <p class="vb-closeup-title" data-card-title dir="auto"></p>
-              <p class="vb-closeup-by" data-card-by dir="auto"></p>
-              <dl class="vb-closeup-facts" data-card-facts></dl>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section class="vb-right" aria-label="Songs">
@@ -194,6 +179,21 @@
               </div>
               <div class="aa-group aa-group--print">
                 <button class="vb-chip aa-print" type="button" data-print>Print</button>
+              </div>
+              {{- /* The close-up: the cover under the pointer (JS, a pointer and the column of chips only). */}}
+              <div class="aa-group aa-group--close" aria-hidden="true">
+                <p class="aa-group-label">Close-up</p>
+                <div class="vb-closeup" data-card>
+                  <div class="vb-closeup-idle" data-card-idle>
+                    <p class="vb-closeup-note">Point at a cover to see it here. Click it to open on Spotify.</p>
+                  </div>
+                  <div class="vb-closeup-info" data-card-info hidden>
+                    <img class="vb-closeup-art" data-card-art width="300" height="300" alt="" decoding="async" referrerpolicy="no-referrer">
+                    <p class="vb-closeup-title" data-card-title dir="auto"></p>
+                    <p class="vb-closeup-by" data-card-by dir="auto"></p>
+                    <dl class="vb-closeup-facts" data-card-facts></dl>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="aa-frame">
@@ -283,11 +283,11 @@
       if (location.hash === '#most-played') tabs.parentNode.open = true;
     }
 
-    // the close-up: the cover under the pointer or the keyboard, with its song or album
-    var card = document.querySelector('[data-card]');
-    var idle = card.querySelector('[data-card-idle]'), info = card.querySelector('[data-card-info]');
-    var art = card.querySelector('[data-card-art]'), title = card.querySelector('[data-card-title]');
-    var by = card.querySelector('[data-card-by]'), facts = card.querySelector('[data-card-facts]');
+    // the close-up (Album Arts only): the cover under the pointer or the keyboard, with its song or album
+    var card = document.querySelector('[data-card]') || document.createElement('div');
+    var idle = card.querySelector('[data-card-idle]') || card, info = card.querySelector('[data-card-info]') || card;
+    var art = card.querySelector('[data-card-art]') || new Image(), title = card.querySelector('[data-card-title]') || card;
+    var by = card.querySelector('[data-card-by]') || card, facts = card.querySelector('[data-card-facts]') || card;
     var current = null;
     function day(t) { return t ? new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''; }
     function place(pos) { return +pos ? 'No. ' + pos + ', past year' : ''; }
@@ -332,7 +332,7 @@
       info.hidden = true;
     }
     function point(e) {
-      var el = e.target.closest ? e.target.closest('.vb-item, .aa-tile') : null;
+      var el = e.target.closest ? e.target.closest('.aa-tile') : null;
       if (el && !el.hidden) show(el);
     }
     stage.addEventListener('mouseover', point);
@@ -625,11 +625,26 @@
         else t.removeAttribute('aria-current');
       });
       if (titles[view]) document.title = titles[view];
+      trail(view);
       if (push) { try { history.pushState(null, '', paths[view]); } catch (e) {} }
       rest();
       if (view === 'arts') arts.start();
     }
-    document.querySelector('main').addEventListener('click', function (e) {
+    // the header's trail follows the view: SABER H. / VIBES, or SABER H. / VIBES / ALBUMARTS
+    function trail(view) {
+      var t = document.querySelector('.sq-trail');
+      var wall = t && t.querySelector('.sq-trail-link[href="' + paths.wall + '"]');
+      if (!wall) return;
+      while (wall.nextSibling) t.removeChild(wall.nextSibling);
+      if (view !== 'arts') { wall.setAttribute('aria-current', 'page'); return; }
+      wall.removeAttribute('aria-current');
+      var sep = document.createElement('span'), a = document.createElement('a');
+      sep.className = 'sq-trail-sep'; sep.setAttribute('aria-hidden', 'true'); sep.textContent = '/';
+      a.className = 'sq-trail-link'; a.href = paths.arts; a.setAttribute('aria-current', 'page');
+      a.textContent = paths.arts.split('/').filter(Boolean).pop();
+      t.appendChild(sep); t.appendChild(a);
+    }
+    document.addEventListener('click', function (e) {
       var a = e.target.closest ? e.target.closest('a[href]') : null;
       if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target === '_blank') return;
       var to = a.origin === location.origin ? viewOf(a.pathname) : null;
