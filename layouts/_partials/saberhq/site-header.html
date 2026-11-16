@@ -1,10 +1,11 @@
 {{/* Site header: the trail to this page on the left; the menu (config.toml) and the theme switch on the right. Context: the page. */}}
 {{- $here := .RelPermalink }}
-{{- $home := site.Home.RelPermalink }}
 <header class="sq-siteheader">
-  <div class="sq-wrap sq-siteheader-in">
+  <div class="sq-siteheader-in">
     <nav class="sq-trail" aria-label="You are here">
-      <a class="sq-mark" href="{{ $home }}"{{ if eq $here $home }} aria-current="page"{{ end }}>Saber H.</a>
+      {{- if ne $here "/" }}
+      <a class="sq-mark" href="/">Saber H.</a>
+      {{- end }}
       {{- if eq .Kind "404" }}
       <span class="sq-trail-sep" aria-hidden="true">/</span><span class="sq-trail-here">404</span>
       {{- else }}
