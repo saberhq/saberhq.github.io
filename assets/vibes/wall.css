@@ -1,0 +1,124 @@
+/* Saber Vibes, the wall: the songs' covers and captions, the open slot, and the Album Arts teaser */
+
+/* The wall: four across, then three and three beside the Album Arts teaser. Each song takes a cover
+   row and a caption row, so the teaser can line up with the covers beside it. */
+.vb-wall {
+  display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  column-gap: var(--gx); margin-bottom: calc(-1 * var(--gy));
+}
+.vb-wall-songs { display: contents; list-style: none; margin: 0; padding: 0; }
+.vb-item, .vb-open { grid-row: span 2; display: grid; grid-template-rows: subgrid; align-items: start; min-width: 0; margin: 0 0 var(--gy); }
+.vb-item { position: relative; }
+
+/* Cover art is shown whole: square, uncropped, nothing on top, never tinted or animated.
+   The 1px outline sits outside the art so pale covers keep an edge on paper. */
+.vb-sleeve {
+  display: block; width: 100%; aspect-ratio: 1; padding: 0; border: 0; background: none;
+  border-radius: var(--art-r); cursor: pointer;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.vb-sleeve img {
+  display: block; width: 100%; height: 100%; max-width: none; border-radius: inherit;
+  outline: var(--rule-w) solid var(--rule); outline-offset: 0;
+  background: var(--surface-sunken);
+}
+/* a song Spotify sends without album art: a plain sunken square that still links. It keeps its
+   hairline when a mouse click focuses it (the page drops only the mouse focus *ring*). */
+.vb-sleeve:empty { background: var(--surface-sunken); outline: var(--rule-w) solid var(--rule); }
+.vb-page .vb-sleeve:empty:focus:not(:focus-visible) { outline: var(--rule-w) solid var(--rule); }
+
+.vb-cap { position: relative; padding-top: 10px; }
+/* Spotify's metadata is shown exactly as delivered: one string, one style, no text-transform.
+   Desktop clamps at two lines (full text in title="" and in the accessible name). */
+.vb-title {
+  margin: 0; font-size: var(--t-size); line-height: 1.3; font-weight: 500;
+  letter-spacing: -0.006em; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+a.vb-title-link, a.vb-title-link:visited { color: var(--ink); text-decoration: none; }
+a.vb-title-link:hover { color: var(--accent-3); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+/* the title link's hit area and focus ring span the whole caption, so the ring can't be clipped
+   (on desktop the artists line sits above the hit area, so its tooltip can show) */
+a.vb-title-link::after { content: ""; position: absolute; inset: 4px -6px -4px; border-radius: var(--radius); }
+a.vb-title-link:focus-visible { outline: none; }
+a.vb-title-link:focus-visible::after { outline: 2px solid var(--focus-ring); outline-offset: 0; }
+.vb-artists {
+  margin: 2px 0 0; font-size: var(--a-size); line-height: 1.35; color: var(--ink-3);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+/* Where captions are clamped (desktop), the artists line sits above the title's hit area, so the
+   full artist list shows in its tooltip when it is cut short (Spotify: full metadata must stay viewable). */
+@media (min-width: 901px) and (hover: hover) {
+  .vb-artists { position: relative; z-index: 1; }
+}
+
+/* hover / focus: the sleeve (the card) lifts; the art itself never changes */
+.vb-item:hover .vb-sleeve, .vb-item:focus-within .vb-sleeve {
+  transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+[data-theme="dark"] .vb-item:hover .vb-sleeve, [data-theme="dark"] .vb-item:focus-within .vb-sleeve { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); }
+.vb-sleeve:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+
+/* the open slot: "room for one more" — this is not a top ten */
+.vb-open-sleeve {
+  display: grid; place-items: center; aspect-ratio: 1; padding: 12px; text-align: center;
+  border: var(--rule-w) dashed var(--ink-4); border-radius: var(--art-r);
+  font-family: var(--font-mono); font-size: 10.5px; line-height: 1.5; letter-spacing: var(--meta-track);
+  color: var(--ink-3);
+}
+
+/* The Album Arts teaser: one cover wide, from row two's cover to row three's, a framed patch of the top albums */
+a.vb-teaser, a.vb-teaser:visited {
+  grid-column: var(--cols); grid-row: 3 / span 4;
+  display: grid; grid-template-rows: subgrid; align-items: start; min-width: 0; margin: 0 0 var(--gy);
+  color: var(--ink); text-decoration: none;
+}
+.vb-teaser-frame {
+  grid-row: 1 / span 3; align-self: stretch;
+  display: flex; align-items: center; justify-content: center;
+  container: teaser / size;
+  border-radius: var(--art-r); background: var(--surface-sunken); outline: var(--rule-w) solid var(--rule);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.vb-teaser-grid {
+  --pad: 10px; --tcols: 3; --tc: calc((100cqw - 2 * var(--pad)) / var(--tcols));
+  display: grid; grid-template-columns: repeat(var(--tcols), var(--tc)); grid-auto-rows: var(--tc);
+  height: calc(100cqh - 2 * var(--pad)); overflow: hidden;
+}
+/* whole covers only: as many rows as fit */
+@supports (height: round(down, 10px, 3px)) {
+  .vb-teaser-grid { height: round(down, 100cqh - 2 * var(--pad), var(--tc)); }
+}
+.vb-teaser-grid img { display: block; width: 100%; height: 100%; max-width: none; }
+.vb-teaser .vb-cap { grid-row: 4; }
+.vb-teaser .vb-title, .vb-teaser .vb-artists { display: block; }
+a.vb-teaser:hover .vb-teaser-frame, a.vb-teaser:focus-visible .vb-teaser-frame {
+  transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+[data-theme="dark"] a.vb-teaser:hover .vb-teaser-frame, [data-theme="dark"] a.vb-teaser:focus-visible .vb-teaser-frame { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); }
+a.vb-teaser:hover .vb-title { color: var(--accent-3); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a.vb-teaser:focus-visible { outline: none; }
+a.vb-teaser:focus-visible .vb-teaser-frame { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+
+@media (max-width: 900px) {
+  /* touch screens have no hover tooltip: show Spotify's full metadata, never clamp it */
+  .vb-title, .vb-artists { display: block; -webkit-line-clamp: none; overflow: visible; }
+}
+/* Wider touch screens (iPads in landscape) have no hover tooltip either, so the full metadata
+   shows there too — Spotify asks that it always be readable — even if a very long credit costs
+   the page a little scroll. */
+@media (min-width: 901px) and (hover: none) {
+  .vb-title, .vb-artists { display: block; -webkit-line-clamp: none; overflow: visible; }
+}
+@media (max-width: 600px) {
+  .vb-title { font-size: 14px; }
+  .vb-artists { font-size: 12.5px; }
+  a.vb-teaser { grid-column: 1 / -1; grid-row: auto / span 2; }
+  .vb-teaser-frame { grid-row: 1; aspect-ratio: 3 / 1; }
+  .vb-teaser .vb-cap { grid-row: 2; }
+  .vb-teaser-grid { --tcols: 8; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vb-item:hover .vb-sleeve, .vb-item:focus-within .vb-sleeve, a.vb-teaser:hover .vb-teaser-frame, a.vb-teaser:focus-visible .vb-teaser-frame { transform: none; }
+}
