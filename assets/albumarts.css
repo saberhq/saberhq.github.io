@@ -13,37 +13,32 @@
 }
 @supports (width: 1cqmin) { .aa-grid { width: 100cqmin; height: 100cqmin; } }
 
-/* ---- Controls: one row above the picture, or a column beside it when the space is wide ---- */
-.aa-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+/* ---- Controls: each choice a pill of two; under the note on wide screens, above the picture on narrow ones ---- */
+.aa-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .aa-controls[hidden] { display: none; }
-.aa-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-.aa-group-label {
-  display: none; margin: 0 0 8px; font-family: var(--font-mono); font-size: 11px; font-weight: 400; line-height: 1.6;
-  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink-3);
-}
-.aa-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.aa-hint { display: none; margin: 8px 0 0; font-size: 13px; line-height: 1.45; color: var(--ink-3); text-wrap: pretty; }
-/* Wide: the picture on the left, the chips in a column beside it (each label in front of its chips),
-   and the close-up under them, as large a square as the height left over allows */
-@container arts (min-aspect-ratio: 11 / 10) {
-  .aa-layout { flex-direction: row-reverse; justify-content: flex-end; gap: 28px; }
-  .aa-frame { flex: 0 0 auto; width: min(100cqh, 100cqw - 228px); height: 100%; }
-  .aa-controls { flex: 0 1 400px; min-width: 200px; min-height: 0; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 10px; }
-  .aa-group { flex-wrap: wrap; align-items: flex-start; }
-  .aa-group .aa-chips { flex: 1 1 0; min-width: 0; }
-  .aa-group-label { display: block; flex: 0 0 64px; margin: 0; line-height: 32px; }
-  .aa-group--print { padding-left: calc(64px + var(--space-2)); }
-  .aa-hint { display: block; flex: 1 0 100%; box-sizing: border-box; margin: 0 0 4px; padding-left: calc(64px + var(--space-2)); }
-}
-.aa-controls .aa-hint[hidden] { display: none; }
+.aa-group { display: flex; align-items: center; }
+.aa-group-label { display: none; }
+.aa-chips { display: flex; }
+.aa-chips .vb-chip { position: relative; margin-left: -1px; padding: 4px 8px; font-size: 11px; border-radius: 0; }
+.aa-chips .vb-chip:first-child { margin-left: 0; padding-left: 10px; border-radius: 999px 0 0 999px; }
+.aa-chips .vb-chip:last-child { padding-right: 10px; border-radius: 0 999px 999px 0; }
+.aa-chips .vb-chip:hover { z-index: 1; }
+.aa-chips .vb-chip[aria-pressed="true"] { z-index: 2; }
+.aa-chips .vb-chip:focus-visible { z-index: 3; }
 
-/* ---- The close-up, under the note: a square that the cover under the pointer fills, its facts beside it ---- */
+/* ---- Wide screens: the chips and the close-up under the note, in the Album Arts view only ---- */
+.vb-arts-side { display: none; }
+@media (min-width: 901px) {
+  .js [data-view="arts"] .vb-arts-side { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; margin-top: 24px; }
+}
+
+/* ---- The close-up, under the chips: a square that the cover under the pointer fills, its facts beside it ---- */
 .vb-close { display: none; }
 @media (min-width: 901px) and (hover: hover) {
-  .js [data-view="arts"] .vb-close { display: block; flex: 1 1 0; min-height: 0; margin-top: 24px; container: close / size; }
+  .vb-arts-side .vb-close { display: block; flex: 1 1 0; min-height: 0; margin-top: 16px; container: close / size; }
 }
-.vb-closeup { --sq: min(140px, 100cqh); }
-@container close (max-height: 100px) { .vb-closeup { display: none; } }
+.vb-closeup { --sq: min(120px, 100cqh); }
+@container close (max-height: 90px) { .vb-closeup { display: none; } }
 .vb-closeup [hidden] { display: none; }
 .vb-closeup p { margin: 0; }
 .vb-closeup-idle {
@@ -95,7 +90,7 @@
   html:has([data-view="arts"]), body:has([data-view="arts"]), body:has([data-view="arts"]) main { display: block; min-height: 0; background: #fff; }
   body:has([data-view="arts"]) .sq-siteheader, body:has([data-view="arts"]) .sq-sitefooter, body:has([data-view="arts"]) .vb-top,
   [data-view="arts"] .sq-kicker, [data-view="arts"] .vb-lede, [data-view="arts"] .vb-body, [data-view="arts"] .vb-sign,
-  [data-view="arts"] .vb-actions, [data-view="arts"] .vb-meta, [data-view="arts"] .vb-close, [data-view="arts"] .vb-tabs,
+  [data-view="arts"] .vb-actions, [data-view="arts"] .vb-meta, [data-view="arts"] .vb-arts-side, [data-view="arts"] .vb-tabs,
   [data-view="arts"] .vb-view--wall, [data-view="arts"] .aa-controls { display: none !important; }
   [data-view="arts"].vb-stage, [data-view="arts"] .vb-right, [data-view="arts"] .vb-views { display: block; padding: 0; min-height: 0; max-width: none; }
   [data-view="arts"] .vb-story { display: block; padding: 0 0 4mm; max-width: none; }

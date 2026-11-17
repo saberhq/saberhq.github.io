@@ -26,7 +26,7 @@
   margin: 12px 0 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.6;
   letter-spacing: var(--meta-track); color: var(--ink-3);
 }
-[data-view="wall"] .vb-meta[data-for="arts"], [data-view="arts"] .vb-meta[data-for="wall"] { display: none; }
+[data-view="arts"] .vb-meta[data-for="wall"] { display: none; }
 
 /* Short desktop windows: tighten so the page still fits one screen */
 @media (min-width: 901px) and (max-height: 800px) {

@@ -44,7 +44,6 @@
   {{- if and (lt (len $teaser) 30) (not (in $keys $k)) }}{{ $teaser = $teaser | append . }}{{ end }}
   {{- $keys = $keys | append $k }}
 {{- end }}
-{{- $albums := len (uniq $keys) }}
 
 {{- /* Wall shape: the songs plus one open slot (at most ten cells), four across; the teaser takes the last column of rows two and three. */ -}}
 {{- $slots := cond (lt $n 10) (add $n 1) 10 }}
@@ -99,19 +98,40 @@
           {{- with $updated }} <span aria-hidden="true">·</span> updated <time datetime="{{ .Format "2006-01-02" }}">{{ .Format "2 Jan 2006" }}</time>{{ end }}</p>
         {{- end }}
         {{- if $total }}
-        <p class="vb-meta" data-for="arts">{{ $total }} liked song{{ if ne $total 1 }}s{{ end }} <span aria-hidden="true">·</span> {{ $albums }} album{{ if ne $albums 1 }}s{{ end }}</p>
-        {{- /* The close-up: the cover under the pointer (Album Arts, JS and a pointer only). */}}
-        <div class="vb-close" aria-hidden="true">
-          <div class="vb-closeup" data-card>
-            <div class="vb-closeup-idle" data-card-idle>
-              <p class="vb-closeup-note">Point at a cover to see it here. Click it to open on Spotify.</p>
+        {{- /* Album Arts on wide screens: the chips, then the close-up of the cover under the pointer. */}}
+        <div class="vb-arts-side" data-arts-side>
+          <div class="aa-controls" data-controls hidden>
+            <div class="aa-group">
+              <p class="aa-group-label" id="aa-l-covers">Covers</p>
+              <div class="aa-chips" role="group" aria-labelledby="aa-l-covers">
+                <button class="vb-chip" type="button" data-mode="albums" aria-pressed="true" title="One cover per album; its size shows how many of its songs are liked">Albums</button>
+                <button class="vb-chip" type="button" data-mode="songs" aria-pressed="false" title="One cover per liked song">Songs</button>
+              </div>
             </div>
-            <div class="vb-closeup-info" data-card-info hidden>
-              <img class="vb-closeup-art" data-card-art width="300" height="300" alt="" decoding="async" referrerpolicy="no-referrer">
-              <div class="vb-closeup-text">
-                <p class="vb-closeup-title" data-card-title dir="auto"></p>
-                <p class="vb-closeup-by" data-card-by dir="auto"></p>
-                <dl class="vb-closeup-facts" data-card-facts></dl>
+            <div class="aa-group">
+              <p class="aa-group-label" id="aa-l-order">Order</p>
+              <div class="aa-chips" role="group" aria-labelledby="aa-l-order">
+                <button class="vb-chip" type="button" data-order="played" aria-pressed="true">Most played</button>
+                <button class="vb-chip" type="button" data-order="colour" aria-pressed="false">Colour</button>
+              </div>
+            </div>
+            <div class="aa-group">
+              <p class="aa-group-label" id="aa-l-size">Grid</p>
+              <div class="aa-chips" role="group" aria-labelledby="aa-l-size" data-sizes></div>
+            </div>
+          </div>
+          <div class="vb-close" aria-hidden="true">
+            <div class="vb-closeup" data-card>
+              <div class="vb-closeup-idle" data-card-idle>
+                <p class="vb-closeup-note">Point at a cover to see it here. Click it to open on Spotify.</p>
+              </div>
+              <div class="vb-closeup-info" data-card-info hidden>
+                <img class="vb-closeup-art" data-card-art width="300" height="300" alt="" decoding="async" referrerpolicy="no-referrer">
+                <div class="vb-closeup-text">
+                  <p class="vb-closeup-title" data-card-title dir="auto"></p>
+                  <p class="vb-closeup-by" data-card-by dir="auto"></p>
+                  <dl class="vb-closeup-facts" data-card-facts></dl>
+                </div>
               </div>
             </div>
           </div>
@@ -187,31 +207,6 @@
             <h2 class="vb-sr">Album Arts</h2>
             {{- if $total }}
             <div class="aa-layout">
-            <div class="aa-controls" data-controls hidden>
-              <div class="aa-group">
-                <p class="aa-group-label" id="aa-l-covers">Covers</p>
-                <div class="aa-chips" role="group" aria-labelledby="aa-l-covers">
-                  <button class="vb-chip" type="button" data-mode="albums" aria-pressed="true" title="A cover’s size shows how many of its songs are liked">Per album</button>
-                  <button class="vb-chip" type="button" data-mode="songs" aria-pressed="false">Per song</button>
-                </div>
-                <p class="aa-hint" data-hint>A cover’s size shows how many of its songs are liked.</p>
-              </div>
-              <div class="aa-group">
-                <p class="aa-group-label" id="aa-l-order">Order</p>
-                <div class="aa-chips" role="group" aria-labelledby="aa-l-order">
-                  <button class="vb-chip" type="button" data-order="played" aria-pressed="true">Most played</button>
-                  <button class="vb-chip" type="button" data-order="colour" aria-pressed="false">Colour</button>
-                  <button class="vb-chip" type="button" data-order="liked" aria-pressed="false">Date liked</button>
-                </div>
-              </div>
-              <div class="aa-group">
-                <p class="aa-group-label" id="aa-l-size">Grid</p>
-                <div class="aa-chips" role="group" aria-labelledby="aa-l-size" data-sizes></div>
-              </div>
-              <div class="aa-group aa-group--print">
-                <button class="vb-chip aa-print" type="button" data-print>Print</button>
-              </div>
-            </div>
             <div class="aa-frame">
               <ol class="aa-grid" style="--n: {{ $first }}" data-grid data-first="{{ $first }}" data-total="{{ $total }}">
                 {{- if eq $view "arts" }}
@@ -372,13 +367,12 @@
     stage.addEventListener('mouseover', point);
     stage.addEventListener('focusin', point);
 
-    // Album Arts: covers per album or per song, three orders, two sizes; Print loads the large covers first
+    // Album Arts: covers per album or per song, two orders, two sizes
     var arts = (function () {
       var grid = document.querySelector('[data-grid]');
       if (!grid) return { start: function () {}, load: function () { return Promise.resolve(); } };
       var controls = document.querySelector('[data-controls]');
       var sizesBox = document.querySelector('[data-sizes]');
-      var hint = document.querySelector('[data-hint]');
       var status = document.querySelector('[data-status]');
       var started = false, loading = null, songs = [], albums = null, sizes = [], shownTiles = [];
       var state = { n: 10, order: 'played', mode: 'albums' };
@@ -501,7 +495,7 @@
       }
       function byHue(x, y) { return (x._grey - y._grey) || (x._grey ? y._c.l - x._c.l : x._c.h - y._c.h); }
 
-      // songs: most played from the centre ring by ring; colour by columns; date liked in reading order
+      // songs: most played from the centre ring by ring; colour by columns
       function songOrder(n) {
         var chosen = songs.slice(0, n * n), out;
         if (state.order === 'colour') {
@@ -511,8 +505,6 @@
             list.slice(c * n, c * n + n).sort(function (x, y) { return y._c.l - x._c.l; })
               .forEach(function (el, r) { out[r * n + c] = el; });
           }
-        } else if (state.order === 'liked') {
-          out = chosen.slice().sort(function (x, y) { return x._liked - y._liked; });
         } else {
           out = new Array(n * n);
           spots(n, 1, 'centre').forEach(function (p, k) { out[p.r * n + p.c] = chosen[k]; });
@@ -520,27 +512,22 @@
         return out.filter(Boolean).map(function (el) { return { el: el, k: 1 }; });
       }
       // albums: the most played that fill the grid; then most played from the centre outwards,
-      // colour with hue across and light to dark down (biggest covers placed first), or date liked in reading order
+      // or colour with hue across and light to dark down (biggest covers placed first)
       function albumOrder(n) {
         var placed;
         if (state.order === 'played') placed = pack(albums, n, 'centre');
         else {
           var chosen = pack(albums, n, 'rows').map(function (p) { p.el._in = true; p.el._area = p.k * p.k; return p.el; });
           var rest = albums.filter(function (a) { var was = a._in; a._in = false; return !was; });
-          if (state.order === 'colour') {
-            var run = 0;
-            chosen.sort(byHue).forEach(function (a) {
-              a._tx = (run + a._area / 2) / (n * n) * n - 0.5;
-              a._ty = (1 - a._c.l) * n - 0.5;
-              run += a._area;
-            });
-            rest.forEach(function (a) { a._tx = a._grey ? n - 1 : a._c.h / 360 * n; a._ty = (1 - a._c.l) * n - 0.5; });
-            chosen.sort(function (x, y) { return y._area - x._area; });
-            placed = pack(chosen.concat(rest), n, 'target');
-          } else {
-            chosen.sort(function (x, y) { return x._liked - y._liked; });
-            placed = pack(chosen.concat(rest), n, 'rows');
-          }
+          var run = 0;
+          chosen.sort(byHue).forEach(function (a) {
+            a._tx = (run + a._area / 2) / (n * n) * n - 0.5;
+            a._ty = (1 - a._c.l) * n - 0.5;
+            run += a._area;
+          });
+          rest.forEach(function (a) { a._tx = a._grey ? n - 1 : a._c.h / 360 * n; a._ty = (1 - a._c.l) * n - 0.5; });
+          chosen.sort(function (x, y) { return y._area - x._area; });
+          placed = pack(chosen.concat(rest), n, 'target');
         }
         return placed.sort(function (p, q) { return p.r - q.r || p.c - q.c; });
       }
@@ -567,7 +554,6 @@
         grid.style.setProperty('--n', n);
         grid.appendChild(frag);
         fitImages();
-        hint.hidden = state.mode !== 'albums';
         controls.querySelectorAll('[data-mode]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-mode') === state.mode ? 'true' : 'false'); });
         controls.querySelectorAll('[data-order]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-order') === state.order ? 'true' : 'false'); });
         sizesBox.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', +b.getAttribute('data-n') === n ? 'true' : 'false'); });
@@ -599,7 +585,7 @@
           b.setAttribute('aria-label', n + ' by ' + n + ' covers');
           sizesBox.appendChild(b);
         });
-        var asked = /^#(\d+)-(played|colour|liked)(?:-(albums|songs))?$/.exec(location.hash);
+        var asked = /^#(\d+)-(played|colour)(?:-(albums|songs))?$/.exec(location.hash);
         if (asked) {
           if (sizes.indexOf(+asked[1]) !== -1) state.n = +asked[1];
           state.order = asked[2];
@@ -609,7 +595,6 @@
         controls.addEventListener('click', function (e) {
           var b = e.target.closest('button');
           if (!b) return;
-          if (b.hasAttribute('data-print')) return printLarge(b);
           if (b.hasAttribute('data-n')) state.n = +b.getAttribute('data-n');
           else if (b.hasAttribute('data-order')) state.order = b.getAttribute('data-order');
           else if (b.hasAttribute('data-mode')) state.mode = b.getAttribute('data-mode');
@@ -622,30 +607,20 @@
         window.addEventListener('resize', function () { clearTimeout(timer); timer = setTimeout(fitImages, 200); });
       }
 
-      // print: swap in the 640px covers, wait for them, then open the print dialog
-      function printLarge(button) {
-        var shown = shownTiles.map(function (p) { return p.el; });
-        var label = button.textContent, left = shown.length;
-        button.disabled = true;
-        status.textContent = 'Loading the large covers for printing.';
-        function done() {
-          if (--left > 0) { button.textContent = 'Loading ' + (shown.length - left) + '/' + shown.length; return; }
-          button.textContent = label; button.disabled = false; status.textContent = '';
-          window.print();
-        }
-        shown.forEach(function (el) {
-          var img = el.querySelector('img'), large = el.getAttribute('data-large');
-          if (!large || img.getAttribute('src') === large) return done();
-          var probe = new Image();
-          probe.referrerPolicy = 'no-referrer';
-          probe.onload = function () { img.removeAttribute('srcset'); img.removeAttribute('sizes'); img.loading = 'eager'; img.src = large; done(); };
-          probe.onerror = done;
-          probe.src = large;
-        });
-      }
-
       return { start: start, load: load };
     })();
+
+    // Album Arts' chips: under the note on wide screens, above the picture on narrow ones
+    var chips = document.querySelector('[data-controls]'), side = document.querySelector('[data-arts-side]'), layout = document.querySelector('.aa-layout');
+    if (chips && side && layout && window.matchMedia) {
+      var narrow = window.matchMedia('(max-width: 900px)');
+      var placeChips = function () {
+        if (narrow.matches) layout.insertBefore(chips, layout.firstChild);
+        else side.insertBefore(chips, side.firstChild);
+      };
+      placeChips();
+      if (narrow.addEventListener) narrow.addEventListener('change', placeChips); else narrow.addListener(placeChips);
+    }
 
     // the two views share one page: only the area under the blue line changes, and the address follows
     var paths = { wall: stage.getAttribute('data-wall-href'), arts: stage.getAttribute('data-arts-href') };
