@@ -1,0 +1,253 @@
+#!/usr/bin/env python3
+"""Saber Vibes history: each song's first play, plays and time, from a Spotify "Extended streaming history" folder."""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import datetime as dt
+import json
+import os
+import sys
+import tempfile
+from pathlib import Path
+
+sys.dont_write_bytecode = True
+
+PLAY_MS = 30_000
+LATE_DAYS = 45
+FILES = "Streaming_History_*.json"
+COLUMNS = ("played_at", "reported_at", "ms_played", "kind", "id", "name", "by", "album", "country", "platform",
+           "reason_start", "reason_end", "shuffle", "skipped", "offline", "incognito", "video")
+
+
+class Problem(Exception):
+    pass
+
+
+def iso(moment: dt.datetime) -> str:
+    return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def text(value) -> str:
+    return value.strip() if isinstance(value, str) else ""
+
+
+def last_part(uri) -> str:
+    return uri.rsplit(":", 1)[-1] if isinstance(uri, str) else ""
+
+
+# Reading the export
+
+def read_rows(folder: Path) -> list:
+    """Every row of every history file, each with the file's kind."""
+    files = sorted(folder.glob(FILES))
+    if not files:
+        raise Problem(f"{folder} holds no {FILES}")
+    rows = []
+    for file in files:
+        try:
+            listed = json.loads(file.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as err:
+            raise Problem(f"{file.name} can't be read ({type(err).__name__})")
+        if not isinstance(listed, list) or not all(isinstance(row, dict) for row in listed):
+            raise Problem(f"{file.name} isn't a list of plays")
+        video = "_Video_" in file.name
+        rows.extend((row, video) for row in listed)
+    return rows
+
+
+def started(row: dict, ended: dt.datetime, ms: int) -> dt.datetime:
+    """When the play began: the device's own clock when it is believable, else the end minus the length."""
+    stamp = row.get("offline_timestamp")
+    if isinstance(stamp, (int, float)) and stamp > 0:
+        seconds = stamp / 1000 if stamp > 1e11 else stamp
+        try:
+            device = dt.datetime.fromtimestamp(seconds, dt.timezone.utc).replace(tzinfo=None)
+        except (ValueError, OverflowError, OSError):
+            device = None
+        if device and dt.timedelta(minutes=-10) <= ended - device <= dt.timedelta(days=LATE_DAYS):
+            return device
+    return ended - dt.timedelta(milliseconds=ms)
+
+
+def what(row: dict) -> tuple:
+    """(kind, id, name, by, album) of what was played."""
+    if row.get("spotify_track_uri"):
+        return ("track", last_part(row["spotify_track_uri"]), text(row.get("master_metadata_track_name")),
+                text(row.get("master_metadata_album_artist_name")), text(row.get("master_metadata_album_album_name")))
+    if row.get("audiobook_uri") or row.get("audiobook_chapter_uri"):
+        return ("audiobook", last_part(row.get("audiobook_chapter_uri") or row.get("audiobook_uri")),
+                text(row.get("audiobook_chapter_title")), "", text(row.get("audiobook_title")))
+    if row.get("spotify_episode_uri"):
+        return ("episode", last_part(row["spotify_episode_uri"]), text(row.get("episode_name")),
+                text(row.get("episode_show_name")), "")
+    return ("other", "", "", "", "")
+
+
+def flag(value) -> str:
+    return "" if value is None else "1" if value else "0"
+
+
+def read_plays(folder: Path) -> tuple:
+    """(plays in the order they happened, how many rows were left out and why)."""
+    left_out = {"written twice": 0, "a device stuck on one song": 0}
+    seen, stuck, plays = set(), set(), []
+    for row, video in read_rows(folder):
+        whole = json.dumps(row, sort_keys=True)
+        if whole in seen:
+            left_out["written twice"] += 1
+            continue
+        seen.add(whole)
+        try:
+            ended = dt.datetime.strptime(row["ts"], "%Y-%m-%dT%H:%M:%SZ")
+            ms = max(0, int(row.get("ms_played") or 0))
+        except (KeyError, TypeError, ValueError):
+            raise Problem("a play has no readable time or length; is this an Extended streaming history?")
+        kind, item_id, name, by, album = what(row)
+        if text(row.get("reason_end")).startswith("unexpected-exit") and ms >= PLAY_MS:
+            loop = (item_id, ms, row["ts"][:10])
+            if loop in stuck:
+                left_out["a device stuck on one song"] += 1
+                continue
+            stuck.add(loop)
+        plays.append({"played_at": started(row, ended, ms), "reported_at": row["ts"], "ms_played": ms, "kind": kind,
+                      "id": item_id, "name": name, "by": by, "album": album, "country": text(row.get("conn_country")),
+                      "platform": text(row.get("platform")), "reason_start": text(row.get("reason_start")),
+                      "reason_end": text(row.get("reason_end")), "shuffle": flag(row.get("shuffle")),
+                      "skipped": flag(row.get("skipped")), "offline": flag(row.get("offline")),
+                      "incognito": flag(row.get("incognito_mode")), "video": flag(video)})
+    plays.sort(key=lambda play: (play["played_at"], play["reported_at"], play["id"]))
+    return plays, left_out
+
+
+# One line per song
+
+def same_song(name: str, by: str) -> tuple:
+    """Recordings of one song share a title and a first artist."""
+    return name.casefold(), by.casefold()
+
+
+def summarise(plays: list) -> list:
+    """Songs with a play of 30 seconds or more; a recording that changed its name joins both names."""
+    parent: dict = {}
+
+    def find(key):
+        while parent.setdefault(key, key) != key:
+            parent[key] = parent[parent[key]]
+            key = parent[key]
+        return key
+
+    known: dict = {}
+    for play in plays:
+        if play["kind"] != "track" or not play["id"] or not play["name"]:
+            continue
+        key = same_song(play["name"], play["by"])
+        parent[find(key)] = find(known.setdefault(play["id"], key))
+    songs: dict = {}
+    for play in plays:
+        if play["kind"] != "track" or not play["id"] or not play["name"]:
+            continue
+        key = same_song(play["name"], play["by"])
+        song = songs.setdefault(find(key), {"names": {}, "ids": [], "first": None, "last": None, "plays": 0, "ms": 0})
+        song["names"][key] = (play["name"], play["by"])
+        song["ms"] += play["ms_played"]
+        if play["id"] not in song["ids"]:
+            song["ids"].append(play["id"])
+        if play["ms_played"] >= PLAY_MS:
+            at = iso(play["played_at"])
+            song["first"] = song["first"] or at
+            song["last"] = at
+            song["plays"] += 1
+    listed = []
+    for song in songs.values():
+        if not song["plays"]:
+            continue
+        names = list(song["names"].values())
+        entry = {"name": names[-1][0], "by": names[-1][1], "ids": song["ids"], "first": song["first"],
+                 "last": song["last"], "plays": song["plays"], "ms": song["ms"]}
+        if len(names) > 1:
+            entry["also"] = [list(pair) for pair in names[:-1]]
+        listed.append(entry)
+    listed.sort(key=lambda entry: (entry["first"], entry["name"], entry["by"]))
+    return listed
+
+
+# Writing
+
+def write_atomic(path: Path, mode: int, fill) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=".vibes-", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
+            fill(handle)
+        os.chmod(tmp, mode)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def write_summary(path: Path, plays: list, songs: list) -> None:
+    head = {"version": 1, "from": iso(plays[0]["played_at"]), "to": max(play["reported_at"] for play in plays),
+            "play_ms": PLAY_MS, "plays": sum(song["plays"] for song in songs)}
+
+    def fill(handle):
+        handle.write(json.dumps(head, ensure_ascii=False, indent=2)[:-2] + ',\n  "songs": [\n')
+        handle.write(",\n".join(json.dumps(song, ensure_ascii=False, separators=(",", ":")) for song in songs))
+        handle.write("\n  ]\n}\n")
+    write_atomic(path, 0o644, fill)
+
+
+def write_plays(path: Path, plays: list) -> None:
+    def fill(handle):
+        table = csv.DictWriter(handle, fieldnames=COLUMNS, lineterminator="\n")
+        table.writeheader()
+        for play in plays:
+            table.writerow(dict(play, played_at=iso(play["played_at"])))
+    write_atomic(path, 0o600, fill)
+
+
+def main(argv: list | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="vibes-history",
+        description="Read a Spotify \"Extended streaming history\" folder and write each song's first play, last "
+                    "play, plays and time, for scripts/vibes-songbook.",
+        epilog="A play counts from 30 seconds. Times are UTC.")
+    parser.add_argument("folder", metavar="FOLDER", help="the unpacked folder holding Streaming_History_*.json")
+    parser.add_argument("--out", metavar="FILE", help="write the songs' summary here (JSON)")
+    parser.add_argument("--plays", metavar="FILE", help="also write every play as a row of a CSV, without IP addresses")
+    args = parser.parse_args(argv)
+    try:
+        plays, left_out = read_plays(Path(args.folder).expanduser())
+        if not plays:
+            raise Problem("the folder's files hold no plays")
+        songs = summarise(plays)
+        if args.out:
+            write_summary(Path(args.out).expanduser(), plays, songs)
+        if args.plays:
+            write_plays(Path(args.plays).expanduser(), plays)
+    except Problem as problem:
+        print(f"vibes-history: {problem}", file=sys.stderr)
+        return 2
+    counted = sum(song["plays"] for song in songs)
+    hours = sum(play["ms_played"] for play in plays) / 3_600_000
+    skipped = ", ".join(f"{count} {why}" for why, count in left_out.items() if count)
+    print(f"vibes-history: {len(plays)} plays, {iso(plays[0]['played_at'])[:10]} to {plays[-1]['reported_at'][:10]}, "
+          f"{hours:.0f} hours · {counted} of 30 seconds or more, across {len(songs)} songs"
+          + (f" · left out: {skipped}" if skipped else ""))
+    for label, target in (("summary", args.out), ("plays", args.plays)):
+        if target:
+            print(f"  {label} · {target}")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print("vibes-history: stopped", file=sys.stderr)
+        sys.exit(130)

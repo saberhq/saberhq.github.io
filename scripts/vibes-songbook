@@ -33,6 +33,8 @@ sync = _load_sync()
 
 MORE_FILE = "vibes_more.json"
 ARTS_FILE = "albumarts.json"
+HISTORY_FILE = "history.json"
+PLAYED = ("first_played", "last_played", "plays", "played_ms")
 LIVE = {MORE_FILE: "https://saberhq.com/vibes/more.json", ARTS_FILE: "https://saberhq.com/vibes/albumarts.json"}
 RANGES = {"short": "short_term", "medium": "medium_term", "long": "long_term"}
 TOP_SHOWN = 10
@@ -261,6 +263,42 @@ def note_colours(book: dict, limit: int | None, log) -> None:
             entry["colour"] = known[url]
 
 
+def load_history(path: Path | None, log) -> dict | None:
+    """What scripts/vibes-history wrote, as two lookups: by song id, and by title and first artist."""
+    if path is None or not path.exists():
+        return None
+    try:
+        by_id, by_song = {}, {}
+        for number, song in enumerate(json.loads(path.read_text(encoding="utf-8"))["songs"]):
+            facts = (number, song["first"], song["last"], int(song["plays"]), int(song["ms"]))
+            for song_id in song["ids"]:
+                by_id[song_id] = facts
+            for name, by in [(song["name"], song["by"])] + [tuple(pair) for pair in song.get("also", [])]:
+                by_song[(name.strip().casefold(), by.strip().casefold())] = facts
+    except (OSError, ValueError, KeyError, TypeError) as err:
+        log.info(f"couldn't read the streaming history ({type(err).__name__}), so first plays stay as they are")
+        return None
+    return {"by_id": by_id, "by_song": by_song}
+
+
+def note_history(book: dict, history: dict) -> None:
+    """Each song's first play, last play, plays and time; another recording of it counts too."""
+    for song_id, entry in book["songs"].items():
+        found = {facts[0]: facts for facts in (history["by_id"].get(song_id), history["by_song"].get(same_song(entry)))
+                 if facts}
+        for key in PLAYED:
+            entry.pop(key, None)
+        if found:
+            entry.update(first_played=min(facts[1] for facts in found.values()),
+                         last_played=max(facts[2] for facts in found.values()),
+                         plays=sum(facts[3] for facts in found.values()),
+                         played_ms=sum(facts[4] for facts in found.values()))
+
+
+def played(entry: dict) -> dict:
+    return {"first_played": entry["first_played"], "plays": entry.get("plays")} if entry.get("first_played") else {}
+
+
 def settle(book: dict) -> None:
     """Work out each song's first date and its in and out counts."""
     first_like: dict = {}
@@ -284,7 +322,8 @@ def more_for_page(book: dict, wall: list, top: dict | None) -> dict:
     songs = {}
     for song in wall:
         entry = book["songs"].get(song["id"]) or {}
-        songs[song["id"]] = {"since": entry.get("since"), "ins": entry.get("ins", 1), "outs": entry.get("outs", 0)}
+        songs[song["id"]] = {"since": entry.get("since"), "ins": entry.get("ins", 1), "outs": entry.get("outs", 0),
+                             **played(entry)}
     return {"updated_at": None, "songs": songs, "top": top or {}}
 
 
@@ -299,7 +338,7 @@ def arts_for_page(book: dict) -> dict:
                       "album": entry["album"].get("name"), "album_url": entry["album"].get("url"),
                       "small": pick_image(images, 64), "medium": pick_image(images, 300),
                       "large": pick_image(images, 640), "liked": entry["liked_at"],
-                      "rank": entry.get("rank"), "colour": entry.get("colour")})
+                      "rank": entry.get("rank"), "colour": entry.get("colour"), **played(entry)})
     ranked = sorted((tile for tile in tiles if tile["rank"] is not None), key=lambda tile: tile["rank"])
     rest = sorted((tile for tile in tiles if tile["rank"] is None), key=lambda tile: tile["liked"], reverse=True)
     return {"updated_at": None, "total": len(tiles), "tiles": ranked + rest}
@@ -348,6 +387,8 @@ def run(args, env, log) -> dict:
     out_dir = Path(args.out_dir)
     book_file = args.songbook or env.get("VIBES_SONGBOOK", "").strip()
     book_path = Path(book_file) if book_file else None
+    history_file = args.history or env.get("VIBES_HISTORY", "").strip()
+    history_path = Path(history_file) if history_file else book_path.with_name(HISTORY_FILE) if book_path else None
     live = {name: fetch_live(name, log) for name in LIVE}
 
     def keep_live(why: str) -> dict:
@@ -394,6 +435,9 @@ def run(args, env, log) -> dict:
         else:
             log.info("the saved login can't read your most-played lists yet; scripts/vibes-login adds that")
         note_colours(book, None if args.deep else COLOURS_PER_RUN, log)
+        history = load_history(history_path, log)
+        if history:
+            note_history(book, history)
         settle(book)
     except sync.Problem as problem:
         result["status"], result["rotated"] = problem.status, spotify.rotated
@@ -430,6 +474,9 @@ def main(argv: list | None = None) -> int:
                     "write data/vibes_more.json and data/albumarts.json for the pages.",
         epilog="Keys as for scripts/vibes-sync. Without keys, the live copies from saberhq.com are used.")
     parser.add_argument("--songbook", metavar="FILE", help="the songbook to read and update (or VIBES_SONGBOOK)")
+    parser.add_argument("--history", metavar="FILE",
+                        help="first plays and play counts from scripts/vibes-history (or VIBES_HISTORY; "
+                             "default: history.json beside the songbook)")
     parser.add_argument("--out-dir", metavar="DIR", default=str(sync.REPO_ROOT / "data"),
                         help="where to write the pages' data (default: data/)")
     parser.add_argument("--deep", action="store_true", help="re-rank every song and colour every cover now")
