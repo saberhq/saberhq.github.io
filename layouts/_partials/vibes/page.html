@@ -27,6 +27,9 @@
   {{- end }}
 {{- end }}{{ end }}
 {{- $n := len $songs }}
+{{- $stats := $more.songs | default dict }}
+{{- $hasDays := false }}
+{{- range $songs }}{{ with index $stats .id }}{{ if or .first_played .since }}{{ $hasDays = true }}{{ end }}{{ end }}{{ end }}
 {{- $updated := false }}
 {{- with $v }}{{ with .updated_at }}
   {{- $raw := . }}
@@ -64,7 +67,7 @@
   <link rel="preconnect" href="https://i.scdn.co">
   {{- end }}
 </head>
-<body class="sq-shell vb-page{{ if $hasTop }} vb-page--top{{ end }}">
+<body class="sq-shell vb-page{{ if $hasTop }} vb-page--top{{ end }}{{ if $hasDays }} vb-page--days{{ end }}">
 
   {{ partial "saberhq/site-header" . }}
 
@@ -95,7 +98,8 @@
           {{- $ms := 0.0 }}
           {{- range $songs }}{{ $ms = add $ms (.duration_ms | default 0) }}{{ end }}
         <p class="vb-meta" data-for="wall">{{ $n }} song{{ if ne $n 1 }}s{{ end }} <span aria-hidden="true">·</span> {{ int (math.Round (div $ms 60000.0)) }} min
-          {{- with $updated }} <span aria-hidden="true">·</span> updated <time datetime="{{ .Format "2006-01-02" }}">{{ .Format "2 Jan 2006" }}</time>{{ end }}</p>
+          {{- with $updated }} <span aria-hidden="true">·</span> updated <time datetime="{{ .Format "2006-01-02" }}">{{ .Format "2 Jan 2006" }}</time>{{ end }}
+          {{- if $hasDays }}<br>days: since the first listen{{ end }}</p>
         {{- end }}
         {{- if $total }}
         {{- /* Album Arts on wide screens: the chips, then the close-up of the cover under the pointer. */}}
@@ -181,6 +185,16 @@
                   {{- with $by }}
                   <p class="vb-artists" dir="auto" title="{{ . }}">{{ . }}</p>
                   {{- end }}
+                  {{- /* Days since the first listen; with ~ when only the date liked or the wall date is known */}}
+                  {{- $st := index $stats $tr.id | default dict }}
+                  {{- $raw := $st.first_played | default $st.since }}
+                  {{- $about := not $st.first_played }}
+                  {{- with $raw }}{{ with try (time.AsTime .) }}{{ if not .Err }}
+                    {{- $days := int (math.Floor (div (now.Sub .Value).Hours 24)) }}
+                    {{- if lt $days 0 }}{{ $days = 0 }}{{ end }}
+                    {{- $on := .Value.Format "2 Jan 2006" }}
+                  <p class="vb-days" data-heard="{{ $raw }}" title="{{ if $about }}No listening history yet: liked or on the wall since {{ $on }}{{ else }}First listen: {{ $on }}{{ end }}">{{ if $about }}<span class="vb-days-about" aria-hidden="true"{{ if not $days }} hidden{{ end }}>~</span>{{ end }}<span class="vb-days-n">{{ if $days }}{{ lang.FormatNumber 0 $days }} day{{ if ne $days 1 }}s{{ end }}{{ else }}today{{ end }}</span><span class="vb-sr"> {{ if $about }}or so {{ end }}since the first listen{{ if not $about }}, on {{ $on }}{{ end }}</span></p>
+                  {{- end }}{{ end }}{{ end }}
                 </div>
               </li>
               {{- end }}
@@ -211,7 +225,7 @@
               <ol class="aa-grid" style="--n: {{ $first }}" data-grid data-first="{{ $first }}" data-total="{{ $total }}">
                 {{- if eq $view "arts" }}
                 {{- range $i, $t := $tiles }}
-                <li class="aa-tile"{{ if ge $i (mul $first $first) }} hidden{{ end }} data-name="{{ $t.name }}" data-by="{{ $t.by }}"{{ with $t.album }} data-album="{{ . }}"{{ end }}{{ with $t.album_url }} data-album-url="{{ . }}"{{ end }} data-liked="{{ $t.liked }}"{{ if $t.rank }} data-pos="{{ add $i 1 }}"{{ end }}{{ with $t.colour }} data-colour="{{ . }}"{{ end }}{{ with $t.medium }} data-medium="{{ . }}"{{ end }}{{ with $t.large }} data-large="{{ . }}"{{ end }}><a href="{{ $t.url }}" target="_blank" rel="noopener"><img src="{{ $t.medium | default $t.small }}"{{ if and $t.small $t.medium }} srcset="{{ $t.small }} 64w, {{ $t.medium }} 300w{{ with $t.large }}, {{ . }} 640w{{ end }}" sizes="(max-width: 900px) 10vw, 64px"{{ end }} width="300" height="300" alt="{{ $t.name }}{{ with $t.by }} by {{ . }}{{ end }}" loading="lazy" decoding="async" referrerpolicy="no-referrer"></a></li>
+                <li class="aa-tile"{{ if ge $i (mul $first $first) }} hidden{{ end }} data-name="{{ $t.name }}" data-by="{{ $t.by }}"{{ with $t.album }} data-album="{{ . }}"{{ end }}{{ with $t.album_url }} data-album-url="{{ . }}"{{ end }} data-liked="{{ $t.liked }}"{{ with $t.first_played }} data-heard="{{ . }}"{{ end }}{{ if $t.rank }} data-pos="{{ add $i 1 }}"{{ end }}{{ with $t.colour }} data-colour="{{ . }}"{{ end }}{{ with $t.medium }} data-medium="{{ . }}"{{ end }}{{ with $t.large }} data-large="{{ . }}"{{ end }}><a href="{{ $t.url }}" target="_blank" rel="noopener"><img src="{{ $t.medium | default $t.small }}"{{ if and $t.small $t.medium }} srcset="{{ $t.small }} 64w, {{ $t.medium }} 300w{{ with $t.large }}, {{ . }} 640w{{ end }}" sizes="(max-width: 900px) 10vw, 64px"{{ end }} width="300" height="300" alt="{{ $t.name }}{{ with $t.by }} by {{ . }}{{ end }}" loading="lazy" decoding="async" referrerpolicy="no-referrer"></a></li>
                 {{- end }}
                 {{- end }}
               </ol>
@@ -273,11 +287,51 @@
   {{- with site.Data.vibes_more }}{{ (resources.FromString "vibes/more.json" (jsonify .)).Publish }}{{ end }}
   {{- with site.Data.albumarts }}{{ (resources.FromString "vibes/albumarts.json" (jsonify .)).Publish }}{{ end }}
 
-  {{/* Saber Vibes: most-played tabs, the two views, the close-up, and Album Arts' covers. */}}
+  {{/* Saber Vibes: the days under each song, most-played tabs, the two views, the close-up, and Album Arts' covers. */}}
   <script>
   (function () {
     var stage = document.querySelector('[data-stage]');
     if (!stage) return;
+
+    // the days since a first listen, counted on the reader's clock
+    function daysSince(t) { return Math.max(0, Math.floor((Date.now() - t) / 864e5)); }
+    function daysText(d) { return d ? d.toLocaleString('en-GB') + (d === 1 ? ' day' : ' days') : 'today'; }
+    document.querySelectorAll('.vb-days[data-heard]').forEach(function (el) {
+      var t = Date.parse(el.getAttribute('data-heard')), n = el.querySelector('.vb-days-n'), about = el.querySelector('.vb-days-about');
+      if (isNaN(t) || !n) return;
+      n.textContent = daysText(daysSince(t));
+      if (about) about.hidden = !daysSince(t);
+    });
+
+    // the wall fits one screen: when captions run long, the covers give up just enough
+    var wallHead = stage.querySelector('.vb-wall-head'), wall = stage.querySelector('.vb-wall'), sleeve = stage.querySelector('.vb-sleeve');
+    var wideScreen = window.matchMedia ? window.matchMedia('(min-width: 901px)') : null;
+    function wallOver() {
+      var cs = getComputedStyle(stage);
+      return wallHead.offsetHeight + parseFloat(getComputedStyle(wallHead).marginBottom) + wall.offsetHeight + parseFloat(getComputedStyle(wall).marginBottom)
+        - (parseFloat(cs.minHeight) - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom));
+    }
+    function fitWall() {
+      stage.style.removeProperty('--trim');
+      if (!wallHead || !wall || !sleeve || !wideScreen || !wideScreen.matches) return;
+      var rows = +stage.style.getPropertyValue('--n-rows') || 1;
+      for (var trim = 0, i = 0; i < 6; i++) {
+        var over = wallOver();
+        if (!(over > 0.5) || sleeve.offsetWidth <= 80) break;
+        trim += Math.ceil(over / rows);
+        stage.style.setProperty('--trim', trim + 'px');
+      }
+    }
+    fitWall();
+    if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', fitWall);
+    window.addEventListener('load', fitWall);
+    // a box the size of the window tells of every resize, in the same frame
+    if (window.ResizeObserver) {
+      var probe = document.createElement('div');
+      probe.style.cssText = 'position:fixed;inset:0;visibility:hidden;pointer-events:none';
+      document.body.appendChild(probe);
+      new ResizeObserver(fitWall).observe(probe);
+    } else window.addEventListener('resize', fitWall);
 
     // most played: one period at a time
     var tabs = document.querySelector('[data-top-tabs]');
@@ -320,10 +374,12 @@
     var current = null;
     function day(t) { return t ? new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''; }
     function place(pos) { return +pos ? 'No. ' + pos + ', past year' : ''; }
-    function fact(term, value) {
+    function ago(t) { var d = daysSince(t); return d ? daysText(d) + ' ago' : 'today'; }
+    function fact(term, value, hint) {
       if (!value) return;
       var row = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
       dt.textContent = term; dd.textContent = value;
+      if (hint) dd.title = hint;
       row.appendChild(dt); row.appendChild(dd); facts.appendChild(row);
     }
     function show(el) {
@@ -342,13 +398,16 @@
         by.textContent = el._by || '';
         if (n === 1) fact('Song', el._songs[0].getAttribute('data-name'));
         else fact('Liked songs', String(n));
-        fact(n === 1 ? 'Liked' : 'First liked', day(el._liked));
+        if (el._heard) fact('First listen', ago(el._heard), day(el._heard));
+        else fact(n === 1 ? 'Liked' : 'First liked', day(el._liked));
         fact('Most played', place(el._pos));
       } else {
         title.textContent = el.getAttribute('data-name');
         by.textContent = el.getAttribute('data-by') || '';
         fact('Album', el.getAttribute('data-album'));
-        fact('Liked', day(Date.parse(el.getAttribute('data-liked'))));
+        var heard = Date.parse(el.getAttribute('data-heard'));
+        if (heard) fact('First listen', ago(heard), day(heard));
+        else fact('Liked', day(Date.parse(el.getAttribute('data-liked'))));
         fact('Most played', place(el.getAttribute('data-pos')));
       }
       idle.hidden = true;
@@ -381,7 +440,7 @@
         var li = document.createElement('li'), a = document.createElement('a'), img = document.createElement('img');
         li.className = 'aa-tile';
         li.hidden = true;
-        var data = { name: t.name, by: t.by, album: t.album, 'album-url': t.album_url, liked: t.liked, colour: t.colour, medium: t.medium, large: t.large, pos: t.rank ? i + 1 : '' };
+        var data = { name: t.name, by: t.by, album: t.album, 'album-url': t.album_url, liked: t.liked, heard: t.first_played, colour: t.colour, medium: t.medium, large: t.large, pos: t.rank ? i + 1 : '' };
         Object.keys(data).forEach(function (k) { if (data[k]) li.setAttribute('data-' + k, data[k]); });
         a.href = t.url; a.target = '_blank'; a.rel = 'noopener';
         img.src = t.medium || t.small || '';
@@ -439,12 +498,13 @@
             a.hidden = true;
             var url = el.getAttribute('data-album-url');
             if (url) a.querySelector('a').href = url;
-            a._rank = el._rank; a._c = el._c; a._grey = el._grey; a._liked = el._liked; a._songs = [];
+            a._rank = el._rank; a._c = el._c; a._grey = el._grey; a._liked = el._liked; a._heard = el._heard; a._songs = [];
             a._pos = el._pos ? list.length + 1 : 0;
             seen[key] = a; list.push(a);
           }
           a._songs.push(el);
           if (el._liked && (!a._liked || el._liked < a._liked)) a._liked = el._liked;
+          if (el._heard && (!a._heard || el._heard < a._heard)) a._heard = el._heard;
         });
         list.forEach(function (a) {
           var n = a._songs.length, name = a.getAttribute('data-album') || a.getAttribute('data-name');
@@ -571,6 +631,7 @@
           el._k = 1;
           el._pos = +el.getAttribute('data-pos') || 0;
           el._liked = Date.parse(el.getAttribute('data-liked')) || 0;
+          el._heard = Date.parse(el.getAttribute('data-heard')) || 0;
           el._c = hsl(el.getAttribute('data-colour') || '#808080');
           el._grey = el._c.s < 0.12 || el._c.l < 0.08 || el._c.l > 0.92;
         });

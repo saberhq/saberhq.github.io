@@ -31,12 +31,14 @@
   --cap: calc(12px + 2.6 * var(--t-size) + 1.35 * var(--a-size));
   --art-r: 8px;               /* Spotify: 8px corners on large screens, 4px on small */
 }
+/* with the days line the budget is one title line, the artists and the days (4px + 15px); the script fits longer captions */
+.vb-page--days { --cap: calc(31px + 1.3 * var(--t-size) + 1.35 * var(--a-size)); }
 .vb-stage {
   --cols: var(--n-cols, 5);
   --rows: var(--n-rows, 2);
   --s-w: calc((min(100vw, var(--vb-max)) - 2 * var(--gut) - var(--left) - var(--cgap) - (var(--cols) - 1) * var(--gx)) / var(--cols));
   --s-h: calc((100vh - var(--chrome) - 2 * var(--pady) - var(--head) - var(--rows) * var(--cap) - (var(--rows) - 1) * var(--gy)) / var(--rows));
-  --s: clamp(80px, min(var(--s-w), var(--s-h)), 260px);   /* capped: one or two songs never balloon */
+  --s: clamp(80px, min(var(--s-w), var(--s-h)) - var(--trim, 0px), 260px);   /* capped: one or two songs never balloon */
   --wall-w: calc(var(--cols) * var(--s) + (var(--cols) - 1) * var(--gx));
   max-width: var(--vb-max); margin: 0 auto;
   padding: var(--pady) var(--gut);
