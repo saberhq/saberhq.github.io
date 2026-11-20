@@ -296,7 +296,7 @@ def note_history(book: dict, history: dict) -> None:
 
 
 def played(entry: dict) -> dict:
-    return {"first_played": entry["first_played"], "plays": entry.get("plays")} if entry.get("first_played") else {}
+    return {"first_played": entry["first_played"]} if entry.get("first_played") else {}
 
 
 def settle(book: dict) -> None:

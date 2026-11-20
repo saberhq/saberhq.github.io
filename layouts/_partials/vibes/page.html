@@ -193,7 +193,7 @@
                     {{- $days := int (math.Floor (div (now.Sub .Value).Hours 24)) }}
                     {{- if lt $days 0 }}{{ $days = 0 }}{{ end }}
                     {{- $on := .Value.Format "2 Jan 2006" }}
-                  <p class="vb-days" data-heard="{{ $raw }}" title="{{ if $about }}No listening history yet: liked or on the wall since {{ $on }}{{ else }}First listen: {{ $on }}{{ end }}">{{ if $about }}<span class="vb-days-about" aria-hidden="true"{{ if not $days }} hidden{{ end }}>~</span>{{ end }}<span class="vb-days-n">{{ if $days }}{{ lang.FormatNumber 0 $days }} day{{ if ne $days 1 }}s{{ end }}{{ else }}today{{ end }}</span><span class="vb-sr"> {{ if $about }}or so {{ end }}since the first listen{{ if not $about }}, on {{ $on }}{{ end }}</span></p>
+                  <p class="vb-days" data-heard="{{ $raw }}" title="{{ if $about }}No listening history yet: liked or on the wall since {{ $on }}{{ else }}First listen: {{ $on }}{{ end }}">{{ if $about }}<span class="vb-days-about" aria-hidden="true"{{ if not $days }} hidden{{ end }}>~</span>{{ end }}<span class="vb-days-n">{{ if $days }}{{ lang.FormatNumber 0 $days }} day{{ if ne $days 1 }}s{{ end }}{{ else }}today{{ end }}</span><span class="vb-sr"> {{ if $about }}or so {{ end }}since the first listen{{ if not $about }}, on <span class="vb-days-on">{{ $on }}</span>{{ end }}</span></p>
                   {{- end }}{{ end }}{{ end }}
                 </div>
               </li>
@@ -297,10 +297,11 @@
     function daysSince(t) { return Math.max(0, Math.floor((Date.now() - t) / 864e5)); }
     function daysText(d) { return d ? d.toLocaleString('en-GB') + (d === 1 ? ' day' : ' days') : 'today'; }
     document.querySelectorAll('.vb-days[data-heard]').forEach(function (el) {
-      var t = Date.parse(el.getAttribute('data-heard')), n = el.querySelector('.vb-days-n'), about = el.querySelector('.vb-days-about');
+      var t = Date.parse(el.getAttribute('data-heard')), n = el.querySelector('.vb-days-n'), about = el.querySelector('.vb-days-about'), on = el.querySelector('.vb-days-on');
       if (isNaN(t) || !n) return;
       n.textContent = daysText(daysSince(t));
       if (about) about.hidden = !daysSince(t);
+      if (on) { on.textContent = day(t); el.title = 'First listen: ' + day(t); }
     });
 
     // the wall fits one screen: when captions run long, the covers give up just enough
