@@ -19,17 +19,18 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 
 
-def _load_sync():
-    """Use vibes-sync's Spotify code (same folder)."""
-    path = Path(__file__).resolve().with_name("vibes-sync")
-    loader = importlib.machinery.SourceFileLoader("vibes_sync", str(path))
-    spec = importlib.util.spec_from_loader("vibes_sync", loader)
+def _load(script: str):
+    """Use another script's code (same folder)."""
+    name = script.replace("-", "_")
+    loader = importlib.machinery.SourceFileLoader(name, str(Path(__file__).resolve().with_name(script)))
+    spec = importlib.util.spec_from_loader(name, loader)
     module = importlib.util.module_from_spec(spec)
     loader.exec_module(module)
     return module
 
 
-sync = _load_sync()
+sync = _load("vibes-sync")
+listened = _load("vibes-history")
 
 MORE_FILE = "vibes_more.json"
 ARTS_FILE = "albumarts.json"
@@ -274,7 +275,7 @@ def load_history(path: Path | None, log) -> dict | None:
             for song_id in song["ids"]:
                 by_id[song_id] = facts
             for name, by in [(song["name"], song["by"])] + [tuple(pair) for pair in song.get("also", [])]:
-                by_song[(name.strip().casefold(), by.strip().casefold())] = facts
+                by_song[listened.same_song(name, by)] = facts
     except (OSError, ValueError, KeyError, TypeError) as err:
         log.info(f"couldn't read the streaming history ({type(err).__name__}), so first plays stay as they are")
         return None
@@ -284,8 +285,8 @@ def load_history(path: Path | None, log) -> dict | None:
 def note_history(book: dict, history: dict) -> None:
     """Each song's first play, last play, plays and time; another recording of it counts too."""
     for song_id, entry in book["songs"].items():
-        found = {facts[0]: facts for facts in (history["by_id"].get(song_id), history["by_song"].get(same_song(entry)))
-                 if facts}
+        spelled = listened.same_song(entry.get("name") or "", ((entry.get("artists") or [{}])[0].get("name") or ""))
+        found = {facts[0]: facts for facts in (history["by_id"].get(song_id), history["by_song"].get(spelled)) if facts}
         for key in PLAYED:
             entry.pop(key, None)
         if found:

@@ -10,6 +10,7 @@ import json
 import os
 import sys
 import tempfile
+import unicodedata
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -123,9 +124,15 @@ def read_plays(folder: Path) -> tuple:
 
 # One line per song
 
+def plain(text: str) -> str:
+    """Letters and digits only: no case, accents, spaces or punctuation."""
+    folded = unicodedata.normalize("NFKD", text).casefold().replace("ı", "i")
+    return "".join(ch for ch in folded if ch.isalnum()) or text.strip().casefold()
+
+
 def same_song(name: str, by: str) -> tuple:
-    """Recordings of one song share a title and a first artist."""
-    return name.casefold(), by.casefold()
+    """Recordings of one song share a title and a first artist, however they are spelled."""
+    return plain(name), plain(by)
 
 
 def summarise(plays: list) -> list:
