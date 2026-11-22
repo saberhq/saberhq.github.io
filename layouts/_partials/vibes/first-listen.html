@@ -1,0 +1,27 @@
+{{- /* A song's first listen. Context: dict "own" (the song page's first_heard: a year, a month or a day), "played", "since". Returns a dict: raw, about, label, source. */ -}}
+{{- $out := dict "raw" "" "about" false "label" "" "source" "" -}}
+{{- $own := "" -}}
+{{- with .own -}}
+  {{- $own = printf "%v" . | strings.TrimSpace -}}
+  {{- if eq (printf "%T" .) "time.Time" }}{{ $own = .Format "2006-01-02" }}{{ end -}}
+{{- end -}}
+{{- if findRE `^\d{4}-\d{2}-\d{2}$` $own -}}
+  {{- $out = dict "raw" $own "about" false "label" ((time.AsTime $own).Format "2 Jan 2006") "source" "own" -}}
+{{- else if findRE `^\d{4}-\d{2}$` $own -}}
+  {{- $mid := printf "%s-15" $own -}}
+  {{- $out = dict "raw" $mid "about" true "label" ((time.AsTime $mid).Format "Jan 2006") "source" "own" -}}
+{{- else if findRE `^\d{4}$` $own -}}
+  {{- $out = dict "raw" (printf "%s-07-01" $own) "about" true "label" $own "source" "own" -}}
+{{- else -}}
+  {{- with $own }}{{ warnf "vibes: can't read first_heard %q (a year, YYYY-MM or YYYY-MM-DD)" . }}{{ end -}}
+  {{- $played := .played -}}
+  {{- with $played | default .since -}}
+    {{- $raw := . -}}
+    {{- with try (time.AsTime $raw) -}}
+      {{- if not .Err -}}
+        {{- $out = dict "raw" $raw "about" (not $played) "label" (.Value.Format "2 Jan 2006") "source" (cond (not $played) "since" "played") -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $out -}}

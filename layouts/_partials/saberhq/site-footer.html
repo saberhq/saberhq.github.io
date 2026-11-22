@@ -1,21 +1,27 @@
-{{/* Site footer: the same columns on every page. Context: the page. */}}
+{{/* Site footer: one strip on every page (who and when, three links, the fine print). Context: the page. */}}
+{{- $mailto := partial "saberhq/mailto" . }}
+{{- $resume := "/resume/" }}
+{{- $resumeOff := partial "saberhq/new-tab" $resume }}
 <footer class="sq-sitefooter">
   <div class="sq-wrap sq-sitefooter-in">
-    <div class="sq-foot-clip"><div class="sq-foot-row">
-      <div class="sq-foot-col">
-        <span class="sq-foot-k"><a href="{{ site.Home.RelPermalink }}">saberhq.com</a></span>
-        <span class="sq-foot-v">© {{ now.Format "2006" }} Saber Hafezqorani</span>
-      </div>
-      <div class="sq-foot-col">
-        <span class="sq-foot-k">Licence</span>
-        <span class="sq-foot-v"><a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="license noopener">CC BY 4.0<span class="sq-sr-only"> (opens in a new tab)</span></a></span>
-      </div>
-      {{ with site.Params.version }}
-      <div class="sq-foot-col">
-        <span class="sq-foot-k">Version</span>
-        <span class="sq-foot-v"><a href="https://github.com/saberhq/saberhq.github.io/releases/tag/{{ . }}" target="_blank" rel="noopener">{{ . }}<span class="sq-sr-only"> release note (opens in a new tab)</span></a></span>
-      </div>
-      {{ end }}
-    </div></div>
+    <small class="sq-foot-who">© {{ if gt now.Year 2025 }}2025–{{ end }}{{ now.Year }} Saber Hafezqorani</small>
+    <nav class="sq-foot-nav" aria-label="Footer">
+      <ul role="list">
+        {{- with site.GetPage "docs/blog" }}{{ with .OutputFormats.Get "rss" }}
+        <li><a href="{{ .RelPermalink }}">RSS</a></li>
+        {{- end }}{{ end }}
+        {{- with $mailto }}
+        <li><a href="{{ . }}">Email</a></li>
+        {{- end }}
+        <li><a href="{{ $resume }}"{{ if $resumeOff }} target="_blank" rel="noopener"{{ end }}>Résumé{{ if $resumeOff }} <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span>{{ end }}</a></li>
+      </ul>
+    </nav>
+    <small class="sq-foot-fine">
+      <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="license noopener">CC BY 4.0<span class="sq-sr-only"> (opens in a new tab)</span></a>
+      {{- with site.Params.version }}
+      <span class="sq-foot-sep" aria-hidden="true">·</span>
+      <a class="sq-foot-version" href="https://github.com/saberhq/saberhq.github.io/releases/tag/{{ . }}" target="_blank" rel="noopener">{{ . }}<span class="sq-sr-only"> release note (opens in a new tab)</span></a>
+      {{- end }}
+    </small>
   </div>
 </footer>

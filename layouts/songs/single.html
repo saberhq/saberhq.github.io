@@ -1,0 +1,162 @@
+{{- /* A song of Saber Vibes (/vibes/songs/<name>/): Spotify's facts, then Saber's own from the song's entry (mine), and his words when the page is a file. */ -}}
+{{- $slug := path.Base .Path }}
+{{- $f := index (partialCached "vibes/songs" "all") $slug | default dict }}
+{{- $name := $f.name | default .Title }}
+{{- $by := $f.by | default .Params.by }}
+{{- $album := $f.album | default .Params.album }}
+{{- $listen := $f.url | default .Params.link }}
+{{- $wallHref := "/vibes/" }}{{ with site.GetPage "/vibes" }}{{ $wallHref = .RelPermalink }}{{ end }}
+{{- $artsHref := "/vibes/albumarts/" }}{{ with site.GetPage "/albumarts" }}{{ $artsHref = .RelPermalink }}{{ end }}
+{{- $mine := $f.mine | default dict }}
+{{- $heard := partial "vibes/first-listen" (dict "own" $mine.first_heard "played" $f.first_played) }}
+{{- /* His pictures and films come by pointer: a picture is the web copy in assets/media/ named in the entry. */ -}}
+{{- $photos := slice }}
+{{- $films := slice }}
+{{- range $mine.media }}
+  {{- if .youtube }}
+    {{- $films = $films | append . }}
+  {{- else if .id }}
+    {{- $item := . }}
+    {{- with resources.GetMatch (printf "media/%s.*" .id) }}{{ $photos = $photos | append (dict "image" . "caption" $item.caption "alt" $item.alt) }}{{ end }}
+  {{- end }}
+{{- end }}
+{{- $colours := slice }}
+{{- range $mine.colours }}{{ with findRE `^#[0-9a-fA-F]{3,8}$` (printf "%v" .) }}{{ $colours = $colours | append (index . 0) }}{{ end }}{{ end }}
+{{- $tone := "" }}{{ with $colours }}{{ $tone = index . 0 }}{{ else }}{{ with findRE `^#[0-9a-fA-F]{6}$` ($f.colour | default "") }}{{ $tone = index . 0 }}{{ end }}{{ end }}
+{{- $kicker := cond (not (not $f.wall)) "A song on the wall" (cond (not (not $f.liked)) "A liked song" "A song") }}
+<!DOCTYPE html>
+<html lang="{{ default .Site.Language.Lang .Site.LanguageCode }}" dir="{{ default "ltr" .Site.Language.LanguageDirection }}">
+<head>
+  {{ partial "docs/html-head" . }}
+  {{ partial "docs/inject/head" . }}
+  {{- if not (or (strings.TrimSpace .Content) $photos $films) }}
+  <meta name="robots" content="noindex, follow">
+  {{- end }}
+  {{- $css := slice (resources.Get "post.css") (resources.Get "vibes.css") (resources.Get "vibes/views.css") (resources.Get "vibes/song.css") | resources.Concat "css/vibes-song.css" | resources.Minify | resources.Fingerprint "sha384" }}
+  <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}" crossorigin="anonymous">
+  {{- if or $f.medium $f.large }}
+  <link rel="preconnect" href="https://i.scdn.co">
+  {{- end }}
+</head>
+<body class="sq-shell vb-page sg-page{{ if $tone }} sg-page--tone{{ end }}"{{ with $tone }} style="--song: {{ . | safeCSS }}"{{ end }} data-song="{{ $slug }}">
+
+  {{ partial "saberhq/site-header" . }}
+
+  <main>
+    <article class="sg-stage">
+
+      <div class="sq-section-head vb-wall-head">
+        <nav class="vb-tabs" aria-label="Saber Vibes">
+          <a class="vb-tab" href="{{ $wallHref }}">On the wall</a>
+          <span class="vb-tab-dot" aria-hidden="true">·</span>
+          <a class="vb-tab" href="{{ $artsHref }}">Album Arts</a>
+        </nav>
+        <span class="sq-section-fill"></span>
+        {{- with $f.url }}{{ partial "vibes/spotify-logo" (dict "href" .) }}{{ end }}
+      </div>
+
+      <header class="sg-head">
+        <div class="sg-cover">
+          {{- if or $f.medium $f.large }}
+            {{- $src := $f.large | default $f.medium }}
+          <a class="sg-cover-link" href="{{ $f.url }}" target="_blank" rel="noopener"><img src="{{ $src }}"{{ if and $f.medium $f.large }} srcset="{{ $f.medium }} 300w, {{ $f.large }} 640w" sizes="(max-width: 700px) 92vw, 360px"{{ end }} width="640" height="640" alt="The cover of {{ $album | default $name }}" decoding="async" referrerpolicy="no-referrer"><span class="sq-sr-only"> (opens on Spotify in a new tab)</span></a>
+          {{- else }}
+          <div class="sg-cover-blank" aria-hidden="true"></div>
+          {{- end }}
+        </div>
+        <div class="sg-id">
+          <p class="sq-kicker">{{ $kicker }}</p>
+          <h1 class="sg-title" dir="auto">{{ $name }}</h1>
+          {{- with $by }}
+          <p class="sg-by" dir="auto">{{ . }}</p>
+          {{- end }}
+          {{- with $album }}
+          <p class="sg-album" dir="auto">{{ . }}</p>
+          {{- end }}
+          {{- with $listen }}
+          <div class="sg-actions">
+            <a class="sq-btn" href="{{ . }}" target="_blank" rel="noopener">{{ if $f.url }}Listen on Spotify{{ else }}Listen{{ end }} <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a>
+          </div>
+          {{- end }}
+          <dl class="sg-facts">
+            {{- if $heard.raw }}
+            <div><dt>First listen</dt><dd>
+              {{- if eq $heard.source "own" -}}
+              <span title="Saber’s own date{{ with $f.first_played }}{{ with try (time.AsTime .) }}{{ if not .Err }}. On Spotify: {{ .Value.Format "2 Jan 2006" }}{{ end }}{{ end }}{{ end }}">{{ $heard.label }}</span>
+              {{- else -}}
+              <time datetime="{{ $heard.raw }}" data-day>{{ $heard.label }}</time>
+              {{- end -}}
+              {{- if not $heard.about }} <span class="sg-sep" aria-hidden="true">·</span> <span data-ago="{{ $heard.raw }}">{{ $days := int (math.Floor (div (now.Sub (time.AsTime $heard.raw)).Hours 24)) }}{{ if gt $days 0 }}{{ lang.FormatNumber 0 $days }} day{{ if ne $days 1 }}s{{ end }} ago{{ else }}today{{ end }}</span>{{ end -}}
+            </dd></div>
+            {{- end }}
+            {{- with $f.wall_since }}{{ with try (time.AsTime .) }}{{ if not .Err }}
+            <div><dt>On the wall</dt><dd>since <time datetime="{{ .Value.Format "2006-01-02T15:04:05Z07:00" }}" data-day>{{ .Value.Format "2 Jan 2006" }}</time></dd></div>
+            {{- end }}{{ end }}{{ end }}
+            {{- with $f.liked }}{{ with try (time.AsTime .) }}{{ if not .Err }}
+            <div><dt>Liked</dt><dd><time datetime="{{ .Value.Format "2006-01-02T15:04:05Z07:00" }}" data-day>{{ .Value.Format "2 Jan 2006" }}</time></dd></div>
+            {{- end }}{{ end }}{{ end }}
+            {{- with $colours }}
+            <div><dt>Colours</dt><dd class="sg-colours">{{ range . }}<span class="sg-colour" style="background: {{ . | safeCSS }}" title="{{ . }}"><span class="sq-sr-only">{{ . }}</span></span>{{ end }}</dd></div>
+            {{- end }}
+          </dl>
+        </div>
+      </header>
+
+      {{- with .Content }}
+      <section class="sg-words sq-prose" aria-label="Saber on this song">
+        {{ . }}
+      </section>
+      {{- end }}
+
+      {{- with $photos }}
+      <section class="sg-photos" aria-label="Pictures">
+        {{- range . }}
+          {{- $big := .image }}
+          {{- $small := cond (gt $big.Width 900) ($big.Resize "900x") $big }}
+        <figure class="sg-photo">
+          <a href="{{ $big.RelPermalink }}"><img src="{{ $small.RelPermalink }}" width="{{ $small.Width }}" height="{{ $small.Height }}" alt="{{ .alt | default "" }}" loading="lazy" decoding="async"></a>
+          {{- with .caption }}
+          <figcaption>{{ . }}</figcaption>
+          {{- end }}
+        </figure>
+        {{- end }}
+      </section>
+      {{- end }}
+
+      {{- with $films }}
+      <section class="sg-films" aria-label="Films">
+        <ul>
+          {{- range . }}
+          <li><a href="https://www.youtube.com/watch?v={{ .youtube }}" target="_blank" rel="noopener">{{ .title | default "A film for this song" }} <span aria-hidden="true">↗</span><span class="sq-sr-only"> (opens on YouTube in a new tab)</span></a></li>
+          {{- end }}
+        </ul>
+      </section>
+      {{- end }}
+
+    </article>
+  </main>
+
+  {{ partial "saberhq/site-footer" . }}
+  {{ partial "docs/inject/body" . }}
+
+  {{/* A song's page: dates in the reader's own time zone, days counted on the reader's clock, and the header's trail kept at Vibes. */}}
+  <script>
+  (function () {
+    function day(t) { return new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+    document.querySelectorAll('time[data-day]').forEach(function (el) {
+      var t = Date.parse(el.getAttribute('datetime'));
+      if (!isNaN(t) && el.getAttribute('datetime').length > 10) el.textContent = day(t);
+    });
+    document.querySelectorAll('[data-ago]').forEach(function (el) {
+      var t = Date.parse(el.getAttribute('data-ago'));
+      if (isNaN(t)) return;
+      var d = Math.max(0, Math.floor((Date.now() - t) / 864e5));
+      el.textContent = d ? d.toLocaleString('en-GB') + (d === 1 ? ' day ago' : ' days ago') : 'today';
+    });
+    var trail = document.querySelector('.sq-trail');
+    var vibes = trail && trail.querySelector('.sq-trail-link[href="{{ $wallHref }}"]');
+    if (vibes) { while (vibes.nextSibling) trail.removeChild(vibes.nextSibling); }
+  })();
+  </script>
+</body>
+</html>

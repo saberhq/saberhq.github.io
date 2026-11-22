@@ -1,4 +1,4 @@
-/* Saber Vibes, the note: the kicker, the name, Saber's words, the button and the counts */
+/* Saber Vibes, the note: the kicker, the name, Saber's words and the button */
 
 /* the kicker sits on the line of the view names */
 .vb-story { display: flex; flex-direction: column; min-width: 0; max-width: 400px; padding-top: 0; }
@@ -22,11 +22,6 @@
 .vb-body a:hover { color: var(--ink); }
 .vb-sign { margin: 6px 0 0; font-size: clamp(14px, 0.98vw, 16px); line-height: 1.6; color: var(--ink-2); }
 .vb-actions { margin-top: 20px; display: flex; flex-wrap: wrap; gap: var(--space-3); }
-.vb-meta {
-  margin: 12px 0 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.6;
-  letter-spacing: var(--meta-track); color: var(--ink-3);
-}
-[data-view="arts"] .vb-meta[data-for="wall"] { display: none; }
 
 /* Short desktop windows: tighten so the page still fits one screen */
 @media (min-width: 901px) and (max-height: 800px) {
@@ -34,7 +29,6 @@
   .vb-lede { margin-top: 12px; }
   .vb-body { line-height: 1.5; }
   .vb-actions { margin-top: 14px; }
-  .vb-meta { margin-top: 8px; }
 }
 
 @media (max-width: 900px) {

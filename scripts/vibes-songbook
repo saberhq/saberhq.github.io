@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Saber Vibes songbook: liked songs, most-played lists and each song's history, for /vibes/ and its album-art page."""
+"""Saber Vibes songbook: liked songs, most-played lists, each song's history and the one-line-per-song table."""
 
 from __future__ import annotations
 
@@ -9,30 +9,39 @@ import importlib.util
 import io
 import json
 import os
+import re
 import struct
 import subprocess
 import sys
 import tempfile
 import traceback
+import unicodedata
 from pathlib import Path
 
 sys.dont_write_bytecode = True
 
 
-def _load_sync():
-    """Use vibes-sync's Spotify code (same folder)."""
-    path = Path(__file__).resolve().with_name("vibes-sync")
-    loader = importlib.machinery.SourceFileLoader("vibes_sync", str(path))
-    spec = importlib.util.spec_from_loader("vibes_sync", loader)
+def _load(script: str):
+    """Use another script's code (same folder)."""
+    name = script.replace("-", "_")
+    loader = importlib.machinery.SourceFileLoader(name, str(Path(__file__).resolve().with_name(script)))
+    spec = importlib.util.spec_from_loader(name, loader)
     module = importlib.util.module_from_spec(spec)
     loader.exec_module(module)
     return module
 
 
-sync = _load_sync()
+sync = _load("vibes-sync")
+listened = _load("vibes-history")
 
 MORE_FILE = "vibes_more.json"
 ARTS_FILE = "albumarts.json"
+HISTORY_FILE = "history.json"
+MINE_FILE = "mine.jsonl"
+SONGS_FILE = "songs.jsonl"
+MEDIA_DIR = "assets/media"
+MEDIA_ID = 12
+PLAYED = ("first_played", "last_played", "plays", "played_ms")
 LIVE = {MORE_FILE: "https://saberhq.com/vibes/more.json", ARTS_FILE: "https://saberhq.com/vibes/albumarts.json"}
 RANGES = {"short": "short_term", "medium": "medium_term", "long": "long_term"}
 TOP_SHOWN = 10
@@ -41,6 +50,8 @@ RANK_PAGES = 120
 LIKED_PAGES = 100
 COLOURS_PER_RUN = 60
 REENTRY_S = 60
+SLUG_MAX = 80
+LATIN = str.maketrans({"ı": "i", "ø": "o", "æ": "ae", "œ": "oe", "đ": "d", "ł": "l", "þ": "th", "ð": "d"})
 
 
 # Reading Spotify
@@ -261,6 +272,188 @@ def note_colours(book: dict, limit: int | None, log) -> None:
             entry["colour"] = known[url]
 
 
+def load_history(path: Path | None, log) -> dict | None:
+    """What scripts/vibes-history wrote, as two lookups: by song id, and by title and first artist."""
+    if path is None or not path.exists():
+        return None
+    try:
+        by_id, by_song = {}, {}
+        for number, song in enumerate(json.loads(path.read_text(encoding="utf-8"))["songs"]):
+            facts = (number, song["first"], song["last"], int(song["plays"]), int(song["ms"]))
+            for song_id in song["ids"]:
+                by_id[song_id] = facts
+            for name, by in [(song["name"], song["by"])] + [tuple(pair) for pair in song.get("also", [])]:
+                by_song[listened.same_song(name, by)] = facts
+    except (OSError, ValueError, KeyError, TypeError) as err:
+        log.info(f"couldn't read the streaming history ({type(err).__name__}), so first plays stay as they are")
+        return None
+    return {"by_id": by_id, "by_song": by_song}
+
+
+def note_history(book: dict, history: dict) -> None:
+    """Each song's first play, last play, plays and time; another recording of it counts too."""
+    for song_id, entry in book["songs"].items():
+        spelled = listened.same_song(entry.get("name") or "", ((entry.get("artists") or [{}])[0].get("name") or ""))
+        found = {facts[0]: facts for facts in (history["by_id"].get(song_id), history["by_song"].get(spelled)) if facts}
+        for key in PLAYED:
+            entry.pop(key, None)
+        if found:
+            entry.update(first_played=min(facts[1] for facts in found.values()),
+                         last_played=max(facts[2] for facts in found.values()),
+                         plays=sum(facts[3] for facts in found.values()),
+                         played_ms=sum(facts[4] for facts in found.values()))
+
+
+def slug_of(text: str) -> str:
+    """Words as part of an address: lower case, accents dropped, hyphens between."""
+    folded = unicodedata.normalize("NFKD", text.casefold().translate(LATIN))
+    kept = "".join(ch if ch.isalnum() else "-" for ch in folded if not unicodedata.combining(ch))
+    return re.sub(r"-+", "-", kept).strip("-")
+
+
+def note_slugs(book: dict) -> None:
+    """Each song's name in its page's address, given once and kept; recordings of one song share it."""
+    def song(entry: dict) -> tuple:
+        return listened.same_song(entry.get("name") or "", ((entry.get("artists") or [{}])[0].get("name") or ""))
+
+    by_song, taken = {}, set()
+    for entry in book["songs"].values():
+        if entry.get("slug"):
+            by_song.setdefault(song(entry), entry["slug"])
+            taken.add(entry["slug"])
+    for song_id, entry in book["songs"].items():
+        if entry.get("slug"):
+            continue
+        key = song(entry)
+        if key not in by_song:
+            first_artist = (entry.get("artists") or [{}])[0].get("name") or ""
+            base = slug_of(f"{entry.get('name') or ''} {first_artist}")[:SLUG_MAX].strip("-") or song_id.lower()
+            slug, number = base, 2
+            while slug in taken:
+                slug, number = f"{base}-{number}", number + 1
+            by_song[key] = slug
+            taken.add(slug)
+        entry["slug"] = by_song[key]
+
+
+def published(entry: dict, shown: dict | None = None) -> dict:
+    out = {key: entry[key] for key in ("slug", "first_played") if entry.get(key)}
+    if shown and shown.get(entry.get("slug")):
+        out["mine"] = shown[entry["slug"]]
+    return out
+
+
+# Saber's own facts and pointers, and the table of songs
+
+def load_mine(path: Path | None, log) -> dict:
+    """What Saber added to a song himself, by the song's address name; a line that can't be read is left out."""
+    mine: dict = {}
+    if path is None or not path.exists():
+        return mine
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as err:
+        log.info(f"couldn't read {path.name} ({type(err).__name__}), so the songs carry no notes of Saber's this time")
+        return mine
+    for number, line in enumerate(lines, 1):
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+            song = entry.pop("id")
+            if not isinstance(song, str) or not song:
+                raise ValueError
+        except (ValueError, KeyError, TypeError, AttributeError):
+            log.info(f"{path.name}, line {number}: not a song's entry, left out")
+            continue
+        mine[song] = entry
+    return mine
+
+
+def web_copies(root: Path) -> set:
+    """The pictures the site holds a web copy of, by the first characters of the original's fingerprint."""
+    folder = root / MEDIA_DIR
+    return {item.stem for item in folder.iterdir() if item.is_file()} if folder.is_dir() else set()
+
+
+def shown_from(mine: dict, copies: set) -> dict:
+    """What a song's page may show of Saber's own: never a path, and a picture only once its web copy exists."""
+    shown = {}
+    for song, entry in mine.items():
+        out = {key: entry[key] for key in ("first_heard", "colours") if entry.get(key)}
+        media = []
+        for item in entry.get("media") or []:
+            if not isinstance(item, dict):
+                continue
+            if item.get("youtube"):
+                media.append({key: item[key] for key in ("youtube", "title") if item.get(key)})
+            elif str(item.get("sha256") or "")[:MEDIA_ID] in copies:
+                media.append({"id": item["sha256"][:MEDIA_ID],
+                              **{key: item[key] for key in ("caption", "alt") if item.get(key)}})
+        if media:
+            out["media"] = media
+        if out:
+            shown[song] = out
+    return shown
+
+
+def harmonise(book: dict, mine: dict) -> list:
+    """One entry per song, the same fields in each: Spotify's facts, the songbook's, the history's and Saber's own."""
+    groups: dict = {}
+    for song_id, entry in book["songs"].items():
+        if entry.get("slug"):
+            groups.setdefault(entry["slug"], []).append((song_id, entry))
+
+    def on_wall(entry: dict) -> bool:
+        stays = entry.get("stays") or []
+        return bool(stays) and not stays[-1].get("out")
+
+    def earliest(entries: list, key: str):
+        return min((entry[key] for entry in entries if entry.get(key)), default=None)
+
+    def most(entries: list, key: str):
+        return max((entry[key] for entry in entries if entry.get(key)), default=None)
+
+    songs = []
+    for slug, recordings in groups.items():
+        entries = [entry for _, entry in recordings]
+        main = min(entries, key=lambda entry: (not on_wall(entry), not entry.get("liked_at"),
+                                               entry.get("rank") or float("inf")))
+        images = main["album"]["images"]
+        liked, wall = any(entry.get("liked_at") for entry in entries), any(on_wall(entry) for entry in entries)
+        songs.append({
+            "id": slug, "title": main["name"], "by": ", ".join(artist["name"] for artist in main["artists"]),
+            "artists": main["artists"], "album": main["album"].get("name"), "album_url": main["album"].get("url"),
+            "cover": pick_image(images, 640) if images else None, "colour": main.get("colour"),
+            "duration_ms": main.get("duration_ms"), "url": main["url"],
+            "spotify_ids": [song_id for song_id, _ in recordings],
+            "liked": liked, "liked_at": earliest(entries, "liked_at"),
+            "first_liked_at": earliest(entries, "first_liked_at"),
+            "on_wall": wall,
+            "stays": sorted((stay for entry in entries for stay in entry.get("stays") or []),
+                            key=lambda stay: stay["in"]),
+            "first_played": earliest(entries, "first_played"), "last_played": most(entries, "last_played"),
+            "plays": most(entries, "plays"), "played_ms": most(entries, "played_ms"),
+            "rank": earliest(entries, "rank"),
+            "page": f"/vibes/songs/{slug}/" if liked or wall else None,
+            "mine": mine.get(slug) or {},
+        })
+    blank = {key: None for key in songs[0]} if songs else {}
+    for slug, entry in mine.items():
+        if slug not in groups:
+            songs.append({**blank, "id": slug, "title": entry.get("title"), "by": entry.get("by"), "artists": [],
+                          "spotify_ids": [], "liked": False, "on_wall": False, "stays": [], "mine": entry})
+    return sorted(songs, key=lambda song: song["id"])
+
+
+def write_songs(path: Path, songs: list) -> None:
+    text = "".join(json.dumps(song, ensure_ascii=False) + "\n" for song in songs)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+        handle.write(text)
+    os.chmod(handle.name, 0o644)
+    os.replace(handle.name, path)
+
+
 def settle(book: dict) -> None:
     """Work out each song's first date and its in and out counts."""
     first_like: dict = {}
@@ -280,15 +473,16 @@ def settle(book: dict) -> None:
 
 # What the pages read
 
-def more_for_page(book: dict, wall: list, top: dict | None) -> dict:
+def more_for_page(book: dict, wall: list, top: dict | None, shown: dict | None = None) -> dict:
     songs = {}
     for song in wall:
         entry = book["songs"].get(song["id"]) or {}
-        songs[song["id"]] = {"since": entry.get("since"), "ins": entry.get("ins", 1), "outs": entry.get("outs", 0)}
+        songs[song["id"]] = {"since": entry.get("since"), "ins": entry.get("ins", 1), "outs": entry.get("outs", 0),
+                             **published(entry, shown)}
     return {"updated_at": None, "songs": songs, "top": top or {}}
 
 
-def arts_for_page(book: dict) -> dict:
+def arts_for_page(book: dict, shown: dict | None = None) -> dict:
     tiles = []
     for song_id, entry in book["songs"].items():
         images = entry["album"]["images"]
@@ -299,7 +493,7 @@ def arts_for_page(book: dict) -> dict:
                       "album": entry["album"].get("name"), "album_url": entry["album"].get("url"),
                       "small": pick_image(images, 64), "medium": pick_image(images, 300),
                       "large": pick_image(images, 640), "liked": entry["liked_at"],
-                      "rank": entry.get("rank"), "colour": entry.get("colour")})
+                      "rank": entry.get("rank"), "colour": entry.get("colour"), **published(entry, shown)})
     ranked = sorted((tile for tile in tiles if tile["rank"] is not None), key=lambda tile: tile["rank"])
     rest = sorted((tile for tile in tiles if tile["rank"] is None), key=lambda tile: tile["liked"], reverse=True)
     return {"updated_at": None, "total": len(tiles), "tiles": ranked + rest}
@@ -348,6 +542,9 @@ def run(args, env, log) -> dict:
     out_dir = Path(args.out_dir)
     book_file = args.songbook or env.get("VIBES_SONGBOOK", "").strip()
     book_path = Path(book_file) if book_file else None
+    history_file = args.history or env.get("VIBES_HISTORY", "").strip()
+    history_path = Path(history_file) if history_file else book_path.with_name(HISTORY_FILE) if book_path else None
+    mine = load_mine(book_path.with_name(MINE_FILE) if book_path else None, log)
     live = {name: fetch_live(name, log) for name in LIVE}
 
     def keep_live(why: str) -> dict:
@@ -394,7 +591,11 @@ def run(args, env, log) -> dict:
         else:
             log.info("the saved login can't read your most-played lists yet; scripts/vibes-login adds that")
         note_colours(book, None if args.deep else COLOURS_PER_RUN, log)
+        history = load_history(history_path, log)
+        if history:
+            note_history(book, history)
         settle(book)
+        note_slugs(book)
     except sync.Problem as problem:
         result["status"], result["rotated"] = problem.status, spotify.rotated
         return keep_live(problem.message)
@@ -403,7 +604,8 @@ def run(args, env, log) -> dict:
         result["rotated"] = spotify.rotated
         return keep_live(f"unexpected problem ({type(err).__name__}: {sync.one_line(err, 120)})")
 
-    more, arts = more_for_page(book, wall, top), arts_for_page(book)
+    shown = shown_from(mine, web_copies(sync.REPO_ROOT))
+    more, arts = more_for_page(book, wall, top, shown), arts_for_page(book, shown)
     if top is None and live[MORE_FILE]:
         more["top"] = live[MORE_FILE].get("top") or {}
     changed = [stamp(more, live[MORE_FILE], now), stamp(arts, live[ARTS_FILE], now)]
@@ -416,6 +618,8 @@ def run(args, env, log) -> dict:
         result["wrote"] = [MORE_FILE, ARTS_FILE]
         if book_path is not None and book_changed:
             sync.write_json(book_path, book)
+        if book_path is not None:
+            write_songs(book_path.with_name(SONGS_FILE), harmonise(book, mine))
     result.update(status="ok", changed=any(changed), rotated=spotify.rotated,
                   message=f"{len(book['songs'])} songs in the songbook, {arts['total']} covers, "
                           f"{'changed' if any(changed) else 'unchanged'}"
@@ -427,9 +631,13 @@ def main(argv: list | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="vibes-songbook",
         description="Read liked songs and most-played lists from Spotify, keep the songbook up to date, and "
-                    "write data/vibes_more.json and data/albumarts.json for the pages.",
+                    "write data/vibes_more.json and data/albumarts.json for the pages. Beside the songbook it "
+                    "writes songs.jsonl, one line per song, and reads mine.jsonl, Saber's own notes.",
         epilog="Keys as for scripts/vibes-sync. Without keys, the live copies from saberhq.com are used.")
     parser.add_argument("--songbook", metavar="FILE", help="the songbook to read and update (or VIBES_SONGBOOK)")
+    parser.add_argument("--history", metavar="FILE",
+                        help="first plays and play counts from scripts/vibes-history (or VIBES_HISTORY; "
+                             "default: history.json beside the songbook)")
     parser.add_argument("--out-dir", metavar="DIR", default=str(sync.REPO_ROOT / "data"),
                         help="where to write the pages' data (default: data/)")
     parser.add_argument("--deep", action="store_true", help="re-rank every song and colour every cover now")
