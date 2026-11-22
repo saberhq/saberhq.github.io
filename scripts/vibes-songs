@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+"""Saber Vibes songs: look a song up, add Saber's own facts and pointers to it, and build the table of songs."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+sys.dont_write_bytecode = True
+
+
+def _load(script: str):
+    """Use another script's code (same folder)."""
+    name = script.replace("-", "_")
+    loader = importlib.machinery.SourceFileLoader(name, str(Path(__file__).resolve().with_name(script)))
+    spec = importlib.util.spec_from_loader(name, loader)
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+songbook = _load("vibes-songbook")
+sync = songbook.sync
+
+KINDS = {"photo": {".jpg", ".jpeg", ".png", ".heic", ".heif", ".tif", ".tiff", ".dng", ".arw", ".raw", ".webp"},
+         "video": {".mp4", ".mov", ".m4v", ".mxf", ".avi", ".mkv"},
+         "audio": {".wav", ".mp3", ".m4a", ".aif", ".aiff", ".flac"}}
+FIRST_HEARD = re.compile(r"\d{4}(-\d{2}(-\d{2})?)?")
+COLOUR = re.compile(r"#[0-9a-fA-F]{6}")
+YOUTUBE = re.compile(r"(?:youtu\.be/|[?&]v=|/shorts/|/embed/)([\w-]{11})")
+
+
+class Stop(Exception):
+    pass
+
+
+class Songs:
+    """The songbook's folder: the songbook, the listening history, Saber's own notes, the table."""
+
+    def __init__(self, book_file: str | None):
+        if not book_file:
+            raise Stop("say where the songbook is: --songbook FILE (or VIBES_SONGBOOK)")
+        self.book_path = Path(book_file).expanduser()
+        if not self.book_path.exists():
+            raise Stop(f"{self.book_path} isn't there")
+        self.mine_path = self.book_path.with_name(songbook.MINE_FILE)
+        self.songs_path = self.book_path.with_name(songbook.SONGS_FILE)
+        self.log = sync.Log(github=False, prefix="vibes-songs")
+        self.mine = self.read_mine()
+
+    def read_mine(self) -> dict:
+        mine = {}
+        if not self.mine_path.exists():
+            return mine
+        for number, line in enumerate(self.mine_path.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.strip():
+                continue
+            try:
+                entry = json.loads(line)
+                mine[entry.pop("id")] = entry
+            except (ValueError, KeyError, TypeError, AttributeError):
+                raise Stop(f"{self.mine_path.name}, line {number}, isn't a song's entry: mend it first")
+        return mine
+
+    def write_mine(self) -> None:
+        kept = {song: entry for song, entry in self.mine.items() if entry}
+        songbook.write_songs(self.mine_path, [{"id": song, **kept[song]} for song in sorted(kept)])
+
+    def table(self) -> list:
+        """Every song, harmonised; the songbook itself is never written from here."""
+        book = songbook.load_book(self.book_path)
+        history = songbook.load_history(self.book_path.with_name(songbook.HISTORY_FILE), self.log)
+        if history:
+            songbook.note_history(book, history)
+        songbook.settle(book)
+        songbook.note_slugs(book)
+        return songbook.harmonise(book, self.mine)
+
+    def pick(self, words: str) -> dict:
+        songs = self.table()
+        for song in songs:
+            if song["id"] == words:
+                return song
+        found = matches(songs, words.split())
+        if len(found) == 1:
+            return found[0]
+        if not found:
+            raise Stop(f"no song matches “{words}”")
+        raise Stop(f"{len(found)} songs match “{words}”; use one of these names:\n" + "\n".join(line(s) for s in found[:20]))
+
+
+def line(song: dict) -> str:
+    marks = " · ".join(mark for mark, on in (("on the wall", song["on_wall"]), ("liked", song["liked"]),
+                                              ("has notes", bool(song["mine"]))) if on)
+    return f"  {song['id']}  ·  {song['title']} — {song['by']}" + (f"  ({marks})" if marks else "")
+
+
+def matches(songs: list, words: list) -> list:
+    plain = songbook.listened.plain
+    wanted = [plain(word) for word in words]
+    return [song for song in songs
+            if all(word in plain(f"{song['id']} {song['title'] or ''} {song['by'] or ''}") for word in wanted)]
+
+
+def fingerprint(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def drive_of(path: Path) -> Path | None:
+    """The drive a file is on, when it is on one."""
+    return Path(*path.parts[:3]) if len(path.parts) > 3 and path.parts[1] == "Volumes" else None
+
+
+def value_of(text: str):
+    try:
+        return json.loads(text)
+    except ValueError:
+        return text
+
+
+def check(key: str, value) -> None:
+    if key in ("id", "media"):
+        raise Stop(f"“{key}” isn't set by hand" + ("; use point and unpoint" if key == "media" else ""))
+    if key == "first_heard" and not FIRST_HEARD.fullmatch(str(value)):
+        raise Stop("first_heard is a year, YYYY-MM or YYYY-MM-DD")
+    if key == "colours" and not (isinstance(value, list) and value and all(COLOUR.fullmatch(str(c)) for c in value)):
+        raise Stop('colours is a list like ["#1b2a6b", "#c9a227"]')
+
+
+def run(args) -> int:
+    songs = Songs(args.songbook or os.environ.get("VIBES_SONGBOOK", "").strip())
+    if args.do == "find":
+        found = matches(songs.table(), args.words)
+        print("\n".join(line(song) for song in found) or "no song matches")
+    elif args.do == "show":
+        print(json.dumps(songs.pick(args.song), ensure_ascii=False, indent=2))
+    elif args.do == "set":
+        song, value = songs.pick(args.song), value_of(args.value)
+        check(args.key, value)
+        songs.mine.setdefault(song["id"], {})[args.key] = str(value) if args.key == "first_heard" else value
+        songs.write_mine()
+        print(f"{song['id']}: {args.key} = {json.dumps(value, ensure_ascii=False)}")
+    elif args.do == "unset":
+        song = songs.pick(args.song)
+        if songs.mine.get(song["id"], {}).pop(args.key, None) is None:
+            raise Stop(f"{song['id']} has no “{args.key}”")
+        songs.write_mine()
+        print(f"{song['id']}: {args.key} removed")
+    elif args.do == "point":
+        song = songs.pick(args.song)
+        item = {}
+        found = YOUTUBE.search(args.what)
+        if found:
+            item["youtube"] = found.group(1)
+        else:
+            path = Path(args.what).expanduser().resolve()
+            if not path.is_file():
+                raise Stop(f"{path} isn't a file (is the drive plugged in?)")
+            root = Path(args.root).resolve() if args.root else drive_of(path)
+            if root and root in path.parents:
+                item["file"], item["on"] = str(path.relative_to(root)), root.name
+            else:
+                item["file"] = str(path)
+            item["sha256"] = fingerprint(path)
+            item["kind"] = next((kind for kind, ends in KINDS.items() if path.suffix.lower() in ends), "file")
+        for key in ("title", "caption", "alt"):
+            if getattr(args, key):
+                item[key] = getattr(args, key)
+        media = songs.mine.setdefault(song["id"], {}).setdefault("media", [])
+        same = "youtube" if "youtube" in item else "sha256"
+        if any(old.get(same) == item[same] for old in media):
+            raise Stop(f"{song['id']} already points at that")
+        media.append(item)
+        songs.write_mine()
+        print(f"{song['id']}: pointer {len(media)} → " + (f"YouTube {item['youtube']}" if found else
+              f"{item['file']} ({item['kind']}; its web copy would be {item['sha256'][:songbook.MEDIA_ID]})"))
+    elif args.do == "unpoint":
+        song = songs.pick(args.song)
+        media = songs.mine.get(song["id"], {}).get("media") or []
+        if not 1 <= args.number <= len(media):
+            raise Stop(f"{song['id']} has {len(media)} pointer(s)")
+        gone = media.pop(args.number - 1)
+        if not media:
+            songs.mine[song["id"]].pop("media")
+        songs.write_mine()
+        print(f"{song['id']}: no longer points at {gone.get('file') or gone.get('youtube')}")
+    elif args.do == "build":
+        table = songs.table()
+        out = Path(args.out).expanduser() if args.out else songs.songs_path
+        songbook.write_songs(out, table)
+        print(f"{len(table)} songs → {out}")
+    return 0
+
+
+def main(argv: list | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="vibes-songs",
+        description="One entry per song. Look a song up, add Saber's own facts and pointers to it, build the table.",
+        epilog="SONG is a song's address name, or words that match one song. Saber's notes are kept in mine.jsonl "
+               "beside the songbook; songs.jsonl, the table, is rebuilt from the songbook, the history and the notes.")
+    parser.add_argument("--songbook", metavar="FILE", help="the songbook (or VIBES_SONGBOOK)")
+    do = parser.add_subparsers(dest="do", required=True, metavar="COMMAND")
+    find = do.add_parser("find", help="songs whose title or artist match")
+    find.add_argument("words", nargs="+")
+    show = do.add_parser("show", help="a song's whole entry")
+    show.add_argument("song")
+    setter = do.add_parser("set", help="set one of Saber's own facts: first_heard, colours, or any name of his")
+    setter.add_argument("song")
+    setter.add_argument("key")
+    setter.add_argument("value", help="plain text, or JSON for a list or a number")
+    unset = do.add_parser("unset", help="remove one of Saber's own facts")
+    unset.add_argument("song")
+    unset.add_argument("key")
+    point = do.add_parser("point", help="point a song at a photo or a clip where it is kept, or at a film on YouTube")
+    point.add_argument("song")
+    point.add_argument("what", help="a file, or a YouTube link")
+    point.add_argument("--root", metavar="DIR", default=os.environ.get("VIBES_MEDIA_ROOT", "").strip(),
+                       help="the folder the footage is kept in (default: the drive the file is on)")
+    point.add_argument("--title")
+    point.add_argument("--caption")
+    point.add_argument("--alt")
+    unpoint = do.add_parser("unpoint", help="remove a song's pointer, by its number")
+    unpoint.add_argument("song")
+    unpoint.add_argument("number", type=int)
+    build = do.add_parser("build", help="write the table, songs.jsonl")
+    build.add_argument("--out", metavar="FILE", help="where to write it (default: beside the songbook)")
+    args = parser.parse_args(argv)
+    try:
+        return run(args)
+    except (Stop, sync.UsageError) as err:
+        print(f"vibes-songs: {err}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print("vibes-songs: stopped", file=sys.stderr)
+        sys.exit(130)

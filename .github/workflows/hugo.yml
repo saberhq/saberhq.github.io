@@ -89,13 +89,17 @@ jobs:
         run: |
           set -euo pipefail
           cd "$BOOK_DIR"
-          if git diff --quiet -- songbook.json; then
+          git add -- songbook.json
+          if [ -f songs.jsonl ]; then git add -- songs.jsonl; fi
+          if git diff --cached --quiet; then
             echo "The songbook didn't change."
             exit 0
           fi
           export GIT_SSH_COMMAND="ssh -i $KEY_FILE -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
           git -c user.name="saberhq.com sync" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit --quiet -m "The hourly sync updated the songbook [saber_vibes]" -- songbook.json
+            commit --quiet -m "The hourly sync updated the songbook [saber_vibes]"
+          git -c user.name="saberhq.com sync" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            pull --quiet --rebase origin songbook
           git push --quiet origin songbook
           echo "Saved the songbook."
 
