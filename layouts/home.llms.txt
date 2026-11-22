@@ -22,9 +22,14 @@
 - [Résumé]({{ "resume/" | absURL }}): {{ site.Params.author }}'s résumé: experience, selected publications, technical skills and education.
 
 ## Posts
-{{- range (where site.RegularPages "Type" "blog").ByDate.Reverse }}
-- [{{ .Title }}]({{ .Permalink }}): {{ .Description }} ({{ .Date.Format "2006-01-02" }})
+{{- range (site.GetPage "/docs/blog").RegularPages.ByDate.Reverse }}
+- [{{ .Title }}]({{ or .Params.external .Permalink }}): {{ .Params.description | default (.Summary | plainify | truncate 150) }} ({{ .Date.Format "2006-01-02" }}{{ with index site.Data.areas (.Params.area | default "") }} · {{ .label }}{{ end }})
 {{- end }}
 
 ## Projects
 - [Sidechain]({{ $sidechain }}llms.txt){{ with $sidechainSummary }}: {{ . }}{{ end }}
+
+## Elsewhere
+{{- range site.Data.header.elsewhere }}
+- [{{ .name }}]({{ .url }}): {{ site.Params.author }} on {{ .name }}
+{{- end }}
