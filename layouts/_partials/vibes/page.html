@@ -55,12 +55,14 @@
 {{- $rows := cond $hasTeaser 3 (int (math.Ceil (div $slots 4.0))) }}
 {{- $first := 10 }}
 {{- if lt $total 100 }}{{ $first = int (math.Floor (math.Sqrt $total)) }}{{ end }}
-{{- /* Songs with a page of their own, and the first listens Saber dated himself (first_heard in a song's folder). */ -}}
+{{- /* Songs with a page of their own, and the first listens Saber dated himself (first_heard in a song's entry). */ -}}
 {{- $songsHref := "/vibes/songs/" }}
 {{- $ownHeard := dict }}
-{{- range where site.RegularPages "Section" "songs" }}
-  {{- $h := partial "vibes/first-listen" (dict "own" .Params.first_heard) }}
-  {{- if eq $h.source "own" }}{{ $ownHeard = merge $ownHeard (dict (path.Base .Path) $h) }}{{ end }}
+{{- range $slug, $song := partialCached "vibes/songs" "all" }}
+  {{- with $song.mine.first_heard }}
+    {{- $h := partial "vibes/first-listen" (dict "own" .) }}
+    {{- if eq $h.source "own" }}{{ $ownHeard = merge $ownHeard (dict $slug $h) }}{{ end }}
+  {{- end }}
 {{- end }}
 <!DOCTYPE html>
 <html lang="{{ default .Site.Language.Lang .Site.LanguageCode }}" dir="{{ default "ltr" .Site.Language.LanguageDirection }}">

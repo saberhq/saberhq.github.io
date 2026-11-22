@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+"""Make the web copy of a picture for the site's media folder, named by the original's fingerprint."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import subprocess
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+MEDIA_DIR = REPO_ROOT / "assets" / "media"
+MEDIA_ID = 12
+
+
+def fingerprint(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def main(argv: list | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="media-export",
+        description="Make the web copy of a picture: a JPEG no larger than --size, in assets/media/, named by the "
+                    "first characters of the original's fingerprint. The original is only read. macOS only (sips).")
+    parser.add_argument("files", nargs="+", metavar="FILE")
+    parser.add_argument("--size", type=int, default=2400, help="longest side in pixels (default 2400)")
+    parser.add_argument("--out-dir", metavar="DIR", default=str(MEDIA_DIR), help="default: assets/media/")
+    args = parser.parse_args(argv)
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    failed = 0
+    for name in args.files:
+        source = Path(name).expanduser()
+        if not source.is_file():
+            print(f"media-export: {source} isn't a file", file=sys.stderr)
+            failed += 1
+            continue
+        target = out_dir / f"{fingerprint(source)[:MEDIA_ID]}.jpg"
+        if target.exists():
+            print(f"{target.stem}  already there  ·  {source.name}")
+            continue
+        done = subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", "85", "-Z", str(args.size),
+                               str(source), "--out", str(target)], capture_output=True, text=True)
+        if done.returncode or not target.exists():
+            print(f"media-export: couldn't read {source.name} as a picture", file=sys.stderr)
+            failed += 1
+            continue
+        print(f"{target.stem}  →  {target.relative_to(REPO_ROOT) if REPO_ROOT in target.parents else target}  ·  {source.name}")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

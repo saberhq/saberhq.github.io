@@ -1,4 +1,4 @@
-{{- /* A song of Saber Vibes (/vibes/songs/<name>/): Spotify's facts, then whatever the song's own folder holds. */ -}}
+{{- /* A song of Saber Vibes (/vibes/songs/<name>/): Spotify's facts, then Saber's own from the song's entry (mine), and his words when the page is a file. */ -}}
 {{- $slug := path.Base .Path }}
 {{- $f := index (partialCached "vibes/songs" "all") $slug | default dict }}
 {{- $name := $f.name | default .Title }}
@@ -7,12 +7,21 @@
 {{- $listen := $f.url | default .Params.link }}
 {{- $wallHref := "/vibes/" }}{{ with site.GetPage "/vibes" }}{{ $wallHref = .RelPermalink }}{{ end }}
 {{- $artsHref := "/vibes/albumarts/" }}{{ with site.GetPage "/albumarts" }}{{ $artsHref = .RelPermalink }}{{ end }}
-{{- $heard := partial "vibes/first-listen" (dict "own" .Params.first_heard "played" $f.first_played) }}
-{{- $cover := "" }}{{ with .Resources.GetMatch "cover.*" }}{{ if and (eq .ResourceType "image") (ne .MediaType.SubType "svg") }}{{ $cover = . }}{{ end }}{{ end }}
+{{- $mine := $f.mine | default dict }}
+{{- $heard := partial "vibes/first-listen" (dict "own" $mine.first_heard "played" $f.first_played) }}
+{{- /* His pictures and films come by pointer: a picture is the web copy in assets/media/ named in the entry. */ -}}
 {{- $photos := slice }}
-{{- range .Resources.ByType "image" }}{{ if ne . $cover }}{{ $photos = $photos | append . }}{{ end }}{{ end }}
+{{- $films := slice }}
+{{- range $mine.media }}
+  {{- if .youtube }}
+    {{- $films = $films | append . }}
+  {{- else if .id }}
+    {{- $item := . }}
+    {{- with resources.GetMatch (printf "media/%s.*" .id) }}{{ $photos = $photos | append (dict "image" . "caption" $item.caption "alt" $item.alt) }}{{ end }}
+  {{- end }}
+{{- end }}
 {{- $colours := slice }}
-{{- range .Params.colours }}{{ with findRE `^#[0-9a-fA-F]{3,8}$` (printf "%v" .) }}{{ $colours = $colours | append (index . 0) }}{{ end }}{{ end }}
+{{- range $mine.colours }}{{ with findRE `^#[0-9a-fA-F]{3,8}$` (printf "%v" .) }}{{ $colours = $colours | append (index . 0) }}{{ end }}{{ end }}
 {{- $tone := "" }}{{ with $colours }}{{ $tone = index . 0 }}{{ else }}{{ with findRE `^#[0-9a-fA-F]{6}$` ($f.colour | default "") }}{{ $tone = index . 0 }}{{ end }}{{ end }}
 {{- $kicker := cond (not (not $f.wall)) "A song on the wall" (cond (not (not $f.liked)) "A liked song" "A song") }}
 <!DOCTYPE html>
@@ -20,14 +29,11 @@
 <head>
   {{ partial "docs/html-head" . }}
   {{ partial "docs/inject/head" . }}
-  {{- if not (or (strings.TrimSpace .Content) $photos) }}
+  {{- if not (or (strings.TrimSpace .Content) $photos $films) }}
   <meta name="robots" content="noindex, follow">
   {{- end }}
   {{- $css := slice (resources.Get "post.css") (resources.Get "vibes.css") (resources.Get "vibes/views.css") (resources.Get "vibes/song.css") | resources.Concat "css/vibes-song.css" | resources.Minify | resources.Fingerprint "sha384" }}
   <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}" crossorigin="anonymous">
-  {{- with .Resources.GetMatch "style.css" }}
-  <link rel="stylesheet" href="{{ .RelPermalink }}">
-  {{- end }}
   {{- if or $f.medium $f.large }}
   <link rel="preconnect" href="https://i.scdn.co">
   {{- end }}
@@ -54,9 +60,6 @@
           {{- if or $f.medium $f.large }}
             {{- $src := $f.large | default $f.medium }}
           <a class="sg-cover-link" href="{{ $f.url }}" target="_blank" rel="noopener"><img src="{{ $src }}"{{ if and $f.medium $f.large }} srcset="{{ $f.medium }} 300w, {{ $f.large }} 640w" sizes="(max-width: 700px) 92vw, 360px"{{ end }} width="640" height="640" alt="The cover of {{ $album | default $name }}" decoding="async" referrerpolicy="no-referrer"><span class="sq-sr-only"> (opens on Spotify in a new tab)</span></a>
-          {{- else if $cover }}
-            {{- $img := cond (gt $cover.Width 1280) ($cover.Resize "1280x") $cover }}
-          <img src="{{ $img.RelPermalink }}" width="{{ $img.Width }}" height="{{ $img.Height }}" alt="{{ $cover.Params.alt | default (printf "A picture for %s" $name) }}" decoding="async">
           {{- else }}
           <div class="sg-cover-blank" aria-hidden="true"></div>
           {{- end }}
@@ -108,18 +111,25 @@
       {{- with $photos }}
       <section class="sg-photos" aria-label="Pictures">
         {{- range . }}
-          {{- $small := . }}{{ $big := . }}
-          {{- if ne .MediaType.SubType "svg" }}
-            {{- if gt .Width 900 }}{{ $small = .Resize "900x" }}{{ end }}
-            {{- if gt .Width 2000 }}{{ $big = .Resize "2000x" }}{{ end }}
-          {{- end }}
+          {{- $big := .image }}
+          {{- $small := cond (gt $big.Width 900) ($big.Resize "900x") $big }}
         <figure class="sg-photo">
-          <a href="{{ $big.RelPermalink }}"><img src="{{ $small.RelPermalink }}"{{ if ne .MediaType.SubType "svg" }} width="{{ $small.Width }}" height="{{ $small.Height }}"{{ end }} alt="{{ .Params.alt | default "" }}" loading="lazy" decoding="async"></a>
-          {{- if ne .Title .Name }}
-          <figcaption>{{ .Title }}</figcaption>
+          <a href="{{ $big.RelPermalink }}"><img src="{{ $small.RelPermalink }}" width="{{ $small.Width }}" height="{{ $small.Height }}" alt="{{ .alt | default "" }}" loading="lazy" decoding="async"></a>
+          {{- with .caption }}
+          <figcaption>{{ . }}</figcaption>
           {{- end }}
         </figure>
         {{- end }}
+      </section>
+      {{- end }}
+
+      {{- with $films }}
+      <section class="sg-films" aria-label="Films">
+        <ul>
+          {{- range . }}
+          <li><a href="https://www.youtube.com/watch?v={{ .youtube }}" target="_blank" rel="noopener">{{ .title | default "A film for this song" }} <span aria-hidden="true">↗</span><span class="sq-sr-only"> (opens on YouTube in a new tab)</span></a></li>
+          {{- end }}
+        </ul>
       </section>
       {{- end }}
 
@@ -148,8 +158,5 @@
     if (vibes) { while (vibes.nextSibling) trail.removeChild(vibes.nextSibling); }
   })();
   </script>
-  {{- with .Resources.GetMatch "script.js" }}
-  <script src="{{ .RelPermalink }}" defer></script>
-  {{- end }}
 </body>
 </html>

@@ -1,4 +1,4 @@
-{{- /* A page for every song on the wall or among the liked songs; a song with its own folder here keeps that folder as its page. */ -}}
+{{- /* A page for every song on the wall or among the liked songs; a song Saber has written about (<name>.md here) keeps that file as its page. */ -}}
 {{- $songs := slice -}}
 {{- $more := (.Site.Data.vibes_more | default dict).songs | default dict -}}
 {{- range (.Site.Data.vibes | default dict).tracks -}}
@@ -18,7 +18,7 @@
 {{- end -}}
 {{- $seen := dict -}}
 {{- range $songs -}}
-  {{- if and (not (index $seen .slug)) (not (fileExists (printf "content/songs/%s/index.md" .slug))) -}}
+  {{- if and (not (index $seen .slug)) (not (fileExists (printf "content/songs/%s.md" .slug))) (not (fileExists (printf "content/songs/%s/index.md" .slug))) -}}
     {{- $.AddPage (dict
       "path" .slug
       "title" .name

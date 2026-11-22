@@ -1,8 +1,8 @@
-{{- /* Every song with a page, keyed by the name in its address: Spotify's facts from the liked songs and the wall. Returns a dict. */ -}}
+{{- /* Every song with a page, keyed by the name in its address: Spotify's facts from the liked songs and the wall, and Saber's own (mine). Returns a dict. */ -}}
 {{- $songs := dict -}}
 {{- range (site.Data.albumarts | default dict).tiles -}}
   {{- if and (reflect.IsMap .) .slug (not (index $songs .slug)) -}}
-    {{- $songs = merge $songs (dict .slug (dict "slug" .slug "id" .id "name" .name "by" .by "url" .url "album" .album "album_url" .album_url "medium" .medium "large" .large "colour" .colour "liked" .liked "first_played" .first_played)) -}}
+    {{- $songs = merge $songs (dict .slug (dict "slug" .slug "id" .id "name" .name "by" .by "url" .url "album" .album "album_url" .album_url "medium" .medium "large" .large "colour" .colour "liked" .liked "first_played" .first_played "mine" (.mine | default dict))) -}}
   {{- end -}}
 {{- end -}}
 {{- $more := (site.Data.vibes_more | default dict).songs | default dict -}}
@@ -22,7 +22,7 @@
       {{- end -}}
       {{- with $album.images }}{{ if not $medium }}{{ $medium = (index . 0).url }}{{ end }}{{ end -}}
       {{- $was := index $songs . | default dict -}}
-      {{- $now := dict "slug" . "id" $tr.id "name" $tr.name "by" (delimit $names ", ") "url" ($tr.url | default (printf "https://open.spotify.com/track/%v" $tr.id)) "album" $album.name "album_url" $album.url "medium" ($medium | default $was.medium) "large" ($large | default $was.large) "wall" true "wall_since" $tr.added_at "first_played" ($st.first_played | default $was.first_played) -}}
+      {{- $now := dict "slug" . "id" $tr.id "name" $tr.name "by" (delimit $names ", ") "url" ($tr.url | default (printf "https://open.spotify.com/track/%v" $tr.id)) "album" $album.name "album_url" $album.url "medium" ($medium | default $was.medium) "large" ($large | default $was.large) "wall" true "wall_since" $tr.added_at "first_played" ($st.first_played | default $was.first_played) "mine" ($st.mine | default $was.mine | default dict) -}}
       {{- $songs = merge $songs (dict . (merge $was $now)) -}}
     {{- end -}}
   {{- end -}}
