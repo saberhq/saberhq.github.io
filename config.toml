@@ -12,6 +12,16 @@ disableKinds = ["taxonomy", "term"]
 [permalinks.page]
   songs = "/vibes/songs/:contentbasename/"
 
+[outputs]
+  home = ["html", "rss", "llms"]
+
+# /llms.txt: the site map for AI tools (llmstxt.org)
+[outputFormats.llms]
+  mediaType = "text/plain"
+  baseName = "llms"
+  isPlainText = true
+  notAlternative = true
+
 [markup]
 [markup.goldmark.renderer]
   unsafe = true

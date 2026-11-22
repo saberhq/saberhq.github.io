@@ -1,0 +1,30 @@
+{{- /* /llms.txt in the llmstxt.org format; each line's words are that page's title and description. */ -}}
+{{- $about := site.GetPage "/about" -}}
+{{- $sidechain := "https://saberhq.com/sidechain/" -}}
+{{- $sidechainSummary := "" -}}
+{{- with try (resources.GetRemote (print $sidechain "llms.txt")) -}}
+  {{- with .Value -}}
+    {{- with findRESubmatch `(?m)^> (.+)$` .Content 1 -}}{{ $sidechainSummary = index (index . 0) 1 }}{{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if not $sidechainSummary }}{{ warnf "llms.txt: Sidechain's llms.txt couldn't be read, so its line has no summary" }}{{ end -}}
+# {{ site.Params.author }}
+
+> {{ $about.Description }}
+
+## Pages
+- [{{ site.Home.Title }}]({{ site.Home.Permalink }}): {{ site.Home.Description }}
+{{- range slice "/about" "/docs/blog" "/vibes" "/albumarts" }}
+{{- with site.GetPage . }}
+- [{{ .Title }}]({{ .Permalink }}): {{ .Description }}
+{{- end }}
+{{- end }}
+- [Résumé]({{ "resume/" | absURL }}): {{ site.Params.author }}'s résumé: experience, selected publications, technical skills and education.
+
+## Posts
+{{- range (where site.RegularPages "Type" "blog").ByDate.Reverse }}
+- [{{ .Title }}]({{ .Permalink }}): {{ .Description }} ({{ .Date.Format "2006-01-02" }})
+{{- end }}
+
+## Projects
+- [Sidechain]({{ $sidechain }}llms.txt){{ with $sidechainSummary }}: {{ . }}{{ end }}
