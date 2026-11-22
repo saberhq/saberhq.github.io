@@ -9,6 +9,9 @@ publishDir = "build"
 # generating unstyled /tags/... listings until we design them.
 disableKinds = ["taxonomy", "term"]
 
+[permalinks.page]
+  songs = "/vibes/songs/:contentbasename/"
+
 [markup]
 [markup.goldmark.renderer]
   unsafe = true

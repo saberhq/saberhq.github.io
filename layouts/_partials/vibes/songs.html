@@ -1,0 +1,30 @@
+{{- /* Every song with a page, keyed by the name in its address: Spotify's facts from the liked songs and the wall. Returns a dict. */ -}}
+{{- $songs := dict -}}
+{{- range (site.Data.albumarts | default dict).tiles -}}
+  {{- if and (reflect.IsMap .) .slug (not (index $songs .slug)) -}}
+    {{- $songs = merge $songs (dict .slug (dict "slug" .slug "id" .id "name" .name "by" .by "url" .url "album" .album "album_url" .album_url "medium" .medium "large" .large "colour" .colour "liked" .liked "first_played" .first_played)) -}}
+  {{- end -}}
+{{- end -}}
+{{- $more := (site.Data.vibes_more | default dict).songs | default dict -}}
+{{- range (site.Data.vibes | default dict).tracks -}}
+  {{- if and (reflect.IsMap .) .id .name -}}
+    {{- $tr := . -}}
+    {{- $st := index $more .id | default dict -}}
+    {{- with $st.slug -}}
+      {{- $names := slice -}}
+      {{- range $tr.artists }}{{ with .name }}{{ $names = $names | append . }}{{ end }}{{ end -}}
+      {{- $album := $tr.album | default dict -}}
+      {{- $medium := "" }}{{ $large := "" -}}
+      {{- range $album.images -}}
+        {{- $w := int (.width | default 0) -}}
+        {{- if and (eq $w 300) (not $medium) }}{{ $medium = .url }}{{ end -}}
+        {{- if and (eq $w 640) (not $large) }}{{ $large = .url }}{{ end -}}
+      {{- end -}}
+      {{- with $album.images }}{{ if not $medium }}{{ $medium = (index . 0).url }}{{ end }}{{ end -}}
+      {{- $was := index $songs . | default dict -}}
+      {{- $now := dict "slug" . "id" $tr.id "name" $tr.name "by" (delimit $names ", ") "url" ($tr.url | default (printf "https://open.spotify.com/track/%v" $tr.id)) "album" $album.name "album_url" $album.url "medium" ($medium | default $was.medium) "large" ($large | default $was.large) "wall" true "wall_since" $tr.added_at "first_played" ($st.first_played | default $was.first_played) -}}
+      {{- $songs = merge $songs (dict . (merge $was $now)) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $songs -}}

@@ -1,0 +1,77 @@
+/* Saber Vibes, a song's page: the cover and Spotify's names, the facts, then Saber's own words and pictures */
+
+.sg-page { --sg-cover: clamp(220px, 30vw, 360px); --sg-gap: var(--space-7); }
+.sg-stage { max-width: var(--page-max); margin: 0 auto; padding: var(--space-7) var(--gut) var(--space-8); }
+.sg-stage .vb-wall-head { margin-bottom: var(--space-6); }
+
+/* ---- The head: the cover beside the song's names ---- */
+.sg-head { display: grid; grid-template-columns: var(--sg-cover) minmax(0, 1fr); column-gap: var(--sg-gap); align-items: start; }
+/* Cover art is shown whole: square, uncropped, nothing on top, never tinted or animated */
+.sg-cover img, .sg-cover-blank {
+  display: block; width: 100%; height: auto; aspect-ratio: 1; max-width: none; border-radius: var(--art-r);
+  outline: var(--rule-w) solid var(--rule); background: var(--surface-sunken);
+}
+.sg-cover > img { aspect-ratio: auto; }
+a.sg-cover-link { display: block; border-radius: var(--art-r); }
+a.sg-cover-link:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+
+.sg-id { min-width: 0; }
+.sg-id .sq-kicker { margin: 0; line-height: 1.6; }
+/* the song's own colour, as a chip beside the kicker */
+.sg-page--tone .sg-id .sq-kicker::before {
+  content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 9px; border-radius: 2px;
+  background: var(--song); outline: var(--rule-w) solid var(--rule);
+}
+/* Spotify's metadata is shown exactly as delivered: no text-transform */
+.sg-title {
+  margin: 10px 0 0; font-size: clamp(30px, 3.6vw, var(--display-size)); font-weight: 600;
+  letter-spacing: var(--display-track); line-height: var(--display-leading); color: var(--ink);
+  overflow-wrap: anywhere; text-wrap: balance;
+}
+.sg-by { margin: 10px 0 0; font-size: clamp(17px, 1.5vw, 20px); line-height: 1.35; color: var(--ink-2); }
+.sg-album { margin: 4px 0 0; font-size: var(--small-size); line-height: var(--small-leading); color: var(--ink-3); }
+.sg-actions { margin-top: var(--space-5); display: flex; flex-wrap: wrap; gap: var(--space-3); }
+
+/* ---- The facts: a small mono table ---- */
+.sg-facts { margin: var(--space-6) 0 0; padding: 0; border-top: var(--rule-w) solid var(--rule); max-width: 460px; }
+.sg-facts > div {
+  display: grid; grid-template-columns: 124px minmax(0, 1fr); column-gap: var(--space-3); align-items: baseline;
+  padding: 9px 0; border-bottom: var(--rule-w) solid var(--rule);
+}
+.sg-facts dt {
+  font-family: var(--font-mono); font-size: var(--micro-size); font-weight: 500; line-height: 1.6;
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink-3);
+}
+.sg-facts dd { margin: 0; font-family: var(--font-mono); font-size: var(--meta-size); line-height: 1.6; letter-spacing: var(--meta-track); color: var(--ink-2); }
+.sg-sep { color: var(--ink-4); }
+.sg-colours { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.sg-colour { display: inline-block; width: 18px; height: 18px; border-radius: 3px; outline: var(--rule-w) solid var(--rule); }
+
+/* ---- Saber's own: his words in the names' column, his pictures across the page ---- */
+.sg-words { max-width: var(--measure); margin: var(--space-8) 0 0 calc(var(--sg-cover) + var(--sg-gap)); }
+.sg-words > :last-child { margin-bottom: 0; }
+.sg-photos {
+  margin-top: var(--space-8); display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-5) 18px; align-items: start;
+}
+.sg-photo { margin: 0; min-width: 0; }
+.sg-photo a { display: block; }
+.sg-photo img { display: block; width: 100%; height: auto; max-width: none; border-radius: 2px; background: var(--surface-sunken); }
+.sg-photo figcaption {
+  margin-top: 8px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.5;
+  letter-spacing: var(--meta-track); color: var(--ink-3);
+}
+.sg-photo a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+
+@media (max-width: 900px) {
+  .sg-page { --sg-cover: clamp(180px, 34vw, 300px); --sg-gap: var(--space-6); }
+  .sg-stage { padding-top: var(--space-6); padding-bottom: var(--space-7); }
+}
+@media (max-width: 700px) {
+  .sg-head { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-5); }
+  .sg-cover { max-width: 420px; }
+  .sg-words { margin-left: 0; margin-top: var(--space-7); }
+  .sg-photos { margin-top: var(--space-7); grid-template-columns: minmax(0, 1fr); }
+  .sg-facts > div { grid-template-columns: 110px minmax(0, 1fr); }
+  .sg-actions .sq-btn { flex: 1; }
+}
