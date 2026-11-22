@@ -1,11 +1,7 @@
 {{- /* About page: content/about/index.md picks this up with `layout: about`. */ -}}
 
-{{- /* The address behind "Say hi" and "Email": the first mailto entry of menu.after in
-     config.toml ("Contact me"). It is only ever an href — never printed on the page. */ -}}
-{{- $mailto := "" }}
-{{- range site.Menus.after }}
-  {{- if and (not $mailto) (hasPrefix .URL "mailto:") }}{{ $mailto = .URL }}{{ end }}
-{{- end }}
+{{- /* The address behind "Say hi" and "Email": only ever an href, never printed on the page. */ -}}
+{{- $mailto := partial "saberhq/mailto" . }}
 {{- /* The Scholar profile from data/header.yaml's Elsewhere, for the "publications" aside */ -}}
 {{- $scholar := "" }}
 {{- range site.Data.header.elsewhere }}
