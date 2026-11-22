@@ -21,6 +21,11 @@
 {{- end }}
 - [Résumé]({{ "resume/" | absURL }}): {{ site.Params.author }}'s résumé: experience, selected publications, technical skills and education.
 
+## News
+{{- range site.Home.Params.news }}
+- {{ .date }}: {{ replace .text "](/" (printf "](%s/" (strings.TrimSuffix "/" site.BaseURL)) }}
+{{- end }}
+
 ## Posts
 {{- range (site.GetPage "/docs/blog").RegularPages.ByDate.Reverse }}
 - [{{ .Title }}]({{ or .Params.external .Permalink }}): {{ .Params.description | default (.Summary | plainify | truncate 150) }} ({{ .Date.Format "2006-01-02" }}{{ with index site.Data.areas (.Params.area | default "") }} · {{ .label }}{{ end }})
