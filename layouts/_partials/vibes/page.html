@@ -28,15 +28,6 @@
 {{- end }}{{ end }}
 {{- $n := len $songs }}
 {{- $stats := $more.songs | default dict }}
-{{- $hasDays := false }}
-{{- range $songs }}{{ with index $stats .id }}{{ if or .first_played .since }}{{ $hasDays = true }}{{ end }}{{ end }}{{ end }}
-{{- $updated := false }}
-{{- with $v }}{{ with .updated_at }}
-  {{- $raw := . }}
-  {{- with try (time.AsTime $raw) }}
-    {{- with .Err }}{{ warnf "vibes: can't read updated_at %q (%s)" $raw . }}{{ else }}{{ $updated = .Value }}{{ end }}
-  {{- end }}
-{{- end }}{{ end }}
 {{- /* Album Arts: one tile per liked song, most played first; the covers are drawn here only on its own address. */ -}}
 {{- $tiles := (site.Data.albumarts | default dict).tiles | default slice }}
 {{- $total := len $tiles }}
@@ -76,7 +67,7 @@
   <link rel="preconnect" href="https://i.scdn.co">
   {{- end }}
 </head>
-<body class="sq-shell vb-page{{ if $hasTop }} vb-page--top{{ end }}{{ if $hasDays }} vb-page--days{{ end }}">
+<body class="sq-shell vb-page{{ if $hasTop }} vb-page--top{{ end }}">
 
   {{ partial "saberhq/site-header" . }}
 
@@ -103,13 +94,6 @@
         <div class="vb-actions">
           <a class="sq-btn" href="{{ $url }}" target="_blank" rel="noopener">Listen on Spotify <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a>
         </div>
-        {{- if $n }}
-          {{- $ms := 0.0 }}
-          {{- range $songs }}{{ $ms = add $ms (.duration_ms | default 0) }}{{ end }}
-        <p class="vb-meta" data-for="wall">{{ $n }} song{{ if ne $n 1 }}s{{ end }} <span aria-hidden="true">·</span> {{ int (math.Round (div $ms 60000.0)) }} min
-          {{- with $updated }} <span aria-hidden="true">·</span> updated <time datetime="{{ .Format "2006-01-02" }}">{{ .Format "2 Jan 2006" }}</time>{{ end }}
-          {{- if $hasDays }}<br>days: since the first listen{{ end }}</p>
-        {{- end }}
         {{- if $total }}
         {{- /* Album Arts on wide screens: the chips, then the close-up of the cover under the pointer. */}}
         <div class="vb-arts-side" data-arts-side>
@@ -197,16 +181,6 @@
                   {{- with $by }}
                   <p class="vb-artists" dir="auto" title="{{ . }}">{{ . }}</p>
                   {{- end }}
-                  {{- /* Days since the first listen; with ~ when only the date liked or the wall date is known */}}
-                  {{- $heard := index $ownHeard ($st.slug | default "") | default (partial "vibes/first-listen" (dict "played" $st.first_played "since" $st.since)) }}
-                  {{- $raw := $heard.raw }}
-                  {{- $about := $heard.about }}
-                  {{- with $raw }}{{ with try (time.AsTime .) }}{{ if not .Err }}
-                    {{- $days := int (math.Floor (div (now.Sub .Value).Hours 24)) }}
-                    {{- if lt $days 0 }}{{ $days = 0 }}{{ end }}
-                    {{- $on := $heard.label }}
-                  <p class="vb-days" data-heard="{{ $raw }}" title="{{ if eq $heard.source "own" }}First listen: {{ $on }}, Saber’s own date{{ else if $about }}No listening history yet: liked or on the wall since {{ $on }}{{ else }}First listen: {{ $on }}{{ end }}">{{ if $about }}<span class="vb-days-about" aria-hidden="true"{{ if not $days }} hidden{{ end }}>~</span>{{ end }}<span class="vb-days-n">{{ if $days }}{{ lang.FormatNumber 0 $days }} day{{ if ne $days 1 }}s{{ end }}{{ else }}today{{ end }}</span><span class="vb-sr"> {{ if $about }}or so {{ end }}since the first listen{{ if not $about }}, on <span class="vb-days-on">{{ $on }}</span>{{ end }}</span></p>
-                  {{- end }}{{ end }}{{ end }}
                 </div>
               </li>
               {{- end }}
@@ -220,7 +194,7 @@
               <span class="vb-teaser-frame" aria-hidden="true"><span class="vb-teaser-grid">
                 {{- range $teaser }}<img src="{{ .small | default .medium }}"{{ if and .small .medium }} srcset="{{ .small }} 64w, {{ .medium }} 300w" sizes="48px"{{ end }} width="64" height="64" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">{{ end -}}
               </span></span>
-              <span class="vb-cap"><span class="vb-title">Album Arts</span><span class="vb-artists">{{ $total }} liked song{{ if ne $total 1 }}s{{ end }}<span class="vb-sr">, every cover in one picture</span></span></span>
+              <span class="vb-cap"><span class="vb-title">Album Arts<span class="vb-sr">, every cover in one picture</span></span></span>
             </a>
             {{- end }}
             </div>
@@ -299,7 +273,7 @@
   {{- with site.Data.vibes_more }}{{ (resources.FromString "vibes/more.json" (jsonify .)).Publish }}{{ end }}
   {{- with site.Data.albumarts }}{{ (resources.FromString "vibes/albumarts.json" (jsonify .)).Publish }}{{ end }}
 
-  {{/* Saber Vibes: the days under each song, most-played tabs, the two views, the close-up, and Album Arts' covers. */}}
+  {{/* Saber Vibes: most-played tabs, the two views, the close-up, and Album Arts' covers. */}}
   <script>
   (function () {
     var stage = document.querySelector('[data-stage]');
@@ -309,44 +283,6 @@
     var ownHeard = {{ $ownHeard | jsonify | safeJS }};
     function daysSince(t) { return Math.max(0, Math.floor((Date.now() - t) / 864e5)); }
     function daysText(d) { return d ? d.toLocaleString('en-GB') + (d === 1 ? ' day' : ' days') : 'today'; }
-    document.querySelectorAll('.vb-days[data-heard]').forEach(function (el) {
-      var t = Date.parse(el.getAttribute('data-heard')), n = el.querySelector('.vb-days-n'), about = el.querySelector('.vb-days-about'), on = el.querySelector('.vb-days-on');
-      if (isNaN(t) || !n) return;
-      n.textContent = daysText(daysSince(t));
-      if (about) about.hidden = !daysSince(t);
-      if (on && el.getAttribute('data-heard').length > 10) { on.textContent = day(t); el.title = 'First listen: ' + day(t); }
-    });
-
-    // the wall fits one screen: when captions run long, the covers give up just enough
-    var wallHead = stage.querySelector('.vb-wall-head'), wall = stage.querySelector('.vb-wall'), sleeve = stage.querySelector('.vb-sleeve');
-    var wideScreen = window.matchMedia ? window.matchMedia('(min-width: 901px)') : null;
-    function wallOver() {
-      var cs = getComputedStyle(stage);
-      return wallHead.offsetHeight + parseFloat(getComputedStyle(wallHead).marginBottom) + wall.offsetHeight + parseFloat(getComputedStyle(wall).marginBottom)
-        - (parseFloat(cs.minHeight) - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom));
-    }
-    function fitWall() {
-      stage.style.removeProperty('--trim');
-      if (!wallHead || !wall || !sleeve || !wideScreen || !wideScreen.matches) return;
-      var rows = +stage.style.getPropertyValue('--n-rows') || 1;
-      for (var trim = 0, i = 0; i < 6; i++) {
-        var over = wallOver();
-        if (!(over > 0.5) || sleeve.offsetWidth <= 80) break;
-        trim += Math.ceil(over / rows);
-        stage.style.setProperty('--trim', trim + 'px');
-      }
-    }
-    fitWall();
-    if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', fitWall);
-    window.addEventListener('load', fitWall);
-    // a box the size of the window tells of every resize, in the same frame
-    if (window.ResizeObserver) {
-      var probe = document.createElement('div');
-      probe.style.cssText = 'position:fixed;inset:0;visibility:hidden;pointer-events:none';
-      document.body.appendChild(probe);
-      new ResizeObserver(fitWall).observe(probe);
-    } else window.addEventListener('resize', fitWall);
-
     // most played: one period at a time
     var tabs = document.querySelector('[data-top-tabs]');
     if (tabs) {
