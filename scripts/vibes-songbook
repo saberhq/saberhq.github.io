@@ -9,11 +9,13 @@ import importlib.util
 import io
 import json
 import os
+import re
 import struct
 import subprocess
 import sys
 import tempfile
 import traceback
+import unicodedata
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -44,6 +46,8 @@ RANK_PAGES = 120
 LIKED_PAGES = 100
 COLOURS_PER_RUN = 60
 REENTRY_S = 60
+SLUG_MAX = 80
+LATIN = str.maketrans({"ı": "i", "ø": "o", "æ": "ae", "œ": "oe", "đ": "d", "ł": "l", "þ": "th", "ð": "d"})
 
 
 # Reading Spotify
@@ -296,8 +300,40 @@ def note_history(book: dict, history: dict) -> None:
                          played_ms=sum(facts[4] for facts in found.values()))
 
 
-def played(entry: dict) -> dict:
-    return {"first_played": entry["first_played"]} if entry.get("first_played") else {}
+def slug_of(text: str) -> str:
+    """Words as part of an address: lower case, accents dropped, hyphens between."""
+    folded = unicodedata.normalize("NFKD", text.casefold().translate(LATIN))
+    kept = "".join(ch if ch.isalnum() else "-" for ch in folded if not unicodedata.combining(ch))
+    return re.sub(r"-+", "-", kept).strip("-")
+
+
+def note_slugs(book: dict) -> None:
+    """Each song's name in its page's address, given once and kept; recordings of one song share it."""
+    def song(entry: dict) -> tuple:
+        return listened.same_song(entry.get("name") or "", ((entry.get("artists") or [{}])[0].get("name") or ""))
+
+    by_song, taken = {}, set()
+    for entry in book["songs"].values():
+        if entry.get("slug"):
+            by_song.setdefault(song(entry), entry["slug"])
+            taken.add(entry["slug"])
+    for song_id, entry in book["songs"].items():
+        if entry.get("slug"):
+            continue
+        key = song(entry)
+        if key not in by_song:
+            first_artist = (entry.get("artists") or [{}])[0].get("name") or ""
+            base = slug_of(f"{entry.get('name') or ''} {first_artist}")[:SLUG_MAX].strip("-") or song_id.lower()
+            slug, number = base, 2
+            while slug in taken:
+                slug, number = f"{base}-{number}", number + 1
+            by_song[key] = slug
+            taken.add(slug)
+        entry["slug"] = by_song[key]
+
+
+def published(entry: dict) -> dict:
+    return {key: entry[key] for key in ("slug", "first_played") if entry.get(key)}
 
 
 def settle(book: dict) -> None:
@@ -324,7 +360,7 @@ def more_for_page(book: dict, wall: list, top: dict | None) -> dict:
     for song in wall:
         entry = book["songs"].get(song["id"]) or {}
         songs[song["id"]] = {"since": entry.get("since"), "ins": entry.get("ins", 1), "outs": entry.get("outs", 0),
-                             **played(entry)}
+                             **published(entry)}
     return {"updated_at": None, "songs": songs, "top": top or {}}
 
 
@@ -339,7 +375,7 @@ def arts_for_page(book: dict) -> dict:
                       "album": entry["album"].get("name"), "album_url": entry["album"].get("url"),
                       "small": pick_image(images, 64), "medium": pick_image(images, 300),
                       "large": pick_image(images, 640), "liked": entry["liked_at"],
-                      "rank": entry.get("rank"), "colour": entry.get("colour"), **played(entry)})
+                      "rank": entry.get("rank"), "colour": entry.get("colour"), **published(entry)})
     ranked = sorted((tile for tile in tiles if tile["rank"] is not None), key=lambda tile: tile["rank"])
     rest = sorted((tile for tile in tiles if tile["rank"] is None), key=lambda tile: tile["liked"], reverse=True)
     return {"updated_at": None, "total": len(tiles), "tiles": ranked + rest}
@@ -440,6 +476,7 @@ def run(args, env, log) -> dict:
         if history:
             note_history(book, history)
         settle(book)
+        note_slugs(book)
     except sync.Problem as problem:
         result["status"], result["rotated"] = problem.status, spotify.rotated
         return keep_live(problem.message)
