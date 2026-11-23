@@ -1,11 +1,11 @@
 # Saber HQ Design System
 
-Personal brand system for **Saber Hafezqorani** (saberhq.com) — computational biologist working at AI × Bio. One identity across the resume, personal website, blog, slides, and anything shared publicly.
+Personal brand system for **Saber Hafezqorani** (saberh.com) — computational biologist working at AI × Bio. One identity across the resume, personal website, blog, slides, and anything shared publicly.
 
 **Sources**
 - Resume (origin of the system): Claude Design project `4db79629-88e3-4a61-9b2d-7f886a9e0b12` — Geist + vermillion were settled there
 - Website repo: https://github.com/saberhq/saberhq.github.io (Hugo, Book theme — generic theme being reworked onto this system; see github.md)
-- Live site: https://saberhq.com
+- Live site: https://saberh.com
 
 **The idea: instrument-panel editorial.** Warm paper, near-black ink, exactly one accent (Okabe–Ito vermillion), Geist for the voice, Geist Mono for the measurements. Structure comes from rules and grids, not boxes and shadows. Print-influenced (New Yorker-adjacent restraint), but engineered rather than literary — the mono rail treats a career like telemetry.
 
@@ -40,7 +40,7 @@ Personal brand system for **Saber Hafezqorani** (saberhq.com) — computational 
 ## Iconography
 No icon set exists in the sources — the typefaces provide the glyphs (see Content fundamentals). Keep it that way on brand surfaces. If a UI genuinely needs functional icons (nav, media controls), use Lucide from CDN at 1.5px stroke, 16–20px, `currentColor` — an intentional addition, not sourced.
 
-**Mark.** No drawn logo — the mark is typographic: `Saber H.`: in the header it is Geist Mono 13px, weight 600, uppercase, 0.12em tracking, ink (the tabs beside it are Geist Sans, sentence case); as the home page's title it is Geist Pixel 52.6px; `saberhq.com` in Geist Mono names the site (footer strips, corner marks); wordmark `SABER HQ` in Geist 600, uppercase, +0.04em tracking. Never draw a monogram glyph.
+**Mark.** No drawn logo — the mark is typographic: `Saber H.`: in the header it is Geist Mono 13px, weight 600, uppercase, 0.12em tracking, ink (the tabs beside it are Geist Sans, sentence case); as the home page's title it is Geist Pixel 52.6px; `saberh.com` in Geist Mono names the site (footer strips, corner marks); wordmark `SABER HQ` in Geist 600, uppercase, +0.04em tracking. Never draw a monogram glyph.
 
 ## Index
 - `styles.css` — entry point; imports everything under `tokens/`

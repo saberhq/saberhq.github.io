@@ -7,7 +7,7 @@
 {{- $artsPage := site.GetPage "/albumarts" }}
 {{- with $artsPage }}{{ $artsHref = .RelPermalink }}{{ end }}
 {{- $titleWall := partial "docs/html-head-title" $main | plainify }}
-{{- $titleArts := "saberhq.com - Album Arts" }}
+{{- $titleArts := "saberh.com - Album Arts" }}
 {{- with $artsPage }}{{ $titleArts = partial "docs/html-head-title" . | plainify }}{{ end }}
 
 {{- $v := site.Data.vibes }}

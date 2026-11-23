@@ -1,4 +1,4 @@
-baseURL = "https://saberhq.com/"
+baseURL = "https://saberh.com/"
 languageCode = "en-us"
 title = "Saber HQ"
 theme = "book"
@@ -42,7 +42,7 @@ disableKinds = ["taxonomy", "term"]
   BookRepo = "https://github.com/saberhq/saberhq.github.io"
   # a post's "updated" date links here, its file path added
   contentHistory = "https://github.com/saberhq/saberhq.github.io/commits/main/content/"
-  # saberhq.com pages that open in a new tab (links to other sites always do)
+  # saberh.com pages that open in a new tab (links to other sites always do)
   newTab = ["/resume/"]
 
 # Footer socials (optional)

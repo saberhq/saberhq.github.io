@@ -15,7 +15,7 @@ news:
   - date: Oct 2026
     text: "Started [Saber Vibes](/vibes/), a short playlist of the songs that sum up my life right now, and added an [About](/about/) page."
   - date: Aug 2026
-    text: "Building Sidechain, my solo entry to Arc Institute's Virtual Cell Challenge 2026. The writeup: [What Sidechain is](https://saberhq.com/sidechain/posts/what-sidechain-is/)."
+    text: "Building Sidechain, my solo entry to Arc Institute's Virtual Cell Challenge 2026. The writeup: [What Sidechain is](https://saberh.com/sidechain/posts/what-sidechain-is/)."
   - date: Aug 2026
     text: "Redesigned the site's typeface and color scheme ([v1.0.0](https://github.com/saberhq/saberhq.github.io/releases/tag/v1.0.0))."
   - date: Jul 2026

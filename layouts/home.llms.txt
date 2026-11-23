@@ -1,6 +1,6 @@
 {{- /* /llms.txt in the llmstxt.org format; each line's words are that page's title and description. */ -}}
 {{- $about := site.GetPage "/about" -}}
-{{- $sidechain := "https://saberhq.com/sidechain/" -}}
+{{- $sidechain := "https://saberh.com/sidechain/" -}}
 {{- $sidechainSummary := "" -}}
 {{- with try (resources.GetRemote (print $sidechain "llms.txt")) -}}
   {{- with .Value -}}

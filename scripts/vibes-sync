@@ -27,7 +27,7 @@ PAGE_FILE = REPO_ROOT / "content" / "vibes" / "index.md"
 DEFAULT_OUT = REPO_ROOT / "data" / "vibes.json"
 
 DEFAULT_PLAYLIST_ID = "0t4TwMJJm9grrUAb7tUliu"
-DEFAULT_FALLBACK_URL = "https://saberhq.com/vibes/vibes.json"
+DEFAULT_FALLBACK_URL = "https://saberh.com/vibes/vibes.json"
 SPOTIFY_ACCOUNTS = "https://accounts.spotify.com"
 SPOTIFY_API = "https://api.spotify.com/v1"
 SCOPES = {
@@ -52,7 +52,7 @@ RETRY_AFTER_CAP_S = 60
 RATE_LIMIT_RETRIES = 2
 TIME_BUDGET_S = 300
 MAX_BODY_BYTES = 5_000_000
-USER_AGENT = "saberhq-vibes-sync/1.0 (+https://saberhq.com/vibes/)"
+USER_AGENT = "saberhq-vibes-sync/1.0 (+https://saberh.com/vibes/)"
 
 _SLEEP_SCALE = 1.0
 
@@ -990,7 +990,7 @@ def main(argv: list[str] | None = None) -> int:
         description="Copy the Saber Vibes Spotify playlist into data/vibes.json for the /vibes/ page.",
         epilog="Keys come from SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET and SPOTIFY_REFRESH_TOKEN, or from "
                "this Mac's keychain (scripts/vibes-login saves them). Without keys, the live list from "
-               "saberhq.com is copied.",
+               "saberh.com is copied.",
     )
     parser.add_argument("--out", metavar="FILE", help="where to write the list (default: data/vibes.json)")
     parser.add_argument("--dry-run", action="store_true", help="read Spotify and print a summary; write nothing")

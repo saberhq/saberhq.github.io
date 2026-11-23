@@ -154,8 +154,8 @@ jobs:
           set -euo pipefail
           new_sidechain_post() {
             local feed blog url
-            feed=$(curl -fsSL "https://saberhq.com/sidechain/posts/index.xml") || return 1
-            blog=$(curl -fsSL "https://saberhq.com/blog/?fresh=$(date +%s)") || return 1
+            feed=$(curl -fsSL "https://saberh.com/sidechain/posts/index.xml") || return 1
+            blog=$(curl -fsSL "https://saberh.com/blog/?fresh=$(date +%s)") || return 1
             for url in $(grep -oE '<guid>[^<]+</guid>' <<<"$feed" | sed -E 's#</?guid>##g'); do
               grep -qF "$url" <<<"$blog" || { echo "$url isn't on the blog yet."; return 0; }
             done
