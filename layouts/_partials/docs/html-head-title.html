@@ -1,10 +1,10 @@
 {{- /* Tab titles (shadows the Book theme partial). */ -}}
 {{- if .IsHome -}}
-saberhq.com
+saberh.com
 {{- else if .Params.short -}}
-saberhq.com - {{ .Params.short }}
+saberh.com - {{ .Params.short }}
 {{- else if eq .Kind "page" -}}
-saberhq.com - {{ .Title }}
+saberh.com - {{ .Title }}
 {{- else -}}
-saberhq.com - {{ lower .Title }}
+saberh.com - {{ lower .Title }}
 {{- end -}}

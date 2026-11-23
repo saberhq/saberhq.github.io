@@ -1,7 +1,7 @@
 {{- /* Sidechain's posts, one card each, read from its feed at every build. The pages are listed, never
        rendered: each card links out to the post on the Sidechain site. A deploy stops if the feed can't be
        read, so the cards never vanish from the live site; a local preview only warns. */ -}}
-{{- $feed := "https://saberhq.com/sidechain/posts/index.xml" -}}
+{{- $feed := "https://saberh.com/sidechain/posts/index.xml" -}}
 {{- $items := slice -}}
 {{- $problem := "" -}}
 {{- with try (resources.GetRemote $feed) -}}

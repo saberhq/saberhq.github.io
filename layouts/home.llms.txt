@@ -1,0 +1,40 @@
+{{- /* /llms.txt in the llmstxt.org format; each line's words are that page's title and description. */ -}}
+{{- $about := site.GetPage "/about" -}}
+{{- $sidechain := "https://saberh.com/sidechain/" -}}
+{{- $sidechainSummary := "" -}}
+{{- with try (resources.GetRemote (print $sidechain "llms.txt")) -}}
+  {{- with .Value -}}
+    {{- with findRESubmatch `(?m)^> (.+)$` .Content 1 -}}{{ $sidechainSummary = index (index . 0) 1 }}{{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if not $sidechainSummary }}{{ warnf "llms.txt: Sidechain's llms.txt couldn't be read, so its line has no summary" }}{{ end -}}
+# {{ site.Params.author }}
+
+> {{ $about.Description }}
+
+## Pages
+- [{{ site.Home.Title }}]({{ site.Home.Permalink }}): {{ site.Home.Description }}
+{{- range slice "/about" "/docs/blog" "/vibes" "/albumarts" }}
+{{- with site.GetPage . }}
+- [{{ .Title }}]({{ .Permalink }}): {{ .Description }}
+{{- end }}
+{{- end }}
+- [Résumé]({{ "resume/" | absURL }}): {{ site.Params.author }}'s résumé: experience, selected publications, technical skills and education.
+
+## News
+{{- range site.Home.Params.news }}
+- {{ .date }}: {{ replace .text "](/" (printf "](%s/" (strings.TrimSuffix "/" site.BaseURL)) }}
+{{- end }}
+
+## Posts
+{{- range (site.GetPage "/docs/blog").RegularPages.ByDate.Reverse }}
+- [{{ .Title }}]({{ or .Params.external .Permalink }}): {{ .Params.description | default (.Summary | plainify | truncate 150) }} ({{ .Date.Format "2006-01-02" }}{{ with index site.Data.areas (.Params.area | default "") }} · {{ .label }}{{ end }})
+{{- end }}
+
+## Projects
+- [Sidechain]({{ $sidechain }}llms.txt){{ with $sidechainSummary }}: {{ . }}{{ end }}
+
+## Elsewhere
+{{- range site.Data.header.elsewhere }}
+- [{{ .name }}]({{ .url }}): {{ site.Params.author }} on {{ .name }}
+{{- end }}

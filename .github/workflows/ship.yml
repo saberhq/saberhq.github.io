@@ -136,7 +136,7 @@ jobs:
 
           live=""
           for _ in $(seq 1 30); do
-            page=$(curl -fsSL "https://saberhq.com/?shipped=$version" || true)
+            page=$(curl -fsSL "https://saberh.com/?shipped=$version" || true)
             if grep -qE "saberhq-version\"? content=\"?${version//./\\.}\"?>" <<<"$page"; then
               live=yes
               break
@@ -151,8 +151,8 @@ jobs:
             echo "::warning::dev has commits that aren't in this release, so it wasn't moved."
           fi
 
-          [ -n "$live" ] || report "merged, released and deployed, but saberhq.com doesn't show $version yet. It may just be slow."
-          comment "Live: **$version** is on https://saberhq.com/ · [release note]($release_url)"
+          [ -n "$live" ] || report "merged, released and deployed, but saberh.com doesn't show $version yet. It may just be slow."
+          comment "Live: **$version** is on https://saberh.com/ · [release note]($release_url)"
           echo "$version is live."
 
   unshipped:

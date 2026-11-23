@@ -42,7 +42,7 @@ SONGS_FILE = "songs.jsonl"
 MEDIA_DIR = "assets/media"
 MEDIA_ID = 12
 PLAYED = ("first_played", "last_played", "plays", "played_ms")
-LIVE = {MORE_FILE: "https://saberhq.com/vibes/more.json", ARTS_FILE: "https://saberhq.com/vibes/albumarts.json"}
+LIVE = {MORE_FILE: "https://saberh.com/vibes/more.json", ARTS_FILE: "https://saberh.com/vibes/albumarts.json"}
 RANGES = {"short": "short_term", "medium": "medium_term", "long": "long_term"}
 TOP_SHOWN = 10
 RANK_EVERY_H = 24
@@ -633,7 +633,7 @@ def main(argv: list | None = None) -> int:
         description="Read liked songs and most-played lists from Spotify, keep the songbook up to date, and "
                     "write data/vibes_more.json and data/albumarts.json for the pages. Beside the songbook it "
                     "writes songs.jsonl, one line per song, and reads mine.jsonl, Saber's own notes.",
-        epilog="Keys as for scripts/vibes-sync. Without keys, the live copies from saberhq.com are used.")
+        epilog="Keys as for scripts/vibes-sync. Without keys, the live copies from saberh.com are used.")
     parser.add_argument("--songbook", metavar="FILE", help="the songbook to read and update (or VIBES_SONGBOOK)")
     parser.add_argument("--history", metavar="FILE",
                         help="first plays and play counts from scripts/vibes-history (or VIBES_HISTORY; "

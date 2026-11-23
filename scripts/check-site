@@ -16,7 +16,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
-SITE = "https://saberhq.com"
+SITE = "https://saberh.com"
 ELSEWHERE = ("/sidechain/",)
 PARKED = ("/podcast/", "/newsletter/", "/docs/")
 AREAS = re.findall(r"^([a-z_]+):", (ROOT / "data/areas.yaml").read_text(), re.M)
