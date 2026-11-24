@@ -1,0 +1,33 @@
+name: Saber Hafezqorani
+alternateName: [Saber HQ, saberhq]
+jobTitle: Individual Researcher - Virtual Cell Modeling
+description: Computational scientist and bioinformatician working at the intersection of AI and biology.
+image: /about/profile.jpg
+sameAs:
+  - https://github.com/saberhq
+  - https://scholar.google.com/citations?user=q2fsO2IAAAAJ
+  - https://orcid.org/0000-0003-0553-9227
+  - https://www.wikidata.org/wiki/Q96291183
+  - https://x.com/saberhq
+  - https://www.youtube.com/@saberhq
+  - https://www.linkedin.com/in/saberhq/
+identifiers:
+  - { propertyID: ORCID, value: 0000-0003-0553-9227, url: "https://orcid.org/0000-0003-0553-9227" }
+  - { propertyID: GoogleScholar, value: q2fsO2IAAAAJ, url: "https://scholar.google.com/citations?user=q2fsO2IAAAAJ" }
+  - { propertyID: GitHub, value: saberhq, url: "https://github.com/saberhq" }
+alumniOf:
+  - { name: University of British Columbia, sameAs: "https://www.ubc.ca/" }
+  - { name: Middle East Technical University (METU), sameAs: "https://www.metu.edu.tr/" }
+knowsAbout:
+  - Bioinformatics
+  - Computational biology
+  - Artificial intelligence
+  - Foundation models for biology
+  - Virtual cell models
+  - Perturbation prediction
+  - Perturb-seq
+  - Single-cell genomics
+  - Transcriptomics
+  - Long-read sequencing
+  - Sequence embeddings
+twitter: "@saberhq"

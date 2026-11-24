@@ -7,8 +7,10 @@ weight: 10
 bookFlatSection: true
 url: "/blog/"
 type: blog
+outputs: [html, rss, markdown]
 cascade:
   type: blog
+  outputs: [html, markdown]
   bookHeadingAnchor: false
 ---
 

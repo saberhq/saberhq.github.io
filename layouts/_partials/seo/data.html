@@ -1,0 +1,67 @@
+{{- /* The about-me data: one graph with the same Person and WebSite on every page, plus this page. */ -}}
+{{- $p := site.Data.person -}}
+{{- $home := site.Home.Permalink -}}
+{{- $personID := print $home "#person" -}}
+{{- $websiteID := print $home "#website" -}}
+{{- $blogURL := print ("blog/" | absURL) "#blog" -}}
+{{- $person := dict "@id" $personID -}}
+{{- $website := dict "@id" $websiteID -}}
+{{- $blogID := dict "@id" $blogURL -}}
+{{- $ids := slice -}}
+{{- range $p.identifiers }}{{ $ids = $ids | append (dict "@type" "PropertyValue" "propertyID" .propertyID "value" (string .value) "url" .url) }}{{ end -}}
+{{- $alumni := slice -}}
+{{- range $p.alumniOf }}{{ $alumni = $alumni | append (dict "@type" "CollegeOrUniversity" "name" .name "sameAs" .sameAs) }}{{ end -}}
+{{- $graph := slice
+  (dict "@type" "Person" "@id" $personID "name" $p.name "alternateName" $p.alternateName
+    "jobTitle" $p.jobTitle "description" $p.description "url" $home "image" (absURL $p.image)
+    "sameAs" $p.sameAs "identifier" $ids "alumniOf" $alumni "knowsAbout" $p.knowsAbout)
+  (dict "@type" "WebSite" "@id" $websiteID "url" $home "name" site.Title "alternateName" (slice "saberh.com" $p.name)
+    "inLanguage" "en" "author" $person "publisher" $person "hasPart" (dict "@id" (print $home "sidechain/#website")))
+-}}
+{{- $page := dict "@id" (print .Permalink "#webpage") "url" .Permalink "name" (partial "docs/html-head-title" .)
+  "isPartOf" $website "inLanguage" "en" -}}
+{{- with .Description }}{{ $page = merge $page (dict "description" .) }}{{ end -}}
+{{- $img := partial "seo/image" . -}}
+{{- with $img.url }}{{ $page = merge $page (dict "primaryImageOfPage" (dict "@type" "ImageObject" "url" .)) }}{{ end -}}
+{{- $post := and .IsPage (eq .Type "blog") -}}
+{{- if .IsHome -}}
+  {{- $page = merge $page (dict "@type" "WebPage" "about" $person) -}}
+{{- else if eq .Layout "about" -}}
+  {{- $page = merge $page (dict "@type" "ProfilePage" "mainEntity" $person) -}}
+{{- else if and (eq .Kind "section") (eq .Type "blog") -}}
+  {{- $posts := slice -}}
+  {{- range where .RegularPages "Params.external" "==" nil }}{{ $posts = $posts | append (dict "@id" (print .Permalink "#article")) }}{{ end -}}
+  {{- $page = merge $page (dict "@type" "CollectionPage" "mainEntity" $blogID) -}}
+  {{- $graph = $graph | append (dict "@type" "Blog" "@id" $blogURL "url" .Permalink "name" .Title
+    "author" $person "publisher" $person "isPartOf" $website "blogPost" $posts) -}}
+{{- else -}}
+  {{- $page = merge $page (dict "@type" "WebPage") -}}
+{{- end -}}
+{{- if $post -}}
+  {{- $article := dict "@type" "BlogPosting" "@id" (print .Permalink "#article") "headline" .Title
+    "url" .Permalink "mainEntityOfPage" (dict "@id" (print .Permalink "#webpage"))
+    "datePublished" (.Date.Format "2006-01-02") "dateModified" (.Lastmod.Format "2006-01-02")
+    "author" $person "publisher" $person "isPartOf" $blogID "inLanguage" "en"
+    "license" "https://creativecommons.org/licenses/by/4.0/" -}}
+  {{- with .Description }}{{ $article = merge $article (dict "description" .) }}{{ end -}}
+  {{- with $img.url }}{{ $article = merge $article (dict "image" .) }}{{ end -}}
+  {{- with .Params.tags }}{{ $article = merge $article (dict "keywords" .) }}{{ end -}}
+  {{- with index site.Data.areas (.Params.area | default "") }}{{ $article = merge $article (dict "articleSection" .label) }}{{ end -}}
+  {{- with .Params.paper -}}
+    {{- $authors := slice -}}
+    {{- range .authors }}{{ $authors = $authors | append (cond (eq . $p.name) $person (dict "@type" "Person" "name" .)) }}{{ end -}}
+    {{- $doi := print "https://doi.org/" .doi -}}
+    {{- $paper := dict "@type" "ScholarlyArticle" "@id" $doi "url" $doi "name" .title "author" $authors
+      "datePublished" (string .date) "isPartOf" (dict "@type" "Periodical" "name" .journal)
+      "identifier" (dict "@type" "PropertyValue" "propertyID" "DOI" "value" .doi) -}}
+    {{- $article = merge $article (dict "about" $paper) -}}
+  {{- end -}}
+  {{- $graph = $graph | append $article -}}
+  {{- $graph = $graph | append (dict "@type" "BreadcrumbList" "@id" (print .Permalink "#breadcrumb") "itemListElement" (slice
+    (dict "@type" "ListItem" "position" 1 "name" "Home" "item" $home)
+    (dict "@type" "ListItem" "position" 2 "name" "Blog" "item" ("blog/" | absURL))
+    (dict "@type" "ListItem" "position" 3 "name" .Title "item" .Permalink))) -}}
+  {{- $page = merge $page (dict "breadcrumb" (dict "@id" (print .Permalink "#breadcrumb"))) -}}
+{{- end -}}
+{{- $graph = $graph | append $page -}}
+<script type="application/ld+json">{{ dict "@context" "https://schema.org" "@graph" $graph | jsonify | safeJS }}</script>

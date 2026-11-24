@@ -1,10 +1,6 @@
-{{- /* Tab titles (shadows the Book theme partial). */ -}}
+{{- /* Tab titles (shadows the Book theme partial): the name alone on the home page, "page · name" elsewhere. */ -}}
 {{- if .IsHome -}}
-saberh.com
-{{- else if .Params.short -}}
-saberh.com - {{ .Params.short }}
-{{- else if eq .Kind "page" -}}
-saberh.com - {{ .Title }}
+{{ site.Params.author }}
 {{- else -}}
-saberh.com - {{ lower .Title }}
+{{ .Title }} · {{ site.Params.author }}
 {{- end -}}

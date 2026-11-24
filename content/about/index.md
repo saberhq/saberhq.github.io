@@ -1,6 +1,6 @@
 ---
 title: About
-short: about
+outputs: [html, markdown]
 description: "I'm Saber Hafezqorani, a research scientist in genomics, data science, and machine learning, now building Sidechain for Arc's Virtual Cell Challenge 2026."
 layout: about
 # Body headings render plain: no "Back to top" link (see layouts/_default/_markup/render-heading.html)

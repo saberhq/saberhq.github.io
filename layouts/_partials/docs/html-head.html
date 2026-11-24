@@ -11,7 +11,7 @@
   <meta http-equiv="Refresh" content="0; url='{{ . }}'" />
 {{- end -}}
 
-{{- template "_internal/opengraph.html" . -}}
+{{- partial "seo/share" . -}}
 
 <title>{{ partial "docs/html-head-title" . }}</title>
 {{ partial "docs/html-head-favicon" . }}
@@ -19,6 +19,9 @@
 {{- $manifest := resources.Get "manifest.json" | resources.ExecuteAsTemplate "manifest.json" . }}
 <link rel="manifest" href="{{ $manifest.RelPermalink }}">
 <link rel="canonical" href="{{ .Permalink }}">
+{{- with .OutputFormats.Get "markdown" }}
+<link rel="alternate" type="text/markdown" href="{{ .Permalink }}" title="This page as Markdown">
+{{- end }}
 
 {{- range .Translations }}
   <link rel="alternate" hreflang="{{ default .Site.LanguageCode .Language.Lang }}" href="{{ .Permalink }}" title="{{ partial "docs/title" . }}">
