@@ -22,7 +22,7 @@ ELSEWHERE = ("/sidechain/",)
 PARKED = ("/podcast/", "/newsletter/", "/docs/")
 AREAS = re.findall(r"^([a-z_]+):", (ROOT / "data/areas.yaml").read_text(), re.M)
 ATTR = re.compile(r"""\b(?:href|src)=(?:"([^"]*)"|'([^']*)'|([^\s>"']+))""")
-PREVIEW = re.compile(r"""<meta property="?og:image"? content=(?:"([^"]*)"|([^\s>]+))""")
+PREVIEW = re.compile(r"""<meta (?:property|name)="?(og|twitter):image"? content=(?:"([^"]*)"|([^\s>]+))""")
 PHOTO = "/about/profile.jpg"
 
 
@@ -103,15 +103,15 @@ def check_cards(out: Path, problems: list):
         text, name = page.read_text(errors="replace"), "/" + page.relative_to(out).as_posix()
         if "og:title" not in text:
             continue
-        m = PREVIEW.search(text)
-        if not m:
+        found = [(m.group(1), urlsplit((m.group(2) or m.group(3)).replace(SITE, "")).path)
+                 for m in PREVIEW.finditer(text)]
+        if "og" not in dict(found):
             problems.append(f"no link-preview picture on {name}")
-            continue
-        path = urlsplit((m.group(1) or m.group(2)).replace(SITE, "")).path
-        if path == PHOTO:
-            problems.append(f"the link preview of {name} is the About photo, not a share card")
-        elif not resolves(out, path):
-            problems.append(f"the link-preview picture of {name} isn't built: {path}")
+        for _, path in found:
+            if path == PHOTO:
+                problems.append(f"the link preview of {name} is the About photo, not a share card")
+            elif not resolves(out, path):
+                problems.append(f"the link-preview picture of {name} isn't built: {path}")
 
 
 def main() -> int:

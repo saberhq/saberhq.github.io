@@ -7,7 +7,12 @@
       "mark": "Saber Hafezqorani",
       "title": "Saber H.",
       "tag": "AI × Bio",
-      "alt": "A card that reads “Saber H.” and “AI × Bio”."
+      "alt": "A card that reads “Saber H.” and “AI × Bio”.",
+      "large": {
+        "chips": ["AI × Bio", "Perturb-seq", "representation learning", "long-read RNA-seq"],
+        "chip_accent": "AI × Bio",
+        "alt": "A card that reads “Saber H.” above four topics: AI × Bio, Perturb-seq, representation learning and long-read RNA-seq."
+      }
     },
     "about": {
       "path": "/about/",
@@ -18,8 +23,8 @@
     "blog": {
       "path": "/blog/",
       "title": "Blog.",
-      "art": "pencil",
-      "alt": "A card that reads “Blog.” beside a pencil drawn in pixels."
+      "line": "Notes on AI × Bio, research tools, and whatever else I’m thinking about.",
+      "alt": "A card that reads “Blog.” and “Notes on AI × Bio, research tools, and whatever else I’m thinking about.”"
     },
     "vibes": {
       "path": "/vibes/",
@@ -31,22 +36,6 @@
     }
   },
   "art": {
-    "pencil": [
-      "...........XX.",
-      "..........XXXX",
-      ".........X.XXX",
-      "........XXX.X.",
-      ".......XXXXX..",
-      "......XXXXX...",
-      ".....XXXXX....",
-      "....XXXXX.....",
-      "...XXXXX......",
-      "..XXXXX.......",
-      ".XXXXX........",
-      ".XXXX.........",
-      "X.XX..........",
-      "XX............"
-    ],
     "notes": [
       "............XXXXXX",
       "........XXXXXXXXXX",

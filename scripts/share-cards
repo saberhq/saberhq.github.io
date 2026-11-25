@@ -2,7 +2,7 @@
 """Draw the share cards in data/share.json: the 1200×630 picture a shared link shows.
 
 A card is a strip (the mark and the address), a pixel title and one companion: a tag, a line,
-chips, a photo or pixel art. Each is written to assets/share/<key>.png.
+chips, a photo or pixel art. Each missing or stale one is drawn to assets/share/<key>.png.
 Drawing needs Google Chrome and the network (for the fonts); --check needs neither.
 """
 
@@ -30,6 +30,7 @@ LADDER = (210.4, 157.8, 131.5, 105.2, 78.9)
 ADVANCE, LEADING = 0.52, 1.04
 WIDE, NARROW, ROOM, SLOT = 1072, 760, 400, 256
 UNDER = {"tag": 124, "line": 130, "chips": 92}
+COMPANIONS = ("tag", "line", "chips", "chip_accent", "photo", "art")
 STAMP = "share-card"
 PNG = b"\x89PNG\r\n\x1a\n"
 SHEET = (
@@ -50,17 +51,23 @@ SHEET = (
 )
 
 
-def resolve(data: dict, key: str) -> dict:
-    card = dict(data["cards"][key])
-    card["key"] = key
-    card.setdefault("mark", data["mark"])
-    card.setdefault("address", data["address"] + card["path"].rstrip("/"))
-    if isinstance(card["title"], str):
-        card["title"] = [card["title"]]
-    if card.get("art"):
-        card["rows"] = data["art"][card["art"]]
-    card.setdefault("size", fit(card))
-    return card
+def resolve(data: dict, key: str) -> list:
+    """The card, and after it the card with its `large` companion when it has one."""
+    base = dict(data["cards"][key])
+    large = base.pop("large", None)
+    cards = [dict(base, key=key)]
+    if large:
+        kept = {k: v for k, v in base.items() if k not in COMPANIONS}
+        cards.append(dict(kept, **large, key=f"{key}-large"))
+    for card in cards:
+        card.setdefault("mark", data["mark"])
+        card.setdefault("address", data["address"] + card["path"].rstrip("/"))
+        if isinstance(card["title"], str):
+            card["title"] = [card["title"]]
+        if card.get("art"):
+            card["rows"] = data["art"][card["art"]]
+        card.setdefault("size", fit(card))
+    return cards
 
 
 def fit(card: dict) -> float:
@@ -257,7 +264,8 @@ def sheet(cards: list, out: Path, folder: Path):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("keys", nargs="*", help="draw only these cards (default: all)")
+    ap.add_argument("keys", nargs="*", help="only these cards (default: every card)")
+    ap.add_argument("--all", action="store_true", help="redraw the fresh pictures too")
     ap.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent, help="the site's folder")
     ap.add_argument("--data", type=Path, help="the list of cards (default: data/share.json)")
     ap.add_argument("--out", type=Path, help="where the pictures go (default: assets/share)")
@@ -271,22 +279,30 @@ def main() -> int:
     if unknown:
         print(f"share-cards: no card named {', '.join(unknown)}", file=sys.stderr)
         return 2
-    cards = [resolve(data, k) for k in (a.keys or data["cards"])]
+    cards = [c for k in (a.keys or data["cards"]) for c in resolve(data, k)]
 
     if a.check:
         bad = [(c["key"], why) for c in cards if (why := check(c, root, out))]
         for key, why in bad:
             print(f"share card {key}: {why} (run scripts/share-cards)")
-        return 1 if bad else 0
+        known = {c["key"] for k in data["cards"] for c in resolve(data, k)}
+        stray = sorted(f.name for f in out.glob("*.png") if f.stem not in known)
+        for name in stray:
+            print(f"share card {name}: belongs to no card in the list (delete it)")
+        return 1 if bad or stray else 0
 
+    todo = [c for c in cards if a.all or check(c, root, out)]
+    for card in cards:
+        if card not in todo:
+            print(f"{card['key']}: fresh")
     failed = 0
     with tempfile.TemporaryDirectory(prefix="share-cards-") as t:
         tmp = Path(t)
-        gone = missing_fonts(root, tmp)
+        gone = missing_fonts(root, tmp) if todo else []
         if gone:
             print(f"share-cards: the fonts did not load ({', '.join(gone)}); nothing drawn", file=sys.stderr)
             return 1
-        for card in cards:
+        for card in todo:
             why = draw(card, root, out, tmp)
             failed += bool(why)
             print(f"{card['key']}: {why or 'drawn'}")
