@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""Tell search engines which pages changed, through IndexNow (Bing, Yandex and others).
+
+  scripts/indexnow changed BUILD   the pages in BUILD/sitemap.xml that differ from the live site
+  scripts/indexnow submit [URL ...] send those addresses (or the lines on stdin) to IndexNow
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+import urllib.error
+import urllib.request
+from pathlib import Path
+from urllib.parse import urlsplit
+
+ROOT = Path(__file__).resolve().parent.parent
+SITE = "https://saberh.com"
+KEY_FILE = ROOT / "static" / "indexnow.txt"
+ENDPOINT = "https://api.indexnow.org/indexnow"
+AGENT = "saberh.com-indexnow"
+
+
+def fetch(url: str) -> tuple[int, bytes]:
+    req = urllib.request.Request(url, headers={"User-Agent": AGENT})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return r.status, r.read()
+    except urllib.error.HTTPError as e:
+        return e.code, b""
+    except (urllib.error.URLError, TimeoutError):
+        return 0, b""
+
+
+def locs(xml: str) -> list[str]:
+    return [u.strip() for u in re.findall(r"<loc>([^<]+)</loc>", xml)]
+
+
+def built_file(build: Path, url: str) -> Path:
+    path = urlsplit(url).path.lstrip("/")
+    return build / path / "index.html" if path == "" or path.endswith("/") else build / path
+
+
+def changed(build: Path) -> list[str]:
+    new = locs((build / "sitemap.xml").read_text(encoding="utf-8"))
+    out = []
+    for url in new:
+        status, live = fetch(url)
+        f = built_file(build, url)
+        if status != 200 or not f.is_file() or f.read_bytes() != live:
+            out.append(url)
+    status, xml = fetch(f"{SITE}/sitemap.xml")
+    if status == 200:
+        out += [u for u in locs(xml.decode("utf-8", "replace")) if u not in new]
+    return out
+
+
+def submit(urls: list[str], dry_run: bool) -> int:
+    urls = [u for u in dict.fromkeys(urls) if u.startswith(SITE + "/")]
+    if not urls:
+        print("Nothing to send.")
+        return 0
+    key = KEY_FILE.read_text(encoding="utf-8").strip()
+    body = {"host": urlsplit(SITE).netloc, "key": key, "keyLocation": f"{SITE}/indexnow.txt", "urlList": urls}
+    if dry_run:
+        print(json.dumps(body, indent=2))
+        return 0
+    req = urllib.request.Request(ENDPOINT, data=json.dumps(body).encode(), method="POST",
+                                 headers={"Content-Type": "application/json; charset=utf-8", "User-Agent": AGENT})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            print(f"IndexNow took {len(urls)} address(es) (HTTP {r.status}).")
+    except urllib.error.HTTPError as e:
+        print(f"::warning title=IndexNow::It refused the list (HTTP {e.code}).")
+    except (urllib.error.URLError, TimeoutError) as e:
+        print(f"::warning title=IndexNow::It couldn't be reached ({e}).")
+    for u in urls:
+        print(f"  {u}")
+    return 0
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    sub = p.add_subparsers(dest="cmd", required=True)
+    c = sub.add_parser("changed")
+    c.add_argument("build", type=Path)
+    s = sub.add_parser("submit")
+    s.add_argument("urls", nargs="*")
+    s.add_argument("--dry-run", action="store_true", help="print the request instead of sending it")
+    a = p.parse_args()
+    if a.cmd == "changed":
+        print("\n".join(changed(a.build)))
+        return 0
+    urls = a.urls or [l.strip() for l in sys.stdin if l.strip()]
+    return submit(urls, a.dry_run)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

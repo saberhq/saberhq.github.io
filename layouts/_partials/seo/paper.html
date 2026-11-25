@@ -1,0 +1,10 @@
+{{- /* One entry of data/papers.yaml as a ScholarlyArticle. Context: paper, person (the #person reference), name (his). */ -}}
+{{- $person := .person -}}
+{{- $name := .name -}}
+{{- $paper := .paper -}}
+{{- $authors := slice -}}
+{{- range $paper.authors }}{{ $authors = $authors | append (cond (eq . $name) $person (dict "@type" "Person" "name" .)) }}{{ end -}}
+{{- $doi := print "https://doi.org/" $paper.doi -}}
+{{- return dict "@type" "ScholarlyArticle" "@id" $doi "url" $doi "name" $paper.title "author" $authors
+  "datePublished" (string $paper.date) "isPartOf" (dict "@type" "Periodical" "name" $paper.venue)
+  "identifier" (dict "@type" "PropertyValue" "propertyID" "DOI" "value" $paper.doi) -}}

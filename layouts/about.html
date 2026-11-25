@@ -2,7 +2,7 @@
 
 {{- /* The address behind "Say hi" and "Email": only ever an href, never printed on the page. */ -}}
 {{- $mailto := partial "saberhq/mailto" . }}
-{{- /* The Scholar profile from data/header.yaml's Elsewhere, for the "publications" aside */ -}}
+{{- /* The Scholar profile from data/header.yaml's Elsewhere, for the link beside Papers */ -}}
 {{- $scholar := "" }}
 {{- range site.Data.header.elsewhere }}
   {{- if and (not $scholar) (strings.Contains .url "scholar.google") }}{{ $scholar = .url }}{{ end }}
@@ -18,11 +18,17 @@
   {{- $more = .ContentWithoutSummary | strings.TrimSpace }}
 {{- end }}
 
+{{- /* $s counts the sections for their numbers; $chapters is the career, grouped. */ -}}
+{{- $s := newScratch }}
+{{- $chapters := partial "about/chapters" . }}
+
 <!DOCTYPE html>
 <html lang="{{ default .Site.Language.Lang .Site.LanguageCode }}" dir="{{ default "ltr" .Site.Language.LanguageDirection }}">
 <head>
   {{ partial "docs/html-head" . }}
   {{ partial "docs/inject/head" . }}
+  {{- $css := slice (resources.Get "about.css") (resources.Get "about/opening.css") (resources.Get "about/letter.css") (resources.Get "about/timeline.css") (resources.Get "about/papers.css") (resources.Get "about/skills.css") (resources.Get "about/elsewhere.css") | resources.Concat "css/about.css" | resources.Minify | resources.Fingerprint "sha384" }}
+  <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}" crossorigin="anonymous">
 </head>
 <body class="sq-shell book-kind-page sq-me-page">
 
@@ -43,10 +49,6 @@
         <p class="sq-tagline">{{ . }}</p>
         {{- end }}
         <div class="sq-hero-actions">
-          {{- with .Params.resume }}
-          {{- $off := partial "saberhq/new-tab" . }}
-          <a class="sq-btn sq-btn--secondary" href="{{ . }}"{{ if $off }} target="_blank" rel="noopener"{{ end }}>Résumé <span class="sq-glyph" aria-hidden="true">{{ cond $off "↗" "→" }}</span>{{ if $off }}<span class="sq-sr-only"> (opens in a new tab)</span>{{ end }}</a>
-          {{- end }}
           {{- with $mailto }}
           <a class="sq-btn sq-btn--secondary" href="{{ . }}">Say hi<span class="sq-sr-only"> (email)</span></a>
           {{- end }}
@@ -73,13 +75,7 @@
     </section>
 
     <section class="sq-section sq-wrap" aria-labelledby="sq-me-long">
-      <div class="sq-section-head">
-        <h2 class="sq-section-label" id="sq-me-long">{{ .Params.longLabel | default "The long version" }}</h2>
-        <span class="sq-section-fill"></span>
-        {{- with $scholar }}
-        <a class="sq-section-aside" href="{{ . }}" target="_blank" rel="noopener">publications <span aria-hidden="true">↗</span><span class="sq-sr-only"> on Google Scholar (opens in a new tab)</span></a>
-        {{- end }}
-      </div>
+      {{ partial "about/head" (dict "s" $s "id" "sq-me-long" "label" (.Params.longLabel | default "The long version")) }}
       <div class="sq-prose sq-me-prose sq-me-cols">
         {{ $letter | safeHTML }}
       </div>
@@ -98,12 +94,14 @@
     </div>
     {{- end }}
 
+    {{- /* The career, from data/career.yaml and data/papers.yaml. */}}
+    {{ partial "about/timeline" (dict "s" $s "chapters" $chapters) }}
+    {{ partial "about/papers" (dict "s" $s "scholar" $scholar) }}
+    {{ partial "about/skills" (dict "s" $s) }}
+
     {{- /* Elsewhere in data/header.yaml, then the mailto, labelled "Email". */}}
     <section class="sq-section sq-wrap" aria-labelledby="sq-me-elsewhere">
-      <div class="sq-section-head">
-        <h2 class="sq-section-label" id="sq-me-elsewhere">Elsewhere</h2>
-        <span class="sq-section-fill"></span>
-      </div>
+      {{ partial "about/head" (dict "s" $s "id" "sq-me-elsewhere" "label" "Elsewhere") }}
       <ul class="sq-me-links" role="list">
         {{- range site.Data.header.elsewhere }}
         <li><a class="sq-me-link" href="{{ .url }}" target="_blank" rel="noopener">{{ .name }} <span class="sq-glyph" aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a></li>

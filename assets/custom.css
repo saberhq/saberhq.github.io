@@ -136,9 +136,6 @@ a.sq-section-aside, a.sq-section-aside:visited { font-size: 10px; font-weight: 4
 .sq-tagline { margin: 14px 0 0; font-size: 17px; line-height: 1.55; color: var(--ink-2); max-width: 52ch; text-wrap: pretty; }
 .sq-hero-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: 28px; }
 
-/* Topic chips under a block of text (the About page) */
-.sq-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
-
 /* ---------- About & recent news (landing) ---------- */
 .sq-bio-grid {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: baseline;
@@ -167,69 +164,6 @@ a.sq-bio-more:hover { color: var(--link-hover); }
    at a tiny optical size — render them in the sans stack, sized to the label text */
 .sq-glyph { font-family: var(--font-sans), system-ui, sans-serif; font-size: 1.3em; line-height: 1; vertical-align: -0.08em; }
 .sq-glyph--accent { color: var(--accent); }
-
-/* ---------- About page (layouts/about.html) ---------- */
-/* Book rings every :focus, mouse clicks included; keep the ring for the keyboard (as on /vibes/) */
-.sq-me-page :focus:not(:focus-visible) { outline: none; }
-.sq-me-hero {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center; column-gap: var(--space-8);
-}
-.sq-me-intro { min-width: 0; }
-/* 52.6px lands Geist Pixel's grid on whole 2px cells — the Sidechain wordmark's size */
-.sq-me-mark {
-  margin: 14px 0 0;
-  font-family: var(--font-pixel); font-weight: 400; font-size: 52.6px;
-  line-height: 1; letter-spacing: 0; color: var(--ink);
-}
-.sq-me-dot { color: var(--accent); }
-
-/* The photo: a circle with a hairline ring a few pixels out. The figure's padding holds the
-   ring, so its outer edge (not the photo's) meets the shell edge and the section rules below.
-   No filter, no shadow, the same picture in dark mode. Sizes mirror `sizes` in the template. */
-.sq-me-photo { --ring-gap: 6px; margin: 0; padding: calc(var(--ring-gap) + var(--rule-w)); }
-.sq-me-photo picture { display: block; }
-.sq-me-photo img {
-  display: block; width: 224px; height: 224px; max-width: none; object-fit: cover;
-  border-radius: 50%;
-  background: var(--surface-sunken); /* holds the circle's tone until the photo arrives */
-  outline: var(--rule-w) solid var(--rule); outline-offset: var(--ring-gap);
-}
-
-/* Section heads here are real h2s: drop Book's heading size and margins */
-.sq-me .sq-section-label { margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit; }
-/* One column of text keeps ~75 characters a line (Geist runs wide: 56ch is about 550px) */
-.sq-me-prose { margin-top: 20px; max-width: 56ch; }
-.sq-me-prose > :last-child { margin-bottom: 0; }
-/* The long version: two newspaper columns, like the home page's news (read down, then across).
-   Each paragraph stays whole in its column. One column under 901px — or anywhere, by dropping
-   the sq-me-cols class in the template. */
-.sq-me-cols { max-width: none; columns: 2; column-gap: var(--space-8); }
-.sq-me-cols p { break-inside: avoid; }
-
-/* Below the <!--more--> line: every rendered "## heading" is drawn as the site's section head,
-   and the text under it is set at the tagline's size, so the personal part reads as a note */
-.sq-me-more > h2 {
-  margin: 0 0 20px; padding-top: 6px;
-  border-top: var(--rule-w-strong) solid var(--rule-strong);
-  font-family: var(--font-mono); font-size: var(--label-size); font-weight: 500; line-height: 1.6;
-  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--ink);
-}
-.sq-me-more > h2 ~ h2 { margin-top: var(--space-8); } /* collapses with the 18px paragraph margin above: 64px, like .sq-section */
-.sq-me-more p { max-width: 36em; font-size: 17px; line-height: 1.55; color: var(--ink-2); }
-.sq-me-more > :last-child { margin-bottom: 0; }
-
-/* Elsewhere: one row of mono links, ink with a vermillion ↗ — not a second copy of the
-   vermillion header nav. "Email" is a mailto link; the address is never shown. */
-.sq-me-links {
-  list-style: none; margin: 20px 0 0; padding: 0;
-  display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6);
-  font-family: var(--font-mono); font-size: 13px; letter-spacing: var(--meta-track);
-}
-.sq-me-links li { margin: 0; }
-a.sq-me-link, a.sq-me-link:visited { color: var(--ink-2); white-space: nowrap; }
-a.sq-me-link:hover { color: var(--ink); }
-.sq-me-link .sq-glyph { color: var(--accent); font-size: 1.1em; }
 
 /* ---------- Video / iframe embeds ---------- */
 .video, .embed {
@@ -274,11 +208,4 @@ a.sq-me-link:hover { color: var(--ink); }
   .sq-wrap { padding-left: var(--space-4); padding-right: var(--space-4); }
   .sq-hero { padding-top: var(--space-7); padding-bottom: var(--space-7); }
   .sq-bio-grid { grid-template-columns: minmax(0, 1fr); }
-  .sq-me-hero { grid-template-columns: minmax(0, 1fr); }
-  .sq-me-photo { --ring-gap: 5px; order: -1; justify-self: start; margin-bottom: var(--space-4); }
-  .sq-me-photo img { width: 136px; height: 136px; }
-  .sq-me-cols { columns: 1; max-width: 56ch; }
-}
-@media (max-width: 600px) {
-  .sq-me-mark { font-size: 44px; }
 }

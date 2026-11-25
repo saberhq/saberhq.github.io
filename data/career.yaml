@@ -1,0 +1,103 @@
+# Saber's career: About, its text copy and the about-me data read this
+roles:
+  - id: sidechain
+    title: Virtual Cell Challenge 2026
+    org: Sidechain
+    org_url: /sidechain/
+    start: "2026-08"
+    lines:
+      - "Built a zero-shot model predicting transcriptome-wide responses to gene knockdown in unseen cell lines"
+      - "Ran the project as a research group of one scientist and a team of AI coding agents (Claude Code)"
+    tools:
+      - { name: Sidechain, url: "https://github.com/saberhq/sidechain" }
+
+  - id: genentech
+    title: Computational Scientist
+    note: Contract
+    org: Genentech (gRED)
+    org_name: Genentech
+    org_url: "https://www.gene.com/"
+    org_type: Corporation
+    place: "South San Francisco, CA, USA (remote)"
+    start: "2025-09"
+    end: "2026-08"
+    lines:
+      - "Co-led end-to-end analysis of two multi-million-cell scale genome-wide single-cell CRISPR Perturb-seq screens in breast (MCF7) and lung (A549) cancer cell lines"
+      - "Built mapdash, a CLI tool generating interactive dashboards to evaluate perturbation maps across parameter sweep runs, plus a reusable sweep orchestrator"
+    tools:
+      - { name: mapdash }
+
+  - id: bcgsc
+    title: Doctoral Research Assistant
+    org: BC Cancer Genome Sciences Centre
+    org_url: "https://www.bcgsc.ca/"
+    org_type: ResearchOrganization
+    place: "Vancouver, BC, Canada"
+    start: "2017-09"
+    end: "2024-08"
+    lines:
+      - "Designed and implemented ntEmbd, a deep learning representation-learning model for nucleotide sequences"
+      - "Co-developed NanoSim, a Nanopore multi-omics long-read synthetic sequence generation pipeline (62,000 downloads, 300+ GitHub stars)"
+    tools:
+      - { name: ntEmbd, url: "https://github.com/BirolLab/ntEmbd" }
+      - { name: NanoSim, url: "https://github.com/BirolLab/NanoSim" }
+
+  - id: metu
+    title: "Research Associate & Master’s Research Assistant"
+    org: METU Informatics Institute
+    org_url: "https://ii.metu.edu.tr/"
+    org_type: EducationalOrganization
+    place: "Ankara, Turkey"
+    start: "2013-02"
+    end: "2017-08"
+    lines:
+      - "Designed a machine learning framework for patient stratification and clinical outcome prediction in neuroblastoma"
+      - "Modelled RBP–microRNA interplay in post-transcriptional regulation"
+
+# beside: the role a degree sits next to on the timeline
+degrees:
+  - id: phd
+    title: Doctor of Philosophy
+    short: Ph.D.
+    field: Bioinformatics
+    org: University of British Columbia (UBC)
+    org_name: University of British Columbia
+    org_url: "https://www.ubc.ca/"
+    start: "2017"
+    end: "2024"
+    thesis: "Machine learning in transcriptome analysis using long RNA sequencing data"
+    thesis_url: "https://open.library.ubc.ca/soa/cIRcle/collections/ubctheses/24/items/1.0444844"
+    beside: bcgsc
+
+  - id: msc
+    title: Master of Science
+    short: M.Sc.
+    field: Bioinformatics
+    org: Middle East Technical University (METU)
+    org_url: "https://www.metu.edu.tr/"
+    start: "2013"
+    end: "2015"
+    thesis: "Modeling the combined effect of RBPs and microRNAs in post-transcriptional regulation"
+    thesis_url: "https://open.metu.edu.tr/handle/11511/25105"
+    beside: metu
+
+talks:
+  - { name: scverse, place: "Palo Alto, CA", year: 2025 }
+  - { name: ISMB/ECCB, track: MLCSB, track_name: "Machine Learning in Computational and Systems Biology", place: "Lyon, France", year: 2023 }
+  - { name: ISMB/ECCB, track: HiTSeq, track_name: "High Throughput Sequencing Algorithms & Applications", place: "Basel, Switzerland", year: 2019 }
+  - { name: Genome Informatics, place: "Hinxton, Cambridge, UK", year: 2018 }
+talks_more: "+ 10 other academic conference presentations, with attendances at NeurIPS and ICML."
+
+awards:
+  - years: "2017 — 2024"
+    text: "Received over $250K in Scholarships, Fellowships, Travel Awards, and Research Funding"
+  - years: "2015 — 2025"
+    text: "Reviewer for Bioinformatics, NAR Genomics and Bioinformatics, Bioinformatics Advances · Active member, International Society for Computational Biology (ISCB)"
+
+skills:
+  - "Bioinformatics & Omics"
+  - "ML & Deep Learning"
+  - "Statistical Modeling"
+  - "AI & Agentic Workflows"
+  - "Workflow & Infrastructure"
+  - "Programming & Scientific SW"

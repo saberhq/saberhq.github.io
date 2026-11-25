@@ -1,13 +1,13 @@
-{{- /* The page's preview image: its own picture, else its cover art, else the About photo. Returns url, width, height, alt. */ -}}
+{{- /* The page's picture: its own, else its cover art, else the About photo. Returns url, width, height, alt, own (not the fallback). */ -}}
 {{- $r := dict -}}
 {{- with .Params.images -}}
   {{- with $.Resources.Get (index . 0) -}}
-    {{- $r = dict "url" .Permalink "width" .Width "height" .Height "alt" ($.Params.photoAlt | default "") -}}
+    {{- $r = dict "url" .Permalink "width" .Width "height" .Height "alt" ($.Params.photoAlt | default "") "own" true -}}
   {{- end -}}
 {{- end -}}
 {{- if and (not $r) .Params.image -}}
   {{- $path := .Params.image -}}
-  {{- $r = dict "url" (absURL $path) "alt" (printf "Cover art for %s" .Title) -}}
+  {{- $r = dict "url" (absURL $path) "alt" (printf "Cover art for %s" .Title) "own" true -}}
   {{- with try (images.Config (path.Join "static" $path)) -}}
     {{- with .Value }}{{ $r = merge $r (dict "width" .Width "height" .Height) }}{{ end -}}
   {{- end -}}

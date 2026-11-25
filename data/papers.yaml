@@ -1,0 +1,94 @@
+# Saber's papers, in the order About shows them
+- id: ntembd
+  title: "ntEmbd: Deep learning embedding for nucleotide sequences"
+  authors: [Saber Hafezqorani, Ka Ming Nip, Inanc Birol]
+  venue: bioRxiv
+  date: "2024-05-02"
+  doi: 10.1101/2024.04.30.591806
+  links:
+    - { name: Code, url: "https://github.com/BirolLab/ntEmbd" }
+    - { name: Video, url: "https://youtu.be/cevepibRu8I" }
+
+- id: nanosim
+  title: "Trans-NanoSim characterizes and simulates nanopore RNA-sequencing data"
+  authors: [Saber Hafezqorani, Chen Yang, Theodora Lo, Ka Ming Nip, René L Warren, Inanc Birol]
+  venue: GigaScience
+  date: "2020-06-01"
+  doi: 10.1093/gigascience/giaa061
+  links:
+    - { name: Code, url: "https://github.com/BirolLab/NanoSim" }
+
+- id: rnabloom2
+  title: "Reference-free assembly of long-read transcriptome sequencing data with RNA-Bloom2"
+  authors: [Ka Ming Nip, Saber Hafezqorani, Kristina K Gagalova, Readman Chiu, Chen Yang, René L Warren, Inanc Birol]
+  venue: Nature Communications
+  date: "2023-05-22"
+  doi: 10.1038/s41467-023-38553-y
+  links:
+    - { name: Code, url: "https://github.com/BirolLab/RNA-Bloom" }
+
+- id: lrgasp
+  title: "Systematic assessment of long-read RNA-seq methods for transcript identification and quantification"
+  byline: "LRGASP Consortium, et al."
+  authors: [Francisco J Pardo-Palacios, Dingjie Wang, Fairlie Reese, Mark Diekhans, Sílvia Carbonell-Sala,
+    Brian Williams, Jane E Loveland, Maite De María, Matthew S Adams, Gabriela Balderrama-Gutierrez,
+    Amit K Behera, Jose M Gonzalez Martinez, Toby Hunt, Julien Lagarde, Cindy E Liang, Haoran Li,
+    Marcus Jerryd Meade, David A Moraga Amador, Andrey D Prjibelski, Inanc Birol, Hamed Bostan,
+    Ashley M Brooks, Muhammed Hasan Çelik, Ying Chen, Mei R M Du, Colette Felton, Jonathan Göke,
+    Saber Hafezqorani, Ralf Herwig, Hideya Kawaji, Joseph Lee, Jian-Liang Li, Matthias Lienhard,
+    Alla Mikheenko, Dennis Mulligan, Ka Ming Nip, Mihaela Pertea, Matthew E Ritchie, Andre D Sim,
+    Alison D Tang, Yuk Kei Wan, Changqing Wang, Brandon Y Wong, Chen Yang, If Barnes, Andrew E Berry,
+    Salvador Capella-Gutierrez, Alyssa Cousineau, Namrita Dhillon, Jose M Fernandez-Gonzalez,
+    Luis Ferrández-Peral, Natàlia Garcia-Reyero, Stefan Götz, Carles Hernández-Ferrer,
+    Liudmyla Kondratova, Tianyuan Liu, Alessandra Martinez-Martin, Carlos Menor, Jorge Mestre-Tomás,
+    Jonathan M Mudge, Nedka G Panayotova, Alejandro Paniagua, Dmitry Repchevsky, Xingjie Ren,
+    Eric Rouchka, Brandon Saint-John, Enrique Sapena, Leon Sheynkman, Melissa Laird Smith,
+    Marie-Marthe Suner, Hazuki Takahashi, Ingrid A Youngworth, Piero Carninci, Nancy D Denslow,
+    Roderic Guigó, Margaret E Hunter, Rene Maehr, Yin Shen, Hagen U Tilgner, Barbara J Wold,
+    Christopher Vollmers, Adam Frankish, Kin Fai Au, Gloria M Sheynkman, Ali Mortazavi, Ana Conesa,
+    Angela N Brooks]
+  venue: Nature Methods
+  date: "2024-06-07"
+  doi: 10.1038/s41592-024-02298-3
+  links:
+    - { name: Code, url: "https://github.com/LRGASP/" }
+    - { name: Website, url: "https://www.gencodegenes.org/pages/LRGASP/" }
+
+- id: rbp-mirna
+  title: "Modeling the combined effect of RNA-binding proteins and microRNAs in post-transcriptional regulation"
+  authors: [Saber Hafezqorani, Atefeh Lafzi, Ruben G de Bruin, Anton Jan van Zonneveld, Eric P van der Veer, Yeşim Aydın Son, Hilal Kazan]
+  venue: Nucleic Acids Research
+  date: "2016-02-02"
+  doi: 10.1093/nar/gkw048
+
+- id: meta-nanosim
+  title: "Characterization and simulation of metagenomic nanopore sequencing data with Meta-NanoSim"
+  authors: [Chen Yang, Theodora Lo, Ka Ming Nip, Saber Hafezqorani, René L Warren, Inanc Birol]
+  venue: GigaScience
+  date: "2023-03-20"
+  doi: 10.1093/gigascience/giad013
+  links:
+    - { name: Code, url: "https://github.com/BirolLab/NanoSim" }
+
+- id: rna-scoop
+  title: "RNA-Scoop: interactive visualization of transcripts in single-cell transcriptomes"
+  authors: [Maria Stephenson, Ka Ming Nip, Saber Hafezqorani, Kristina K Gagalova, Chen Yang, René L Warren, Inanc Birol]
+  venue: NAR Genomics and Bioinformatics
+  date: "2021-11-29"
+  doi: 10.1093/nargab/lqab105
+  links:
+    - { name: Code, url: "https://github.com/BirolLab/RNA-Scoop" }
+
+- id: rbpsponge
+  title: "RBPSponge: genome-wide identification of lncRNAs that sponge RBPs"
+  authors: [Saber Hafezqorani, Aissa Houdjedj, Mehmet Arici, Abdesselam Said, Hilal Kazan]
+  venue: Bioinformatics
+  date: "2019-11-01"
+  doi: 10.1093/bioinformatics/btz448
+
+- id: neuroblastoma
+  title: "Predicting clinical outcomes in neuroblastoma with genomic data integration"
+  authors: [Ilyes Baali, D Alp Emre Acar, Tunde W Aderinwale, Saber Hafezqorani, Hilal Kazan]
+  venue: Biology Direct
+  date: "2018-09-27"
+  doi: 10.1186/s13062-018-0223-8

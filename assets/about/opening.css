@@ -1,0 +1,35 @@
+/* About, the opening: the kicker, the pixel line, the lede, the buttons and the photo */
+
+.sq-me-hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center; column-gap: var(--space-8);
+}
+.sq-me-intro { min-width: 0; }
+/* 52.6px lands Geist Pixel's grid on whole 2px cells — the Sidechain wordmark's size */
+.sq-me-mark {
+  margin: 14px 0 0;
+  font-family: var(--font-pixel); font-weight: 400; font-size: 52.6px;
+  line-height: 1; letter-spacing: 0; color: var(--ink);
+}
+.sq-me-dot { color: var(--accent); }
+
+/* The photo: a circle with a hairline ring a few pixels out. The figure's padding holds the
+   ring, so its outer edge (not the photo's) meets the shell edge and the section rules below.
+   No filter, no shadow, the same picture in dark mode. Sizes mirror `sizes` in the template. */
+.sq-me-photo { --ring-gap: 6px; margin: 0; padding: calc(var(--ring-gap) + var(--rule-w)); }
+.sq-me-photo picture { display: block; }
+.sq-me-photo img {
+  display: block; width: 224px; height: 224px; max-width: none; object-fit: cover;
+  border-radius: 50%;
+  background: var(--surface-sunken); /* holds the circle's tone until the photo arrives */
+  outline: var(--rule-w) solid var(--rule); outline-offset: var(--ring-gap);
+}
+
+@media (max-width: 900px) {
+  .sq-me-hero { grid-template-columns: minmax(0, 1fr); }
+  .sq-me-photo { --ring-gap: 5px; order: -1; justify-self: start; margin-bottom: var(--space-4); }
+  .sq-me-photo img { width: 136px; height: 136px; }
+}
+@media (max-width: 600px) {
+  .sq-me-mark { font-size: 44px; }
+}

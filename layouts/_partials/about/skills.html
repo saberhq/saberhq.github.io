@@ -1,0 +1,9 @@
+{{- /* Skills: the groups of data/career.yaml on one line. Context: s. */ -}}
+{{- with site.Data.career.skills }}
+<section class="sq-section sq-wrap" aria-labelledby="sq-me-skills">
+  {{ partial "about/head" (dict "s" $.s "id" "sq-me-skills" "label" "Skills") }}
+  <p class="sq-skills">
+    {{- range $i, $k := . }}{{ if $i }}<span class="sq-skills-sep" aria-hidden="true"> · </span>{{ end }}<span class="sq-skill">{{ $k }}</span>{{ end -}}
+  </p>
+</section>
+{{- end }}

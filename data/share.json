@@ -1,0 +1,58 @@
+{
+  "mark": "Saber H.",
+  "address": "saberh.com",
+  "cards": {
+    "home": {
+      "path": "/",
+      "mark": "Saber Hafezqorani",
+      "title": "Saber H.",
+      "tag": "AI × Bio",
+      "alt": "A card that reads “Saber H.” and “AI × Bio”.",
+      "large": {
+        "chips": ["AI × Bio", "Perturb-seq", "representation learning", "long-read RNA-seq"],
+        "chip_accent": "AI × Bio",
+        "alt": "A card that reads “Saber H.” above four topics: AI × Bio, Perturb-seq, representation learning and long-read RNA-seq."
+      }
+    },
+    "about": {
+      "path": "/about/",
+      "title": ["Hi, I’m", "Saber."],
+      "photo": "content/about/profile.jpg",
+      "alt": "A card that reads “Hi, I’m Saber.” beside a small round photo of Saber Hafezqorani."
+    },
+    "blog": {
+      "path": "/blog/",
+      "title": "Blog.",
+      "line": "Notes on AI × Bio, research tools, and whatever else I’m thinking about.",
+      "alt": "A card that reads “Blog.” and “Notes on AI × Bio, research tools, and whatever else I’m thinking about.”"
+    },
+    "vibes": {
+      "path": "/vibes/",
+      "address": "sabervibes.com",
+      "title": ["Saber", "Vibes."],
+      "accent": "vibes",
+      "art": "notes",
+      "alt": "A card that reads “Saber Vibes.” beside two music notes drawn in pixels."
+    }
+  },
+  "art": {
+    "notes": [
+      "............XXXXXX",
+      "........XXXXXXXXXX",
+      "....XXXXXXXXXXXXXX",
+      "....XXXXXXXXXX..XX",
+      "....XXXXXX......XX",
+      "....XX..........XX",
+      "....XX..........XX",
+      "....XX..........XX",
+      "....XX..........XX",
+      "....XX..........XX",
+      "....XX.......XXXXX",
+      "....XX......XXXXXX",
+      ".XXXXX......XXXXXX",
+      "XXXXXX.......XXXX.",
+      "XXXXXX............",
+      ".XXXX............."
+    ]
+  }
+}

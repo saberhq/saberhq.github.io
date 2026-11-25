@@ -1,9 +1,11 @@
-{{- /* Link previews: Open Graph and X cards. */ -}}
-{{- $title := partial "docs/html-head-title" . -}}
+{{- /* Link previews: Open Graph and X cards. The picture: the page's own share card, else its own picture, else the nearest card. */ -}}
+{{- $title := .Params.shareTitle | default (partial "docs/html-head-title" .) -}}
 {{- $desc := default .Summary .Description | plainify | htmlUnescape -}}
 {{- $post := and .IsPage (eq .Type "blog") -}}
 {{- $profile := eq .Layout "about" -}}
 {{- $img := partial "seo/image" . -}}
+{{- $card := partial "saberhq/share-card" . -}}
+{{- if and $card (or $card.own (not $img.own)) }}{{ $img = $card }}{{ end -}}
 <meta property="og:site_name" content="{{ site.Title }}">
 <meta property="og:type" content="{{ cond $post "article" (cond $profile "profile" "website") }}">
 <meta property="og:title" content="{{ $title }}">
@@ -41,6 +43,9 @@
 <meta name="twitter:site" content="{{ . }}">
 <meta name="twitter:creator" content="{{ . }}">
 {{- end }}
-{{- with $img.alt }}
+{{- with $img.large }}
+<meta name="twitter:image" content="{{ .url }}">
+{{- end }}
+{{- with ($img.large | default $img).alt }}
 <meta name="twitter:image:alt" content="{{ . }}">
 {{- end }}

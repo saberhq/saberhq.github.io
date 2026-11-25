@@ -1,0 +1,24 @@
+/* About, Papers: a grid of hairline cards, one per paper */
+
+.sq-papers { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); margin: 20px 0 0; padding: 0; }
+.sq-paper {
+  display: flex; flex-direction: column; margin: 0; padding: 14px 16px 12px;
+  border: var(--rule-w) solid var(--rule); border-radius: var(--radius); background: var(--surface-card);
+  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.sq-paper:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); transform: translateY(-2px); }
+.sq-paper-meta { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: var(--meta-track); color: var(--ink-3); }
+.sq-paper-title { margin: 6px 0 0; font-size: 16.5px; font-weight: 600; letter-spacing: var(--h3-track); line-height: 1.3; color: var(--ink); text-wrap: pretty; }
+.sq-paper-authors { margin: 8px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-3); text-wrap: pretty; }
+.sq-paper-authors b { font-weight: 600; color: var(--ink); }
+/* [Paper] [Code] [Blog], on the card's last line */
+.sq-paper-links { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: auto 0 0; padding-top: 12px; font-family: var(--font-mono); font-size: 12.5px; }
+.sq-paper-links a, .sq-paper-links a:visited { color: var(--link); }
+.sq-paper-links a:hover { color: var(--link-hover); }
+
+@media (max-width: 900px) {
+  .sq-papers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .sq-papers { grid-template-columns: minmax(0, 1fr); }
+}

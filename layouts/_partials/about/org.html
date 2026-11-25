@@ -1,0 +1,3 @@
+{{- /* An organisation's name as a link. Context: a role or a degree. */ -}}
+{{- $off := partial "saberhq/new-tab" .org_url -}}
+<a class="sq-cv-org" href="{{ .org_url }}"{{ if $off }} target="_blank" rel="noopener"{{ end }}>{{ .org }} <span class="sq-glyph" aria-hidden="true">{{ cond $off "↗" "→" }}</span>{{ if $off }}<span class="sq-sr-only"> (opens in a new tab)</span>{{ end }}</a>

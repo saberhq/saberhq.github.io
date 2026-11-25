@@ -10,7 +10,8 @@
 {{- $ids := slice -}}
 {{- range $p.identifiers }}{{ $ids = $ids | append (dict "@type" "PropertyValue" "propertyID" .propertyID "value" (string .value) "url" .url) }}{{ end -}}
 {{- $alumni := slice -}}
-{{- range $p.alumniOf }}{{ $alumni = $alumni | append (dict "@type" (.type | default "CollegeOrUniversity") "name" .name "sameAs" .sameAs) }}{{ end -}}
+{{- range site.Data.career.degrees }}{{ $alumni = $alumni | append (dict "@type" "CollegeOrUniversity" "name" (.org_name | default .org) "sameAs" .org_url) }}{{ end -}}
+{{- range site.Data.career.roles }}{{ if .org_type }}{{ $alumni = $alumni | append (dict "@type" .org_type "name" (.org_name | default .org) "sameAs" .org_url) }}{{ end }}{{ end -}}
 {{- $graph := slice
   (dict "@type" "Person" "@id" $personID "name" $p.name "alternateName" $p.alternateName
     "jobTitle" $p.jobTitle "description" $p.description "url" $home "image" (absURL $p.image)
@@ -27,7 +28,13 @@
 {{- if .IsHome -}}
   {{- $page = merge $page (dict "@type" "WebPage" "about" $person) -}}
 {{- else if eq .Layout "about" -}}
-  {{- $page = merge $page (dict "@type" "ProfilePage" "mainEntity" $person) -}}
+  {{- $mentions := slice -}}
+  {{- range site.Data.papers -}}
+    {{- $paper := partial "seo/paper" (dict "paper" . "person" $person "name" $p.name) -}}
+    {{- $graph = $graph | append $paper -}}
+    {{- $mentions = $mentions | append (dict "@id" (index $paper "@id")) -}}
+  {{- end -}}
+  {{- $page = merge $page (dict "@type" "ProfilePage" "mainEntity" $person "mentions" $mentions) -}}
 {{- else if and (eq .Kind "section") (eq .Type "blog") -}}
   {{- $posts := slice -}}
   {{- range where .RegularPages "Params.external" "==" nil }}{{ $posts = $posts | append (dict "@id" (print .Permalink "#article")) }}{{ end -}}
@@ -47,14 +54,8 @@
   {{- with $img.url }}{{ $article = merge $article (dict "image" .) }}{{ end -}}
   {{- with .Params.tags }}{{ $article = merge $article (dict "keywords" .) }}{{ end -}}
   {{- with index site.Data.areas (.Params.area | default "") }}{{ $article = merge $article (dict "articleSection" .label) }}{{ end -}}
-  {{- with .Params.paper -}}
-    {{- $authors := slice -}}
-    {{- range .authors }}{{ $authors = $authors | append (cond (eq . $p.name) $person (dict "@type" "Person" "name" .)) }}{{ end -}}
-    {{- $doi := print "https://doi.org/" .doi -}}
-    {{- $paper := dict "@type" "ScholarlyArticle" "@id" $doi "url" $doi "name" .title "author" $authors
-      "datePublished" (string .date) "isPartOf" (dict "@type" "Periodical" "name" .journal)
-      "identifier" (dict "@type" "PropertyValue" "propertyID" "DOI" "value" .doi) -}}
-    {{- $article = merge $article (dict "about" $paper) -}}
+  {{- range where site.Data.papers "id" (.Params.paper | default "") -}}
+    {{- $article = merge $article (dict "about" (partial "seo/paper" (dict "paper" . "person" $person "name" $p.name))) -}}
   {{- end -}}
   {{- $graph = $graph | append $article -}}
   {{- $graph = $graph | append (dict "@type" "BreadcrumbList" "@id" (print .Permalink "#breadcrumb") "itemListElement" (slice

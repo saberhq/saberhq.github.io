@@ -1,0 +1,27 @@
+{{- /* One role: title, organisation, lines, tools. Context: role, tag (optional small label). */ -}}
+{{- $role := .role -}}
+{{- with .tag }}<span class="sq-cv-k">{{ . }}</span>{{ end }}
+<div class="sq-cv-head">
+  <h3 class="sq-cv-title">{{ $role.title }}{{ with $role.note }} <span class="sq-cv-note">{{ . }}</span>{{ end }}</h3>
+  <span class="sq-cv-leader" aria-hidden="true"></span>
+  {{ partial "about/org" $role }}
+</div>
+{{- with $role.lines }}
+<ul class="sq-cv-lines" role="list">
+  {{- range . }}
+  <li>{{ . }}</li>
+  {{- end }}
+</ul>
+{{- end }}
+{{- with $role.tools }}
+<p class="sq-cv-tools">
+  {{- range . }}
+  {{- if .url }}
+  {{- $off := partial "saberhq/new-tab" .url }}
+  <a class="sq-cv-tool" href="{{ .url }}"{{ if $off }} target="_blank" rel="noopener"{{ end }}><code>{{ .name }}</code>{{ if $off }}<span class="sq-sr-only"> (opens in a new tab)</span>{{ end }}</a>
+  {{- else }}
+  <span class="sq-cv-tool"><code>{{ .name }}</code></span>
+  {{- end }}
+  {{- end }}
+</p>
+{{- end }}

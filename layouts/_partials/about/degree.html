@@ -1,0 +1,9 @@
+{{- /* One degree: title, school, years, thesis. Context: degree, tag (optional small label). */ -}}
+{{- $d := .degree -}}
+{{- with .tag }}<span class="sq-cv-k">{{ . }}</span>{{ end }}
+<div class="sq-cv-head">
+  <h3 class="sq-cv-title">{{ $d.title }}, {{ $d.field }}</h3>
+  <span class="sq-cv-leader" aria-hidden="true"></span>
+  {{ partial "about/org" $d }}
+</div>
+<p class="sq-cv-thesis"><span class="sq-cv-years">{{ $d.start }} – {{ $d.end }}</span>{{ with $d.thesis }}{{ . }} <a class="sq-artifact" href="{{ $d.thesis_url }}" target="_blank" rel="noopener">[Thesis]<span class="sq-sr-only"> (opens in a new tab)</span></a>{{ end }}</p>
