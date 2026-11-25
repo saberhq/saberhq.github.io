@@ -13,7 +13,7 @@ disableKinds = ["taxonomy", "term"]
   songs = "/vibes/songs/:contentbasename/"
 
 [outputs]
-  home = ["html", "rss", "llms"]
+  home = ["html", "rss", "llms", "markdown"]
 
 # /llms.txt: the site map for AI tools (llmstxt.org)
 [outputFormats.llms]
@@ -21,6 +21,13 @@ disableKinds = ["taxonomy", "term"]
   baseName = "llms"
   isPlainText = true
   notAlternative = true
+
+# index.md beside index.html: each page as plain text, for AI tools and readers
+[outputFormats.markdown]
+  mediaType = "text/markdown"
+  baseName = "index"
+  isPlainText = true
+  rel = "alternate"
 
 [markup]
 [markup.goldmark.renderer]

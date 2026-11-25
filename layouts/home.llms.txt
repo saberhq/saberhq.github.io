@@ -12,14 +12,15 @@
 
 > {{ $about.Description }}
 
+Most links below are a page as Markdown (`index.md`); the web page is the same address without `index.md`.
+
 ## Pages
-- [{{ site.Home.Title }}]({{ site.Home.Permalink }}): {{ site.Home.Description }}
+- [{{ site.Home.Title }}]({{ partial "seo/md-url" site.Home }}): {{ site.Home.Description }}
 {{- range slice "/about" "/docs/blog" "/vibes" "/albumarts" }}
 {{- with site.GetPage . }}
-- [{{ .Title }}]({{ .Permalink }}): {{ .Description }}
+- [{{ .Title }}]({{ partial "seo/md-url" . }}): {{ .Description }}
 {{- end }}
 {{- end }}
-- [Résumé]({{ "resume/" | absURL }}): {{ site.Params.author }}'s résumé: experience, selected publications, technical skills and education.
 
 ## News
 {{- range site.Home.Params.news }}
@@ -27,8 +28,8 @@
 {{- end }}
 
 ## Posts
-{{- range (site.GetPage "/docs/blog").RegularPages.ByDate.Reverse }}
-- [{{ .Title }}]({{ or .Params.external .Permalink }}): {{ .Params.description | default (.Summary | plainify | truncate 150) }} ({{ .Date.Format "2006-01-02" }}{{ with index site.Data.areas (.Params.area | default "") }} · {{ .label }}{{ end }})
+{{- range $post := (site.GetPage "/docs/blog").RegularPages.ByDate.Reverse }}
+- [{{ .Title }}]({{ with .Params.external }}{{ . }}index.md{{ else }}{{ partial "seo/md-url" $post }}{{ end }}): {{ .Params.description | default (.Summary | plainify | truncate 150) }} ({{ .Date.Format "2006-01-02" }}{{ with index site.Data.areas (.Params.area | default "") }} · {{ .label }}{{ end }})
 {{- end }}
 
 ## Projects
