@@ -23,6 +23,8 @@
 <head>
   {{ partial "docs/html-head" . }}
   {{ partial "docs/inject/head" . }}
+  {{- $css := slice (resources.Get "about.css") (resources.Get "about/opening.css") (resources.Get "about/letter.css") (resources.Get "about/elsewhere.css") | resources.Concat "css/about.css" | resources.Minify | resources.Fingerprint "sha384" }}
+  <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}" crossorigin="anonymous">
 </head>
 <body class="sq-shell book-kind-page sq-me-page">
 

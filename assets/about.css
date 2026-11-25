@@ -1,0 +1,7 @@
+/* About, the page: what its parts share; loaded first, only by layouts/about.html */
+
+/* Book rings every :focus, mouse clicks included; keep the ring for the keyboard (as on /vibes/) */
+.sq-me-page :focus:not(:focus-visible) { outline: none; }
+
+/* Section heads here are real h2s: drop Book's heading size and margins */
+.sq-me .sq-section-label { margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit; }
