@@ -21,7 +21,6 @@ Most links below are a page as Markdown (`index.md`); the web page is the same a
 - [{{ .Title }}]({{ partial "seo/md-url" . }}): {{ .Description }}
 {{- end }}
 {{- end }}
-- [Résumé]({{ "resume/" | absURL }}): {{ site.Params.author }}'s résumé: experience, selected publications, technical skills and education.
 
 ## News
 {{- range site.Home.Params.news }}

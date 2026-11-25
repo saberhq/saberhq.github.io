@@ -10,7 +10,7 @@
 {{- $ids := slice -}}
 {{- range $p.identifiers }}{{ $ids = $ids | append (dict "@type" "PropertyValue" "propertyID" .propertyID "value" (string .value) "url" .url) }}{{ end -}}
 {{- $alumni := slice -}}
-{{- range $p.alumniOf }}{{ $alumni = $alumni | append (dict "@type" "CollegeOrUniversity" "name" .name "sameAs" .sameAs) }}{{ end -}}
+{{- range $p.alumniOf }}{{ $alumni = $alumni | append (dict "@type" (.type | default "CollegeOrUniversity") "name" .name "sameAs" .sameAs) }}{{ end -}}
 {{- $graph := slice
   (dict "@type" "Person" "@id" $personID "name" $p.name "alternateName" $p.alternateName
     "jobTitle" $p.jobTitle "description" $p.description "url" $home "image" (absURL $p.image)

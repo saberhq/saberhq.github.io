@@ -5,7 +5,7 @@
 
 {{ .Params.heading }} {{ .Params.lede }}
 
-Web page: {{ .Permalink }}{{ with .Params.resume }} · résumé: {{ . | absURL }}{{ end }}
+Web page: {{ .Permalink }}
 
 ## {{ .Params.longLabel | default "The long version" }}
 
