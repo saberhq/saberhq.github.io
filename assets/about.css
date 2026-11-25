@@ -5,3 +5,9 @@
 
 /* Section heads here are real h2s: drop Book's heading size and margins */
 .sq-me .sq-section-label { margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit; }
+
+/* The number in a section's label */
+.sq-section-num { margin-right: 4px; color: var(--accent); }
+.sq-me h3 { margin: 0; }
+/* The mono column beside the timeline */
+.sq-me { --cv-rail: 164px; }

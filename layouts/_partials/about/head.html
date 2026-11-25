@@ -1,0 +1,9 @@
+{{- /* A numbered section head. Context: s (the page's counter), id, label, aside (optional HTML). */ -}}
+{{- .s.Add "n" 1 -}}
+<div class="sq-section-head">
+  <h2 class="sq-section-label" id="{{ .id }}"><span class="sq-section-num">{{ printf "%02d" (.s.Get "n") }}</span> {{ .label }}</h2>
+  <span class="sq-section-fill"></span>
+  {{- with .aside }}
+  {{ . }}
+  {{- end }}
+</div>

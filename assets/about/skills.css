@@ -1,0 +1,5 @@
+/* About, Skills: one mono line, the groups apart by a vermillion dot */
+
+.sq-skills { margin: 16px 0 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.9; letter-spacing: var(--meta-track); color: var(--ink-2); }
+.sq-skill { white-space: nowrap; }
+.sq-skills-sep { color: var(--accent); }

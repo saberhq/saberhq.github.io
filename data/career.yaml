@@ -5,7 +5,9 @@ roles:
     org: Sidechain
     org_url: /sidechain/
     start: "2026-08"
-    lines: []
+    lines:
+      - "Built a zero-shot model predicting transcriptome-wide responses to gene knockdown in unseen cell lines"
+      - "Ran the project as a research group of one scientist and a team of AI coding agents (Claude Code)"
     tools:
       - { name: Sidechain, url: "https://github.com/saberhq/sidechain" }
 
@@ -19,7 +21,9 @@ roles:
     place: "South San Francisco, CA, USA (remote)"
     start: "2025-09"
     end: "2026-08"
-    lines: []
+    lines:
+      - "Co-led end-to-end analysis of two multi-million-cell scale genome-wide single-cell CRISPR Perturb-seq screens in breast (MCF7) and lung (A549) cancer cell lines"
+      - "Built mapdash, a CLI tool generating interactive dashboards to evaluate perturbation maps across parameter sweep runs, plus a reusable sweep orchestrator"
     tools:
       - { name: mapdash }
 
@@ -31,7 +35,9 @@ roles:
     place: "Vancouver, BC, Canada"
     start: "2017-09"
     end: "2024-08"
-    lines: []
+    lines:
+      - "Designed and implemented ntEmbd, a deep learning representation-learning model for nucleotide sequences"
+      - "Co-developed NanoSim, a Nanopore multi-omics long-read synthetic sequence generation pipeline (62,000 downloads, 300+ GitHub stars)"
     tools:
       - { name: ntEmbd, url: "https://github.com/BirolLab/ntEmbd" }
       - { name: NanoSim, url: "https://github.com/BirolLab/NanoSim" }
@@ -44,7 +50,9 @@ roles:
     place: "Ankara, Turkey"
     start: "2013-02"
     end: "2017-08"
-    lines: []
+    lines:
+      - "Designed a machine learning framework for patient stratification and clinical outcome prediction in neuroblastoma"
+      - "Modelled RBP–microRNA interplay in post-transcriptional regulation"
 
 # beside: the role a degree sits next to on the timeline
 degrees:
@@ -74,11 +82,10 @@ degrees:
     beside: metu
 
 talks:
-  - { name: scverse, place: "Palo Alto, CA" }
-  - { name: ISMB/ECCB, track: MLCSB, track_name: "Machine Learning in Computational and Systems Biology", place: "Lyon, France" }
-  - { name: ISMB/ECCB, track: HiTSeq, track_name: "High Throughput Sequencing Algorithms & Applications", place: "Basel, Switzerland" }
-  - { name: Genome Informatics, place: "Hinxton, Cambridge, UK" }
-talk_years: [2025, 2023, 2019, 2018, 2017, 2015]
+  - { name: scverse, place: "Palo Alto, CA", year: 2025 }
+  - { name: ISMB/ECCB, track: MLCSB, track_name: "Machine Learning in Computational and Systems Biology", place: "Lyon, France", year: 2023 }
+  - { name: ISMB/ECCB, track: HiTSeq, track_name: "High Throughput Sequencing Algorithms & Applications", place: "Basel, Switzerland", year: 2019 }
+  - { name: Genome Informatics, place: "Hinxton, Cambridge, UK", year: 2018 }
 talks_more: "+ 10 other academic conference presentations, with attendances at NeurIPS and ICML."
 
 awards:

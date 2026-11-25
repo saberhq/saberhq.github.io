@@ -39,24 +39,6 @@ Topics: {{ delimit . ", " }}{{ with $.Params.topicAccent }}, {{ . }}{{ end }}
   {{- range where site.RegularPages "Params.paper" $paper.id }} · [Blog]({{ .Permalink }}){{ end }}
 {{- end }}
 
-## Talks
-{{- range $c.talks }}
-- {{ .name }}{{ with .track }}, {{ . }}{{ end }}{{ with .track_name }}: {{ . }}{{ end }} ({{ .place }})
-{{- end }}
-{{- with $c.talk_years }}
-
-Years: {{ delimit . " · " }}
-{{- end }}
-{{- with $c.talks_more }}
-
-{{ . }}
-{{- end }}
-
-## Awards and service
-{{- range $c.awards }}
-- {{ .years }}: {{ .text }}
-{{- end }}
-
 ## Skills
 
 {{ delimit $c.skills " · " }}

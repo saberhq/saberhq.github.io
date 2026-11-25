@@ -1,0 +1,12 @@
+{{- /* A role's dates, from start and end ("YYYY-MM"). Returns from, to, current and span ("6 years, 11 months"). */ -}}
+{{- $start := time.AsTime (print .start "-01") -}}
+{{- $end := now -}}
+{{- $current := true -}}
+{{- with .end }}{{ $end = time.AsTime (print . "-01") }}{{ $current = false }}{{ end -}}
+{{- $months := add (add (mul (sub $end.Year $start.Year) 12) (sub (int ($end.Format "1")) (int ($start.Format "1")))) 1 -}}
+{{- $y := div $months 12 -}}
+{{- $m := mod $months 12 -}}
+{{- $span := "" -}}
+{{- if $y }}{{ $span = printf "%d year%s" $y (cond (gt $y 1) "s" "") }}{{ end -}}
+{{- if $m }}{{ $span = printf "%s%s%d month%s" $span (cond (ne $span "") ", " "") $m (cond (gt $m 1) "s" "") }}{{ end -}}
+{{- return dict "from" ($start.Format "Jan 2006") "to" (cond $current "now" ($end.Format "Jan 2006")) "current" $current "span" $span -}}

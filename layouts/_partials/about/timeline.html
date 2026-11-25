@@ -1,0 +1,52 @@
+{{- /* Now and Timeline: mono dates on the left, a pixel on the spine, the entry on the right. Context: s, chapters. */ -}}
+{{- with .chapters.now }}
+<section class="sq-section sq-wrap" aria-labelledby="sq-me-now">
+  {{ partial "about/head" (dict "s" $.s "id" "sq-me-now" "label" "Now") }}
+  <ol class="sq-tl" role="list">
+    {{- range . }}
+    {{- $d := partial "about/dates" . }}
+    <li class="sq-tl-item is-now">
+      <div class="sq-tl-meta">
+        <span class="sq-tl-dates">{{ $d.from }} — <span class="sq-now">now</span></span>
+        {{- with .place }}
+        <span class="sq-tl-place">{{ . }}</span>
+        {{- end }}
+      </div>
+      <div class="sq-tl-node" aria-hidden="true"></div>
+      <div class="sq-tl-body">
+        {{ partial "about/role" (dict "role" .) }}
+      </div>
+    </li>
+    {{- end }}
+  </ol>
+</section>
+{{- end }}
+
+<section class="sq-section sq-wrap" aria-labelledby="sq-me-timeline">
+  {{ partial "about/head" (dict "s" .s "id" "sq-me-timeline" "label" "Timeline") }}
+  <ol class="sq-tl" role="list">
+    {{- range .chapters.past }}
+    {{- $d := partial "about/dates" .role }}
+    <li class="sq-tl-item">
+      <div class="sq-tl-meta">
+        <span class="sq-tl-dates">{{ $d.from }} — {{ $d.to }}</span>
+        <span class="sq-tl-span">{{ $d.span }}</span>
+        {{- with .role.place }}
+        <span class="sq-tl-place">{{ . }}</span>
+        {{- end }}
+      </div>
+      <div class="sq-tl-node" aria-hidden="true"></div>
+      <div class="sq-tl-body">
+        {{- if .degree }}
+        <div class="sq-pair">
+          <div class="sq-pair-col">{{ partial "about/role" (dict "role" .role "tag" "work") }}</div>
+          <div class="sq-pair-col">{{ partial "about/degree" (dict "degree" .degree "tag" "study") }}</div>
+        </div>
+        {{- else }}
+        {{ partial "about/role" (dict "role" .role) }}
+        {{- end }}
+      </div>
+    </li>
+    {{- end }}
+  </ol>
+</section>

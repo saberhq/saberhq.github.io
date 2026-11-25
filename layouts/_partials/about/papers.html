@@ -1,0 +1,29 @@
+{{- /* Papers: one card per entry of data/papers.yaml, in the file's order. Context: s, scholar (a link). */ -}}
+{{- $me := site.Data.person.name -}}
+{{- $aside := "" -}}
+{{- with .scholar }}{{ $aside = printf `<a class="sq-section-aside" href="%s" target="_blank" rel="noopener">Google Scholar <span aria-hidden="true">↗</span><span class="sq-sr-only"> (opens in a new tab)</span></a>` . | safeHTML }}{{ end -}}
+<section class="sq-section sq-wrap" aria-labelledby="sq-me-papers">
+  {{ partial "about/head" (dict "s" .s "id" "sq-me-papers" "label" "Papers" "aside" $aside) }}
+  <ul class="sq-papers" role="list">
+    {{- range $paper := site.Data.papers }}
+    <li class="sq-paper">
+      <div class="sq-paper-meta">{{ .venue }} <span aria-hidden="true">·</span> {{ (time.AsTime .date).Year }}</div>
+      <h3 class="sq-paper-title">{{ .title }}</h3>
+      <p class="sq-paper-authors">
+        {{- with .byline }}{{ . }}{{ else }}
+        {{- range $i, $a := .authors }}{{ if $i }}, {{ end }}{{ if eq $a $me }}<b>{{ $a }}</b>{{ else }}{{ $a }}{{ end }}{{ end }}
+        {{- end -}}
+      </p>
+      <p class="sq-paper-links">
+        <a href="https://doi.org/{{ .doi }}" target="_blank" rel="noopener">[Paper]<span class="sq-sr-only"> (opens in a new tab)</span></a>
+        {{- range .links }}
+        <a href="{{ .url }}" target="_blank" rel="noopener">[{{ .name }}]<span class="sq-sr-only"> (opens in a new tab)</span></a>
+        {{- end }}
+        {{- range where site.RegularPages "Params.paper" $paper.id }}
+        <a href="{{ .RelPermalink }}">[Blog]</a>
+        {{- end }}
+      </p>
+    </li>
+    {{- end }}
+  </ul>
+</section>
