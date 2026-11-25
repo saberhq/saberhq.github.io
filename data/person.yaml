@@ -15,11 +15,6 @@ identifiers:
   - { propertyID: ORCID, value: 0000-0003-0553-9227, url: "https://orcid.org/0000-0003-0553-9227" }
   - { propertyID: GoogleScholar, value: q2fsO2IAAAAJ, url: "https://scholar.google.com/citations?user=q2fsO2IAAAAJ" }
   - { propertyID: GitHub, value: saberhq, url: "https://github.com/saberhq" }
-alumniOf:
-  - { name: University of British Columbia, sameAs: "https://www.ubc.ca/" }
-  - { name: Middle East Technical University (METU), sameAs: "https://www.metu.edu.tr/" }
-  - { name: BC Cancer Genome Sciences Centre, type: ResearchOrganization, sameAs: "https://www.bcgsc.ca/" }
-  - { name: Genentech, type: Corporation, sameAs: "https://www.gene.com/" }
 knowsAbout:
   - Bioinformatics
   - Computational biology

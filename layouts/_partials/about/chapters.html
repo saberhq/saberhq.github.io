@@ -1,0 +1,14 @@
+{{- /* The career entries, grouped for About: `now` (roles without an end) and `past` (each role with the degree beside it). */ -}}
+{{- $c := site.Data.career -}}
+{{- $now := slice -}}
+{{- $past := slice -}}
+{{- range $role := $c.roles -}}
+  {{- if not $role.end -}}
+    {{- $now = $now | append $role -}}
+  {{- else -}}
+    {{- $chapter := dict "role" $role -}}
+    {{- range where $c.degrees "beside" $role.id }}{{ $chapter = merge $chapter (dict "degree" .) }}{{ end -}}
+    {{- $past = $past | append $chapter -}}
+  {{- end -}}
+{{- end -}}
+{{- return dict "now" $now "past" $past -}}

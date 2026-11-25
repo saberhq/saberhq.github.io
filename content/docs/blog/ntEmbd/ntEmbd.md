@@ -7,12 +7,7 @@ image: /images/art/green.jpg
 description: "ntEmbd turns nucleotide sequences into vector embeddings; explore training setup, benchmarks, and GitHub repo links."
 area: research
 tags: [machine learning, genomics]
-paper:
-  title: "ntEmbd: Deep learning embedding for nucleotide sequences"
-  authors: [Saber Hafezqorani, Ka Ming Nip, Inanc Birol]
-  journal: bioRxiv
-  date: 2024-05-02
-  doi: 10.1101/2024.04.30.591806
+paper: ntembd
 ---
 
 Enabled by the explosion of data and substantial increase in computational power, deep learning is finding increasingly more applications in genomics research. Deep learning abstracts features from input data typically through an autoencoding process, embedding symbolic representations of sequences into vectors of floating point numbers. These latent representations can then be used in downstream tasks, such as data classification and clustering. In genomics applications, models based on embedding methods heavily use paradigms established in the natural language processing (NLP) domain. However, analysis of nucleotide sequences presents particular challenges, limiting the utility of NLP paradigms; these include wider distribution of sequence lengths (e.g. transcript sequence lengths) and long-range dependencies between features (e.g. cis- and trans-regulatory motifs). These challenges may be addressed by an embedding model specifically designed for nucleotide sequences.

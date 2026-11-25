@@ -7,12 +7,7 @@ image: /images/art/earth.jpg
 description: "Trans-NanoSim captures nanopore transcript quirks; learn how benchmarks and simulations accelerate RNA tooling workflows."
 area: research
 tags: [genomics]
-paper:
-  title: "Trans-NanoSim characterizes and simulates nanopore RNA-sequencing data"
-  authors: [Saber Hafezqorani, Chen Yang, Theodora Lo, Ka Ming Nip, René L Warren, Inanc Birol]
-  journal: GigaScience
-  date: 2020-06-01
-  doi: 10.1093/gigascience/giaa061
+paper: nanosim
 ---
 
 Compared with second-generation sequencing technologies, third-generation single-molecule RNA sequencing has unprecedented advantages; the long reads it generates facilitate isoform-level transcript characterization. In particular, the Oxford Nanopore Technology sequencing platforms have become more popular in recent years owing to their relatively high affordability and portability compared with other third-generation sequencing technologies. To aid the development of analytical tools that leverage the power of this technology, simulated data provide a cost-effective solution with ground truth. However, a nanopore sequence simulator targeting transcriptomic data is not available yet.
