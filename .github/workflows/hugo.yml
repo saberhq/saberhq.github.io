@@ -190,6 +190,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      changed: ${{ steps.changed.outputs.urls }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -240,6 +242,13 @@ jobs:
           echo "Building ${HUGO_PARAMS_VERSION:-an untagged commit}."
           hugo --minify --cleanDestinationDir --config config.toml
 
+      - name: List the pages that changed
+        id: changed
+        run: |
+          urls=$(python3 scripts/indexnow changed build || true)
+          { echo "urls<<END_OF_URLS"; echo "$urls"; echo "END_OF_URLS"; } >> "$GITHUB_OUTPUT"
+          echo "${urls:-No page changed.}"
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -259,6 +268,22 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  indexnow:
+    needs: [build, deploy]
+    if: ${{ !cancelled() && needs.deploy.result == 'success' && needs.build.outputs.changed != '' }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Tell search engines which pages changed
+        env:
+          URLS: ${{ needs.build.outputs.changed }}
+        run: printf '%s\n' "$URLS" | python3 scripts/indexnow submit
 
   vibes-alert:
     needs: vibes
