@@ -16,11 +16,12 @@ Most links below are a page as Markdown (`index.md`); the web page is the same a
 
 ## Pages
 - [{{ site.Home.Title }}]({{ partial "seo/md-url" site.Home }}): {{ site.Home.Description }}
-{{- range slice "/about" "/resume" "/docs/blog" "/vibes" "/albumarts" }}
+{{- range slice "/about" "/docs/blog" "/vibes" "/albumarts" }}
 {{- with site.GetPage . }}
 - [{{ .Title }}]({{ partial "seo/md-url" . }}): {{ .Description }}
 {{- end }}
 {{- end }}
+- [Résumé]({{ "resume/" | absURL }}): {{ site.Params.author }}'s résumé: experience, selected publications, technical skills and education.
 
 ## News
 {{- range site.Home.Params.news }}
