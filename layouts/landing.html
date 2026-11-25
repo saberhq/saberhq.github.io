@@ -20,8 +20,7 @@
           <span class="sq-flip" aria-hidden="true">{{ range split "Sidechain" "" }}<span>{{ . }}</span>{{ end }}</span><span class="sq-glyph" aria-hidden="true">→</span>
         </a>
         {{ end }}
-        {{/* The about text lives on its own page now (layouts/about.html), which also
-             carries the résumé link. Same tab: it's part of the site, like Sidechain. */}}
+        {{/* The about text lives on its own page (layouts/about.html). Same tab: it's part of the site. */}}
         {{ with .Params.about }}<a class="sq-btn sq-btn--secondary" href="{{ . }}">About me</a>{{ end }}
       </div>
     </section>

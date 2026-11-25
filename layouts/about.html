@@ -49,10 +49,6 @@
         <p class="sq-tagline">{{ . }}</p>
         {{- end }}
         <div class="sq-hero-actions">
-          {{- with .Params.resume }}
-          {{- $off := partial "saberhq/new-tab" . }}
-          <a class="sq-btn sq-btn--secondary" href="{{ . }}"{{ if $off }} target="_blank" rel="noopener"{{ end }}>Résumé <span class="sq-glyph" aria-hidden="true">{{ cond $off "↗" "→" }}</span>{{ if $off }}<span class="sq-sr-only"> (opens in a new tab)</span>{{ end }}</a>
-          {{- end }}
           {{- with $mailto }}
           <a class="sq-btn sq-btn--secondary" href="{{ . }}">Say hi<span class="sq-sr-only"> (email)</span></a>
           {{- end }}

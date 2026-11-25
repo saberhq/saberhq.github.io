@@ -13,7 +13,7 @@ heading: "Hi, I’m Saber."
 lede: "A research scientist in genomics, data science, and machine learning, now building Sidechain for Arc’s Virtual Cell Challenge 2026."
 # The label over the text below (the home page carries the short version)
 longLabel: "The long version"
-resume: /resume/
+aliases: ["/resume/"]
 # The photo: a square picture in this folder, at least 448px wide, shown as a circle
 photo: profile.jpg
 photoAlt: "Saber Hafezqorani with a warm smile, in a cream fleece jacket, outdoors in front of a purple-grey painted wall."

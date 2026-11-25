@@ -50,7 +50,7 @@ disableKinds = ["taxonomy", "term"]
   # a post's "updated" date links here, its file path added
   contentHistory = "https://github.com/saberhq/saberhq.github.io/commits/main/content/"
   # saberh.com pages that open in a new tab (links to other sites always do)
-  newTab = ["/resume/"]
+  newTab = []
 
 # Footer socials (optional)
 [params.social]

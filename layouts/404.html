@@ -56,12 +56,9 @@
         <h1>404</h1>
         <h2>This page has moved or never existed</h2>
         <p>
-          If you followed a link to a résumé PDF, that file was retired — the résumé
-          lives as a page now, and prints to PDF from your browser.
+          If you followed a link to the résumé, it has moved: the About page carries it now.
         </p>
         <ul>
-          {{- $newTab := partial "saberhq/new-tab" "/resume/" }}
-          <li><a href="/resume/"{{ if $newTab }} target="_blank" rel="noopener"{{ end }}>Résumé{{ if $newTab }}<span class="sq-sr-only"> (opens in a new tab)</span>{{ end }}</a></li>
           <li><a href="{{ .Site.Home.RelPermalink }}">Home</a></li>
           <li><a href="/about/">About</a></li>
           <li><a href="/blog/">Blog</a></li>
