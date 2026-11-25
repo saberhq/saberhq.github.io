@@ -1,0 +1,69 @@
+{
+  "mark": "Saber H.",
+  "address": "saberh.com",
+  "cards": {
+    "home": {
+      "path": "/",
+      "mark": "Saber Hafezqorani",
+      "title": "Saber H.",
+      "tag": "AI × Bio",
+      "alt": "A card that reads “Saber H.” and “AI × Bio”."
+    },
+    "about": {
+      "path": "/about/",
+      "title": ["Hi, I’m", "Saber."],
+      "photo": "content/about/profile.jpg",
+      "alt": "A card that reads “Hi, I’m Saber.” beside a small round photo of Saber Hafezqorani."
+    },
+    "blog": {
+      "path": "/blog/",
+      "title": "Blog.",
+      "art": "pencil",
+      "alt": "A card that reads “Blog.” beside a pencil drawn in pixels."
+    },
+    "vibes": {
+      "path": "/vibes/",
+      "address": "sabervibes.com",
+      "title": ["Saber", "Vibes."],
+      "accent": "vibes",
+      "art": "notes",
+      "alt": "A card that reads “Saber Vibes.” beside two music notes drawn in pixels."
+    }
+  },
+  "art": {
+    "pencil": [
+      "...........XX.",
+      "..........XXXX",
+      ".........X.XXX",
+      "........XXX.X.",
+      ".......XXXXX..",
+      "......XXXXX...",
+      ".....XXXXX....",
+      "....XXXXX.....",
+      "...XXXXX......",
+      "..XXXXX.......",
+      ".XXXXX........",
+      ".XXXX.........",
+      "X.XX..........",
+      "XX............"
+    ],
+    "notes": [
+      "............XXXXXX",
+      "........XXXXXXXXXX",
+      "....XXXXXXXXXXXXXX",
+      "....XXXXXXXXXX..XX",
+      "....XXXXXX......XX",
+      "....XX..........XX",
+      "....XX..........XX",
+      "....XX..........XX",
+      "....XX..........XX",
+      "....XX..........XX",
+      "....XX.......XXXXX",
+      "....XX......XXXXXX",
+      ".XXXXX......XXXXXX",
+      "XXXXXX.......XXXX.",
+      "XXXXXX............",
+      ".XXXX............."
+    ]
+  }
+}

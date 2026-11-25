@@ -17,7 +17,7 @@ resume: /resume/
 # The photo: a square picture in this folder, at least 448px wide, shown as a circle
 photo: profile.jpg
 photoAlt: "Saber Hafezqorani with a warm smile, in a cream fleece jacket, outdoors in front of a purple-grey painted wall."
-# Link previews (Open Graph) use the photo
+# The page's picture in the about-me data (link previews show the share card)
 images:
   - profile.jpg
 # The topic tags close the long version. To add more sections later, put a <!--more--> line

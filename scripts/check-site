@@ -2,8 +2,9 @@
 """Build the site into a temporary folder and check it.
 
 Checks: the build has no errors or warnings, every internal link and image resolves,
-every post has a title, a description, a known area and a date that isn't in the future, and no
-parked section is in the sitemap. Exits 1 when something fails.
+every post has a title, a description, a known area and a date that isn't in the future, no
+parked section is in the sitemap, and every share card is drawn, fresh and the picture its pages'
+link previews show. Exits 1 when something fails.
 """
 
 import argparse
@@ -21,6 +22,8 @@ ELSEWHERE = ("/sidechain/",)
 PARKED = ("/podcast/", "/newsletter/", "/docs/")
 AREAS = re.findall(r"^([a-z_]+):", (ROOT / "data/areas.yaml").read_text(), re.M)
 ATTR = re.compile(r"""\b(?:href|src)=(?:"([^"]*)"|'([^']*)'|([^\s>"']+))""")
+PREVIEW = re.compile(r"""<meta property="?og:image"? content=(?:"([^"]*)"|([^\s>]+))""")
+PHOTO = "/about/profile.jpg"
 
 
 def build(out: Path, problems: list) -> bool:
@@ -90,6 +93,27 @@ def check_sitemap(out: Path, problems: list):
             problems.append(f"sitemap lists a page that isn't built: {loc}")
 
 
+def check_cards(out: Path, problems: list):
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/share-cards"), "--check"],
+                       capture_output=True, text=True)
+    problems.extend(x for x in r.stdout.splitlines() if x)
+    if r.returncode and not r.stdout.strip():
+        problems.append(f"share-cards --check failed: {r.stderr.strip()[-200:]}")
+    for page in sorted(out.rglob("*.html")):
+        text, name = page.read_text(errors="replace"), "/" + page.relative_to(out).as_posix()
+        if "og:title" not in text:
+            continue
+        m = PREVIEW.search(text)
+        if not m:
+            problems.append(f"no link-preview picture on {name}")
+            continue
+        path = urlsplit((m.group(1) or m.group(2)).replace(SITE, "")).path
+        if path == PHOTO:
+            problems.append(f"the link preview of {name} is the About photo, not a share card")
+        elif not resolves(out, path):
+            problems.append(f"the link-preview picture of {name} isn't built: {path}")
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--keep", metavar="DIR", help="build into DIR and keep it")
@@ -100,6 +124,7 @@ def main() -> int:
         if build(out, problems):
             check_links(out, problems)
             check_sitemap(out, problems)
+            check_cards(out, problems)
         check_posts(problems)
     if problems:
         print(f"check-site: {len(problems)} problem(s)")
