@@ -68,6 +68,10 @@
     </main>
     {{ partial "saberhq/site-footer" . }}
 
+    {{/* Count the address asked for, under /404. */}}
+    {{ if hugo.IsProduction }}
+    <script>window.goatcounter = { path: function () { return '/404' + location.pathname; } };</script>
+    {{ end }}
     {{ partial "docs/inject/body" . }}
   </body>
 

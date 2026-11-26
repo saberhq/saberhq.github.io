@@ -9,11 +9,15 @@
 </div>
 <script>
 (function () {
+  var count = function (what) {
+    if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: what + location.pathname, event: true });
+  };
   var top = document.querySelector('[data-scroll-top]');
   if (top) top.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
 
   var share = document.querySelector('[data-share]');
   if (share) share.addEventListener('click', function () {
+    count('share');
     var url = share.getAttribute('data-url');
     var title = share.getAttribute('data-title');
     if (navigator.share) {
@@ -25,6 +29,7 @@
 
   var copyBtn = document.querySelector('[data-copy-link]');
   if (copyBtn) copyBtn.addEventListener('click', function () {
+    count('copy');
     var url = copyBtn.getAttribute('data-url');
     var done = function () {
       var was = copyBtn.innerHTML;
