@@ -5,16 +5,17 @@
         async src="https://gc.zgo.at/count.js"></script>
 {{ end }}
 
-{{/* Outbound clicks, grouped by host; same-host links are skipped. */}}
+{{/* Outbound clicks, grouped by host (email links as out/email); same-host links are skipped. */}}
 {{ if hugo.IsProduction }}
 <script>
 document.addEventListener('click', function (e) {
-  var a = e.target && e.target.closest && e.target.closest('a[href^="http"]');
+  var a = e.target && e.target.closest && e.target.closest('a[href^="http"], a[href^="mailto:"]');
   if (!a) return;
-  var host = a.host.replace(/^www\./, '');
+  var mail = a.protocol === 'mailto:';
+  var host = mail ? 'email' : a.host.replace(/^www\./, '');
   if (host === location.host.replace(/^www\./, '')) return;
   if (!window.goatcounter || !window.goatcounter.count) return;
-  window.goatcounter.count({ path: 'out/' + host, title: a.href, event: true });
+  window.goatcounter.count({ path: 'out/' + host, title: mail ? 'Email' : a.href, event: true });
 });
 </script>
 {{ end }}
